@@ -1,0 +1,5 @@
+id,fecha,modulo,tipo_falla,severidad,tiempo_resolucion_min,atribuible_a_musa,descripcion_falla,accion_correctiva
+FALLA-01,2026-06-18,auth,Expiración de token no calculada en UTC,Media,45,false,Tokens expiraban antes de tiempo por desfase de zona horaria,Uso estricto de datetime.now(timezone.utc)
+FALLA-02,2026-07-09,polizas,Transición de estado por_vencer con offset de fecha,Baja,30,false,Filtro de 30 días calculaba >= 31 días en meses de 31 días,Uso de timedelta(days=30) exacto
+FALLA-03,2026-08-22,ocr,Descriptor de archivo pdfplumber no cerrado en PDF dañado,Alta,60,false,Excepción no capturada dejaba archivo abierto en disco,Bloque try...finally con cierre explícito
+FALLA-04,2026-09-05,outbox,Stale task watchdog timeout no configurado,Media,40,false,Tareas zombi permanecían en PROCESSING si el contenedor se reiniciaba,Watchdog de tareas huérfanas cada 60s
