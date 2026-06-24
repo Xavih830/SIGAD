@@ -27,3 +27,12 @@ doc/api/
 
 .flutter-plugins
 .flutter-plugins-dependencies
+
+# Ignore documentos folder
+documentos/
+
+# IDE files and metadata
+.idea/
+*.iml
+.metadata
+
