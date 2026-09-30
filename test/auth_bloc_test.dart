@@ -1,33 +1,32 @@
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
+import 'package:http/http.dart' as http;
+import 'package:mocktail/mocktail.dart';
 import 'package:sigad/core/services/hive_helper.dart';
-import 'package:sigad/core/utils/sha256_helper.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_event.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_state.dart';
 
+class MockHttpClient extends Mock implements http.Client {}
+
 void main() {
   late AuthBloc authBloc;
+  late MockHttpClient mockClient;
   late Directory tempDir;
 
+  setUpAll(() {
+    registerFallbackValue(Uri());
+  });
+
   setUp(() async {
-    // Setup a clean temporary directory for Hive database boxes
     tempDir = await Directory.systemTemp.createTemp('sigad_hive_test_dir');
     Hive.init(tempDir.path);
-
-    // Open standard boxes
-    await Hive.openBox(HiveHelper.usersBoxName);
-    await Hive.openBox(HiveHelper.clientsBoxName);
-    await Hive.openBox(HiveHelper.policiesBoxName);
     await Hive.openBox(HiveHelper.sessionBoxName);
-    await Hive.openBox(HiveHelper.workshopsBoxName);
-    await Hive.openBox(HiveHelper.assistanceBoxName);
 
-    // Seed mock data
-    await HiveHelper.seedDataIfNeeded();
-
-    authBloc = AuthBloc();
+    mockClient = MockHttpClient();
+    authBloc = AuthBloc(client: mockClient);
   });
 
   tearDown(() async {
@@ -52,9 +51,46 @@ void main() {
     );
   });
 
+  test('CheckSession should emit AuthSuccess when active user is cached in sessionBox', () async {
+    await HiveHelper.sessionBox.put('active_user', {
+      'id': 'usr-1',
+      'email': 'admin@sigad.ec',
+      'name': 'Admin',
+      'role': 'admin_system',
+      'isActive': true,
+    });
+
+    authBloc.add(CheckSession());
+    await expectLater(
+      authBloc.stream,
+      emitsInOrder([
+        isA<AuthSuccess>().having((s) => s.user['email'], 'email', 'admin@sigad.ec'),
+      ]),
+    );
+  });
+
   test('LoginSubmitted should emit AuthSuccess when valid admin credentials are provided', () async {
-    authBloc.add(const LoginSubmitted(email: 'admin@sigad.ec', password: 'Admin#SIGAD24'));
-    
+    when(() => mockClient.post(
+          any(),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        )).thenAnswer((_) async => http.Response(
+          jsonEncode({
+            'access_token': 'jwt_mock_token',
+            'refresh_token': 'jwt_refresh_mock',
+            'user': {
+              'id': 'usr-1',
+              'email': 'admin@sigad.ec',
+              'nombre': 'Administrador del Sistema',
+              'rol': 'admin',
+              'is_active': true,
+            },
+          }),
+          200,
+        ));
+
+    authBloc.add(const LoginSubmitted(identificador: 'admin@sigad.ec', password: 'Admin#SIGAD24'));
+
     await expectLater(
       authBloc.stream,
       emitsInOrder([
@@ -64,45 +100,80 @@ void main() {
     );
   });
 
-  test('LoginSubmitted should emit AuthSuccess when valid client credentials are provided', () async {
-    authBloc.add(const LoginSubmitted(email: 'c.perez@gmail.com', password: 'Carlos#2024'));
-
-    await expectLater(
-      authBloc.stream,
-      emitsInOrder([
-        AuthLoading(),
-        isA<AuthSuccess>().having((s) => s.user['email'], 'email', 'c.perez@gmail.com'),
-      ]),
-    );
-  });
-
   test('LoginSubmitted should emit AuthFailure on wrong password', () async {
-    authBloc.add(const LoginSubmitted(email: 'admin@sigad.ec', password: 'WrongPassword'));
+    when(() => mockClient.post(
+          any(),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        )).thenAnswer((_) async => http.Response(
+          jsonEncode({'detail': 'Invalid credentials'}),
+          401,
+        ));
+
+    authBloc.add(const LoginSubmitted(identificador: 'admin@sigad.ec', password: 'WrongPassword'));
 
     await expectLater(
       authBloc.stream,
       emitsInOrder([
         AuthLoading(),
         const AuthFailure(message: 'Las credenciales ingresadas no son válidas.'),
+      ]),
+    );
+  });
+
+  test('LoginSubmitted should emit AuthFailure on network error without fallback', () async {
+    when(() => mockClient.post(
+          any(),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        )).thenThrow(const SocketException('Failed host lookup'));
+
+    authBloc.add(const LoginSubmitted(identificador: 'admin@sigad.ec', password: 'AnyPassword'));
+
+    await expectLater(
+      authBloc.stream,
+      emitsInOrder([
+        AuthLoading(),
+        const AuthFailure(message: 'Error de conexión con el servidor'),
       ]),
     );
   });
 
   test('LoginSubmitted should lock out user after 3 consecutive failures', () async {
-    // Attempt 1
-    authBloc.add(const LoginSubmitted(email: 'admin@sigad.ec', password: 'WrongPassword1'));
-    // Attempt 2
-    authBloc.add(const LoginSubmitted(email: 'admin@sigad.ec', password: 'WrongPassword2'));
-    // Attempt 3
-    authBloc.add(const LoginSubmitted(email: 'admin@sigad.ec', password: 'WrongPassword3'));
+    when(() => mockClient.post(
+          any(),
+          headers: any(named: 'headers'),
+          body: any(named: 'body'),
+        )).thenAnswer((_) async => http.Response(
+          jsonEncode({'detail': 'Invalid credentials'}),
+          401,
+        ));
 
+    // Attempt 1
+    authBloc.add(const LoginSubmitted(identificador: 'admin@sigad.ec', password: 'WrongPassword1'));
     await expectLater(
       authBloc.stream,
       emitsInOrder([
         AuthLoading(),
         const AuthFailure(message: 'Las credenciales ingresadas no son válidas.'),
+      ]),
+    );
+
+    // Attempt 2
+    authBloc.add(const LoginSubmitted(identificador: 'admin@sigad.ec', password: 'WrongPassword2'));
+    await expectLater(
+      authBloc.stream,
+      emitsInOrder([
         AuthLoading(),
         const AuthFailure(message: 'Las credenciales ingresadas no son válidas.'),
+      ]),
+    );
+
+    // Attempt 3
+    authBloc.add(const LoginSubmitted(identificador: 'admin@sigad.ec', password: 'WrongPassword3'));
+    await expectLater(
+      authBloc.stream,
+      emitsInOrder([
         AuthLoading(),
         isA<AuthLockedOut>(),
       ]),

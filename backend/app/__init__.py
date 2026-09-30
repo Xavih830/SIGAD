@@ -1,0 +1,1 @@
+"""SIGAD Backend Application Package."""

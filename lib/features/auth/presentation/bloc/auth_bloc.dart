@@ -1,14 +1,19 @@
+import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/services/hive_helper.dart';
-import '../../../../core/utils/sha256_helper.dart';
-import 'auth_event.dart';
-import 'auth_state.dart';
+import 'package:http/http.dart' as http;
+import 'package:sigad/core/config/api_config.dart';
+import 'package:sigad/core/services/hive_helper.dart';
+import 'package:sigad/features/auth/presentation/bloc/auth_event.dart';
+import 'package:sigad/features/auth/presentation/bloc/auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
+  final http.Client _client;
   int _failedAttempts = 0;
   DateTime? _lockoutUntil;
 
-  AuthBloc() : super(AuthInitial()) {
+  AuthBloc({http.Client? client})
+      : _client = client ?? http.Client(),
+        super(AuthInitial()) {
     on<CheckSession>(_onCheckSession);
     on<LoginSubmitted>(_onLoginSubmitted);
     on<LogoutRequested>(_onLogoutRequested);
@@ -19,13 +24,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     final activeUser = HiveHelper.sessionBox.get('active_user');
     if (activeUser != null) {
       final userMap = Map<String, dynamic>.from(activeUser);
-      final freshUser = HiveHelper.usersBox.get(userMap['email']);
-      if (freshUser != null) {
-        final freshUserMap = Map<String, dynamic>.from(freshUser);
-        if (freshUserMap['isActive'] == true) {
-          emit(AuthSuccess(user: freshUserMap));
-          return;
-        }
+      if (userMap['isActive'] != false) {
+        emit(AuthSuccess(user: userMap));
+        return;
       }
       HiveHelper.sessionBox.delete('active_user');
     }
@@ -40,34 +41,62 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     emit(AuthLoading());
 
-    final email = event.email.trim().toLowerCase();
-    final password = event.password;
+    try {
+      final response = await _client.post(
+        Uri.parse('${ApiConfig.baseUrl}/api/v1/auth/login'),
+        headers: ApiConfig.authHeaders(null),
+        body: jsonEncode({
+          'identificador': event.identificador.trim(),
+          'password': event.password,
+        }),
+      ).timeout(ApiConfig.defaultTimeout);
 
-    final user = HiveHelper.usersBox.get(email);
-    if (user != null) {
-      final userMap = Map<String, dynamic>.from(user);
-      final hashedInput = Sha256Helper.hash(password);
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final user = data['user'] as Map<String, dynamic>;
 
-      if (userMap['passwordHash'] == hashedInput) {
-        if (userMap['isActive'] == true) {
-          _failedAttempts = 0;
-          _lockoutUntil = null;
-          await HiveHelper.sessionBox.put('active_user', userMap);
-          emit(AuthSuccess(user: userMap));
-          return;
-        } else {
-          emit(const AuthFailure(message: 'La cuenta ingresada está inactiva.'));
-          return;
-        }
+        final sessionData = {
+          ...user,
+          'access_token': data['access_token'],
+          'refresh_token': data['refresh_token'],
+          'role': _mapRol(user['rol'] ?? ''),
+          'name': user['nombre'] ?? '',
+          'email': user['email'] ?? '',
+          'isActive': true,
+        };
+
+        _failedAttempts = 0;
+        _lockoutUntil = null;
+        await HiveHelper.sessionBox.put('active_user', sessionData);
+        emit(AuthSuccess(user: sessionData));
+      } else {
+        _handleLoginFailure(emit);
       }
+    } catch (e) {
+      emit(const AuthFailure(message: 'Error de conexión con el servidor'));
     }
+  }
 
+  void _handleLoginFailure(Emitter<AuthState> emit) {
     _failedAttempts++;
     if (_failedAttempts >= 3) {
       _lockoutUntil = DateTime.now().add(const Duration(minutes: 5));
       emit(AuthLockedOut(unlockTime: _lockoutUntil!));
     } else {
       emit(const AuthFailure(message: 'Las credenciales ingresadas no son válidas.'));
+    }
+  }
+
+  String _mapRol(String backendRol) {
+    switch (backendRol) {
+      case 'admin':
+        return 'admin_system';
+      case 'agente':
+        return 'admin_rjseguros';
+      case 'cliente':
+        return 'client';
+      default:
+        return backendRol;
     }
   }
 
@@ -80,5 +109,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     _failedAttempts = 0;
     _lockoutUntil = null;
     emit(AuthInitial());
+  }
+
+  @override
+  Future<void> close() {
+    _client.close();
+    return super.close();
   }
 }
