@@ -189,3 +189,34 @@ def extraer_documento_sync(file_path: str) -> dict[str, Any]:
         "confianza": confianza,
         "campos_extraidos": campos,
     }
+
+
+def evaluar_decision_extraccion(
+    legible: bool,
+    confianza: float | Decimal,
+    coincide_vehiculo: bool = False,
+    placa_duplicada: bool = False,
+) -> str:
+    """Evalúa la regla de decisión canónica de Jorgensen para extracción OCR.
+
+    Tabla canónica reducida:
+    R1: Legibilidad = No (False) -> 'Rechazar Documento' (indiferencia en el resto)
+    R2: Legible = Sí, Confianza < 80% -> 'Revisión Manual Obligatoria' (indiferencia)
+    R3: Legible = Sí, Confianza >= 80%, Placa Duplicada = Sí -> 'Rechazar Documento'
+    R4: Legible = Sí, Confianza >= 80%, Coincide = Sí, Duplicada = No -> 'Aprobar Automáticamente'
+    R5: Legible = Sí, Confianza >= 80%, Coincide = No, Duplicada = No -> 'Revisión Manual Obligatoria'
+    """
+    if not legible:
+        return "Rechazar Documento"
+
+    conf = Decimal(str(confianza))
+    if conf < Decimal("80.0"):
+        return "Revisión Manual Obligatoria"
+
+    if placa_duplicada:
+        return "Rechazar Documento"
+
+    if coincide_vehiculo:
+        return "Aprobar Automáticamente"
+
+    return "Revisión Manual Obligatoria"
