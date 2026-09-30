@@ -1,0 +1,2218 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SIGAD API",
+    "description": "Sistema Integral de Gestión de Asegurados — Backend",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Login",
+        "description": "Polymorphic login: email → direct lookup, cédula → join through clientes.",
+        "operationId": "login_api_v1_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/vinculacion": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Vincular Cliente",
+        "description": "Flujo de vinculación móvil para clientes asegurados.",
+        "operationId": "vincular_cliente_api_v1_auth_vinculacion_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VinculacionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/clientes": {
+      "post": {
+        "tags": [
+          "Clientes"
+        ],
+        "summary": "Registrar Cliente",
+        "description": "Registra un nuevo cliente asegurado y genera su código OTP de vinculación inicial.",
+        "operationId": "registrar_cliente_api_v1_clientes_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClienteCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClienteResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Clientes"
+        ],
+        "summary": "Listar Clientes",
+        "description": "Lista todos los clientes registrados.",
+        "operationId": "listar_clientes_api_v1_clientes_get",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Búsqueda por nombre o cédula",
+              "title": "Q"
+            },
+            "description": "Búsqueda por nombre o cédula"
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Skip"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClienteResponse"
+                  },
+                  "title": "Response Listar Clientes Api V1 Clientes Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/clientes/{cliente_id}": {
+      "get": {
+        "tags": [
+          "Clientes"
+        ],
+        "summary": "Obtener Cliente",
+        "description": "Obtiene el detalle de un cliente asegurado.",
+        "operationId": "obtener_cliente_api_v1_clientes__cliente_id__get",
+        "parameters": [
+          {
+            "name": "cliente_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Cliente Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClienteResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/clientes/{cliente_id}/otp": {
+      "post": {
+        "tags": [
+          "Clientes"
+        ],
+        "summary": "Regenerar Otp Cliente",
+        "description": "Regenera un nuevo código OTP de vinculación para un cliente existente.",
+        "operationId": "regenerar_otp_cliente_api_v1_clientes__cliente_id__otp_post",
+        "parameters": [
+          {
+            "name": "cliente_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Cliente Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClienteResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/polizas": {
+      "get": {
+        "tags": [
+          "Pólizas"
+        ],
+        "summary": "Listar Polizas",
+        "description": "Listar pólizas.\n\nAnti-BOLA estricto a nivel de consulta SQL:\nLos usuarios con rol 'cliente' únicamente pueden consultar pólizas asociadas\na su propia identificación registrada (Sección 17.1).",
+        "operationId": "listar_polizas_api_v1_polizas_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PolizaResponse"
+                  },
+                  "type": "array",
+                  "title": "Response Listar Polizas Api V1 Polizas Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Pólizas"
+        ],
+        "summary": "Crear Poliza",
+        "description": "Emisión formal de póliza con snapshot inmutable de kilometraje y evaluación de CFG.",
+        "operationId": "crear_poliza_api_v1_polizas_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PolizaCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PolizaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/polizas/{id}": {
+      "get": {
+        "tags": [
+          "Pólizas"
+        ],
+        "summary": "Obtener Poliza",
+        "description": "Detalle de una póliza con Anti-BOLA en SQL.",
+        "operationId": "obtener_poliza_api_v1_polizas__id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PolizaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/polizas/{id}/deducibles": {
+      "get": {
+        "tags": [
+          "Pólizas"
+        ],
+        "summary": "Consultar Deducibles",
+        "description": "Consultar deducibles diferenciados de una póliza (SC-2026-001) con Anti-BOLA.",
+        "operationId": "consultar_deducibles_api_v1_polizas__id__deducibles_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DeducibleResponse"
+                  },
+                  "title": "Response Consultar Deducibles Api V1 Polizas  Id  Deducibles Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/polizas/{id}/estado": {
+      "patch": {
+        "tags": [
+          "Pólizas"
+        ],
+        "summary": "Actualizar Estado Poliza",
+        "description": "Actualizar estado de póliza. Dispara triggers de auditoría en PostgreSQL.",
+        "operationId": "actualizar_estado_poliza_api_v1_polizas__id__estado_patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PolizaUpdateEstado"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PolizaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/vehiculos": {
+      "get": {
+        "tags": [
+          "Vehículos"
+        ],
+        "summary": "Listar Vehiculos",
+        "description": "Listar vehículos.\n\nAnti-BOLA estricto a nivel de consulta SQL:\nLos usuarios con rol 'cliente' solo ven sus propios vehículos registrados.",
+        "operationId": "listar_vehiculos_api_v1_vehiculos_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/VehiculoResponse"
+                  },
+                  "type": "array",
+                  "title": "Response Listar Vehiculos Api V1 Vehiculos Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Vehículos"
+        ],
+        "summary": "Crear Vehiculo",
+        "description": "Registrar un nuevo vehículo con validación de placa ANT.\n\nAnti-BOLA: Clientes solo pueden registrar vehículos asociados a su propia ficha de cliente.",
+        "operationId": "crear_vehiculo_api_v1_vehiculos_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VehiculoCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehiculoResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/vehiculos/{id}": {
+      "get": {
+        "tags": [
+          "Vehículos"
+        ],
+        "summary": "Obtener Vehiculo",
+        "description": "Obtener detalle de vehículo por ID con protección Anti-BOLA.",
+        "operationId": "obtener_vehiculo_api_v1_vehiculos__id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehiculoResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/talleres": {
+      "get": {
+        "tags": [
+          "Talleres"
+        ],
+        "summary": "Listar Talleres",
+        "description": "Obtiene el catálogo de talleres autorizados.",
+        "operationId": "listar_talleres_api_v1_talleres_get",
+        "parameters": [
+          {
+            "name": "ciudad",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtrar por ciudad",
+              "title": "Ciudad"
+            },
+            "description": "Filtrar por ciudad"
+          },
+          {
+            "name": "solo_activos",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Mostrar solo talleres activos",
+              "default": true,
+              "title": "Solo Activos"
+            },
+            "description": "Mostrar solo talleres activos"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TallerResponse"
+                  },
+                  "title": "Response Listar Talleres Api V1 Talleres Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Talleres"
+        ],
+        "summary": "Crear Taller",
+        "description": "Registra un nuevo taller autorizado.",
+        "operationId": "crear_taller_api_v1_talleres_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TallerCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TallerResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/talleres/{taller_id}": {
+      "get": {
+        "tags": [
+          "Talleres"
+        ],
+        "summary": "Obtener Taller",
+        "description": "Obtiene un taller por su ID.",
+        "operationId": "obtener_taller_api_v1_talleres__taller_id__get",
+        "parameters": [
+          {
+            "name": "taller_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Taller Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TallerResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/asistencias": {
+      "get": {
+        "tags": [
+          "Asistencias"
+        ],
+        "summary": "Listar Asistencias",
+        "description": "Obtiene el catálogo de servicios de asistencia en carretera y emergencias.",
+        "operationId": "listar_asistencias_api_v1_asistencias_get",
+        "parameters": [
+          {
+            "name": "solo_activas",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Mostrar solo asistencias activas",
+              "default": true,
+              "title": "Solo Activas"
+            },
+            "description": "Mostrar solo asistencias activas"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AsistenciaResponse"
+                  },
+                  "title": "Response Listar Asistencias Api V1 Asistencias Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Asistencias"
+        ],
+        "summary": "Crear Asistencia",
+        "description": "Registra un nuevo servicio de asistencia.",
+        "operationId": "crear_asistencia_api_v1_asistencias_post",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AsistenciaCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AsistenciaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/asistencias/{asistencia_id}": {
+      "get": {
+        "tags": [
+          "Asistencias"
+        ],
+        "summary": "Obtener Asistencia",
+        "description": "Obtiene el detalle de un servicio de asistencia por ID.",
+        "operationId": "obtener_asistencia_api_v1_asistencias__asistencia_id__get",
+        "parameters": [
+          {
+            "name": "asistencia_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Asistencia Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AsistenciaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/documentos": {
+      "post": {
+        "tags": [
+          "Documentos"
+        ],
+        "summary": "Cargar Documento",
+        "description": "Uploads a document (PDF or image) with 15MB limit and <=10 page validation.",
+        "operationId": "cargar_documento_api_v1_documentos_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_cargar_documento_api_v1_documentos_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Cargar Documento Api V1 Documentos Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Documentos"
+        ],
+        "summary": "Listar Documentos",
+        "description": "List documents accessible to current user.",
+        "operationId": "listar_documentos_api_v1_documentos_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "poliza_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Poliza Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "title": "Response Listar Documentos Api V1 Documentos Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/documentos/cargar": {
+      "post": {
+        "tags": [
+          "Documentos"
+        ],
+        "summary": "Cargar Documento",
+        "description": "Uploads a document (PDF or image) with 15MB limit and <=10 page validation.",
+        "operationId": "cargar_documento_api_v1_documentos_cargar_post",
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_cargar_documento_api_v1_documentos_cargar_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Cargar Documento Api V1 Documentos Cargar Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/documentos/{documento_id}/descargar": {
+      "get": {
+        "tags": [
+          "Documentos"
+        ],
+        "summary": "Descargar Documento",
+        "description": "Anti-IDOR authorized download endpoint.",
+        "operationId": "descargar_documento_api_v1_documentos__documento_id__descargar_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "documento_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Documento Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/documentos/{documento_id}": {
+      "get": {
+        "tags": [
+          "Documentos"
+        ],
+        "summary": "Obtener Documento",
+        "description": "Retrieves document processing status and extracted results.",
+        "operationId": "obtener_documento_api_v1_documentos__documento_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "documento_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Documento Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Obtener Documento Api V1 Documentos  Documento Id  Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "Infra"
+        ],
+        "summary": "Health",
+        "description": "Simple health check for Docker / load-balancer probes.",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Health Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AsistenciaCreate": {
+        "properties": {
+          "titulo": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 2,
+            "title": "Titulo"
+          },
+          "descripcion": {
+            "type": "string",
+            "minLength": 5,
+            "title": "Descripcion"
+          },
+          "telefono_emergencia": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 3,
+            "title": "Telefono Emergencia"
+          },
+          "icono": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Icono",
+            "default": "phone"
+          },
+          "activo": {
+            "type": "boolean",
+            "title": "Activo",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "titulo",
+          "descripcion",
+          "telefono_emergencia"
+        ],
+        "title": "AsistenciaCreate",
+        "description": "Schema para registrar un nuevo servicio de asistencia."
+      },
+      "AsistenciaResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "titulo": {
+            "type": "string",
+            "title": "Titulo"
+          },
+          "descripcion": {
+            "type": "string",
+            "title": "Descripcion"
+          },
+          "telefono_emergencia": {
+            "type": "string",
+            "title": "Telefono Emergencia"
+          },
+          "icono": {
+            "type": "string",
+            "title": "Icono"
+          },
+          "activo": {
+            "type": "boolean",
+            "title": "Activo"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "titulo",
+          "descripcion",
+          "telefono_emergencia",
+          "icono",
+          "activo",
+          "created_at"
+        ],
+        "title": "AsistenciaResponse",
+        "description": "Schema de respuesta para servicio de asistencia."
+      },
+      "Body_cargar_documento_api_v1_documentos_cargar_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "title": "File"
+          },
+          "poliza_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poliza Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_cargar_documento_api_v1_documentos_cargar_post"
+      },
+      "Body_cargar_documento_api_v1_documentos_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "title": "File"
+          },
+          "poliza_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poliza Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_cargar_documento_api_v1_documentos_post"
+      },
+      "ClienteCreate": {
+        "properties": {
+          "identificacion": {
+            "type": "string",
+            "title": "Identificacion",
+            "description": "Cédula de 10 dígitos ecuatoriana"
+          },
+          "nombres": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 2,
+            "title": "Nombres"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "email"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "telefono": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Telefono"
+          }
+        },
+        "type": "object",
+        "required": [
+          "identificacion",
+          "nombres"
+        ],
+        "title": "ClienteCreate",
+        "description": "Schema para creación y onboarding de un cliente por un agente."
+      },
+      "ClienteResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "identificacion": {
+            "type": "string",
+            "title": "Identificacion"
+          },
+          "nombres": {
+            "type": "string",
+            "title": "Nombres"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "telefono": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Telefono"
+          },
+          "usuario_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usuario Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "codigo_vinculacion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Codigo Vinculacion"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "identificacion",
+          "nombres",
+          "created_at"
+        ],
+        "title": "ClienteResponse",
+        "description": "Schema de respuesta para cliente registrado."
+      },
+      "CoberturaCreate": {
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "monto": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Monto",
+            "description": "Monto asegurado para la cobertura"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nombre",
+          "monto"
+        ],
+        "title": "CoberturaCreate"
+      },
+      "CoberturaResponse": {
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "monto": {
+            "type": "string",
+            "title": "Monto",
+            "description": "Monto asegurado para la cobertura"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "poliza_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Poliza Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nombre",
+          "monto",
+          "id",
+          "poliza_id",
+          "created_at"
+        ],
+        "title": "CoberturaResponse"
+      },
+      "DeducibleCreate": {
+        "properties": {
+          "tipo_siniestro": {
+            "$ref": "#/components/schemas/TipoSiniestroEnum",
+            "description": "Tipo de siniestro cubierto (general, robo, choque, perdida_total)",
+            "default": "general"
+          },
+          "porcentaje_valor": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Porcentaje Valor",
+            "description": "Porcentaje aplicable sobre el valor asegurado"
+          },
+          "monto_minimo_usd": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Monto Minimo Usd",
+            "description": "Monto mínimo en USD a pagar"
+          }
+        },
+        "type": "object",
+        "required": [
+          "porcentaje_valor",
+          "monto_minimo_usd"
+        ],
+        "title": "DeducibleCreate",
+        "description": "Schema para creación de deducible."
+      },
+      "DeducibleResponse": {
+        "properties": {
+          "tipo_siniestro": {
+            "$ref": "#/components/schemas/TipoSiniestroEnum",
+            "description": "Tipo de siniestro cubierto (general, robo, choque, perdida_total)",
+            "default": "general"
+          },
+          "porcentaje_valor": {
+            "type": "string",
+            "title": "Porcentaje Valor",
+            "description": "Porcentaje aplicable sobre el valor asegurado"
+          },
+          "monto_minimo_usd": {
+            "type": "string",
+            "title": "Monto Minimo Usd",
+            "description": "Monto mínimo en USD a pagar"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "poliza_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Poliza Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "porcentaje_valor",
+          "monto_minimo_usd",
+          "id",
+          "poliza_id",
+          "created_at"
+        ],
+        "title": "DeducibleResponse",
+        "description": "Schema de respuesta con identificadores y auditoría."
+      },
+      "EstadoPoliza": {
+        "type": "string",
+        "enum": [
+          "pendiente",
+          "activa",
+          "por_vencer",
+          "vencida",
+          "cancelada"
+        ],
+        "title": "EstadoPoliza",
+        "description": "Formal 5-state policy lifecycle.\n\nStates 'error' and 'borrador' are strictly prohibited in the domain model.\n'por_vencer' is only assigned by the temporal background scheduler."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "LoginRequest": {
+        "properties": {
+          "identificador": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Identificador",
+            "description": "Email or cédula"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Password"
+          }
+        },
+        "type": "object",
+        "required": [
+          "identificador",
+          "password"
+        ],
+        "title": "LoginRequest",
+        "description": "Login payload — accepts email (contains @) or cédula (numeric)."
+      },
+      "PolizaCreate": {
+        "properties": {
+          "numero_poliza": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 3,
+            "title": "Numero Poliza"
+          },
+          "cliente_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Cliente Id"
+          },
+          "vehiculo_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Vehiculo Id"
+          },
+          "inspeccion_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inspeccion Id"
+          },
+          "fecha_inicio": {
+            "type": "string",
+            "format": "date",
+            "title": "Fecha Inicio"
+          },
+          "fecha_fin": {
+            "type": "string",
+            "format": "date",
+            "title": "Fecha Fin"
+          },
+          "valor_asegurado": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Valor Asegurado",
+            "description": "Valor comercial asegurado"
+          },
+          "prima_mensual": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Prima Mensual",
+            "description": "Prima mensual calculada"
+          },
+          "kilometraje_emision": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Kilometraje Emision",
+            "description": "Snapshot contractual inmutable al emitir"
+          },
+          "deducibles": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/DeducibleCreate"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deducibles"
+          },
+          "coberturas": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/CoberturaCreate"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coberturas"
+          }
+        },
+        "type": "object",
+        "required": [
+          "numero_poliza",
+          "cliente_id",
+          "vehiculo_id",
+          "fecha_inicio",
+          "fecha_fin",
+          "valor_asegurado",
+          "prima_mensual",
+          "kilometraje_emision"
+        ],
+        "title": "PolizaCreate",
+        "description": "Schema para emisión de una nueva póliza.\n\nExige snapshot inmutable de kilometraje_emision y valida vigencia."
+      },
+      "PolizaResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "numero_poliza": {
+            "type": "string",
+            "title": "Numero Poliza"
+          },
+          "cliente_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Cliente Id"
+          },
+          "vehiculo_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Vehiculo Id"
+          },
+          "inspeccion_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inspeccion Id"
+          },
+          "fecha_inicio": {
+            "type": "string",
+            "format": "date",
+            "title": "Fecha Inicio"
+          },
+          "fecha_fin": {
+            "type": "string",
+            "format": "date",
+            "title": "Fecha Fin"
+          },
+          "estado": {
+            "$ref": "#/components/schemas/EstadoPoliza"
+          },
+          "valor_asegurado": {
+            "type": "string",
+            "title": "Valor Asegurado"
+          },
+          "prima_mensual": {
+            "type": "string",
+            "title": "Prima Mensual"
+          },
+          "kilometraje_emision": {
+            "type": "integer",
+            "title": "Kilometraje Emision"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "deducibles": {
+            "items": {
+              "$ref": "#/components/schemas/DeducibleResponse"
+            },
+            "type": "array",
+            "title": "Deducibles",
+            "default": []
+          },
+          "coberturas": {
+            "items": {
+              "$ref": "#/components/schemas/CoberturaResponse"
+            },
+            "type": "array",
+            "title": "Coberturas",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "numero_poliza",
+          "cliente_id",
+          "vehiculo_id",
+          "inspeccion_id",
+          "fecha_inicio",
+          "fecha_fin",
+          "estado",
+          "valor_asegurado",
+          "prima_mensual",
+          "kilometraje_emision",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "PolizaResponse",
+        "description": "Schema de respuesta completo para una póliza."
+      },
+      "PolizaUpdateEstado": {
+        "properties": {
+          "estado": {
+            "$ref": "#/components/schemas/EstadoPoliza"
+          }
+        },
+        "type": "object",
+        "required": [
+          "estado"
+        ],
+        "title": "PolizaUpdateEstado",
+        "description": "Schema para transición de estado de póliza."
+      },
+      "TallerCreate": {
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 2,
+            "title": "Nombre"
+          },
+          "direccion": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 5,
+            "title": "Direccion"
+          },
+          "telefono": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 5,
+            "title": "Telefono"
+          },
+          "ciudad": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 2,
+            "title": "Ciudad"
+          },
+          "activo": {
+            "type": "boolean",
+            "title": "Activo",
+            "default": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "nombre",
+          "direccion",
+          "telefono",
+          "ciudad"
+        ],
+        "title": "TallerCreate",
+        "description": "Schema para registrar un nuevo taller mecánico autorizado."
+      },
+      "TallerResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "direccion": {
+            "type": "string",
+            "title": "Direccion"
+          },
+          "telefono": {
+            "type": "string",
+            "title": "Telefono"
+          },
+          "ciudad": {
+            "type": "string",
+            "title": "Ciudad"
+          },
+          "activo": {
+            "type": "boolean",
+            "title": "Activo"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "nombre",
+          "direccion",
+          "telefono",
+          "ciudad",
+          "activo",
+          "created_at"
+        ],
+        "title": "TallerResponse",
+        "description": "Schema de respuesta para taller mecánico."
+      },
+      "TipoSiniestroEnum": {
+        "type": "string",
+        "enum": [
+          "general",
+          "robo",
+          "choque",
+          "perdida_total"
+        ],
+        "title": "TipoSiniestroEnum",
+        "description": "Categorías formales de siniestro para deducibles diferenciados (SC-2026-001)."
+      },
+      "TokenResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "refresh_token": {
+            "type": "string",
+            "title": "Refresh Token"
+          },
+          "token_type": {
+            "type": "string",
+            "title": "Token Type",
+            "default": "bearer"
+          },
+          "user": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "User"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "refresh_token",
+          "user"
+        ],
+        "title": "TokenResponse",
+        "description": "JWT token pair returned on successful login."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "VehiculoCreate": {
+        "properties": {
+          "placa": {
+            "type": "string",
+            "title": "Placa"
+          },
+          "marca": {
+            "type": "string",
+            "title": "Marca"
+          },
+          "modelo": {
+            "type": "string",
+            "title": "Modelo"
+          },
+          "anio": {
+            "type": "integer",
+            "title": "Anio"
+          },
+          "cliente_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Cliente Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "placa",
+          "marca",
+          "modelo",
+          "anio",
+          "cliente_id"
+        ],
+        "title": "VehiculoCreate",
+        "description": "Schema para registrar un nuevo vehículo."
+      },
+      "VehiculoResponse": {
+        "properties": {
+          "placa": {
+            "type": "string",
+            "title": "Placa"
+          },
+          "marca": {
+            "type": "string",
+            "title": "Marca"
+          },
+          "modelo": {
+            "type": "string",
+            "title": "Modelo"
+          },
+          "anio": {
+            "type": "integer",
+            "title": "Anio"
+          },
+          "cliente_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Cliente Id"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "placa",
+          "marca",
+          "modelo",
+          "anio",
+          "cliente_id",
+          "id",
+          "created_at"
+        ],
+        "title": "VehiculoResponse",
+        "description": "Schema de respuesta de vehículo."
+      },
+      "VinculacionRequest": {
+        "properties": {
+          "identificacion": {
+            "type": "string",
+            "title": "Identificacion"
+          },
+          "codigo": {
+            "type": "string",
+            "title": "Codigo"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password"
+          },
+          "password_confirmacion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password Confirmacion"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          }
+        },
+        "type": "object",
+        "required": [
+          "identificacion",
+          "codigo",
+          "password"
+        ],
+        "title": "VinculacionRequest",
+        "description": "Payload para el flujo de vinculación móvil con OTP y contraseña."
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}
