@@ -1,0 +1,17 @@
+:80, :443 {
+    header {
+        Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+        X-Content-Type-Options "nosniff"
+        X-Frame-Options "DENY"
+        Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' http://localhost:8000;"
+        Referrer-Policy "strict-origin-when-cross-origin"
+    }
+
+    root * /srv/flutter_web
+    file_server
+
+    handle /descargas/* {
+        root * /srv/downloads
+        file_server
+    }
+}
