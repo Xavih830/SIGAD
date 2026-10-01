@@ -145,3 +145,164 @@ async def test_subida_y_consulta_documento_valido(seed_data: dict):
         res_get = await client.get(f"/api/v1/documentos/{doc_id}")
         assert res_get.status_code == 200
         assert res_get.json()["estado_extraccion"] == "pendiente"
+
+
+async def test_revisar_campos_documento_exitoso(seed_data: dict, db_session):
+    """Admin o Agente puede revisar y corregir campos extraídos OCR (HU-06)."""
+    admin_token = seed_data["tokens"]["admin"]
+    doc_id = uuid.uuid4()
+    res_id = uuid.uuid4()
+
+    await db_session.execute(
+        text(
+            """
+            INSERT INTO documentos (
+                id, poliza_id, nombre_archivo, ruta_archivo, tipo_mime, tamano_bytes, hash_sha256,
+                estado_extraccion, intentos, created_at, updated_at
+            ) VALUES (
+                :id, NULL, 'contrato_ocr.pdf', '/tmp/fake.pdf', 'application/pdf', 1024, 'dummyhash',
+                'requiere_revision_manual', 1, NOW(), NOW()
+            )
+            """
+        ),
+        {"id": doc_id},
+    )
+    await db_session.execute(
+        text(
+            """
+            INSERT INTO resultados_extraccion (
+                id, documento_id, texto_completo, metodo, confianza, campos_extraidos, created_at
+            ) VALUES (
+                :id, :doc_id, 'Texto con errores', 'pdfplumber', 75.50, '{"placa": "PBX-0000", "valor_asegurado": "12000"}', NOW()
+            )
+            """
+        ),
+        {"id": res_id, "doc_id": doc_id},
+    )
+    await db_session.commit()
+
+    # 1. Ejecutar PATCH /revision con nuevos campos corregidos
+    async with make_client(admin_token) as client:
+        payload = {
+            "campos_extraidos": {
+                "placa": "ABC-1234",
+                "valor_asegurado": 18500.0,
+                "prima_mensual": 45.0,
+                "numero_poliza": "POL-2026-999",
+            },
+            "estado_extraccion": "completado",
+        }
+        res = await client.patch(f"/api/v1/documentos/{doc_id}/revision", json=payload)
+        assert res.status_code == 200, res.text
+        data = res.json()
+        assert data["id"] == str(doc_id)
+        assert data["estado_extraccion"] == "completado"
+        assert data["campos_extraidos"]["placa"] == "ABC-1234"
+        assert data["campos_extraidos"]["valor_asegurado"] == 18500.0
+
+        # 2. Consultar GET /documentos/{id} para confirmar persistencia en BD
+        res_get = await client.get(f"/api/v1/documentos/{doc_id}")
+        assert res_get.status_code == 200
+        get_data = res_get.json()
+        assert get_data["estado_extraccion"] == "completado"
+        assert get_data["resultado"]["campos_extraidos"]["placa"] == "ABC-1234"
+        assert get_data["resultado"]["campos_extraidos"]["numero_poliza"] == "POL-2026-999"
+
+
+async def test_revisar_campos_documento_prohibido_cliente(seed_data: dict, db_session):
+    """Clientes no tienen autorización para revisar o alterar campos OCR (HTTP 403)."""
+    token_cliente = seed_data["tokens"]["cliente_a"]
+    doc_id = uuid.uuid4()
+    res_id = uuid.uuid4()
+
+    await db_session.execute(
+        text(
+            """
+            INSERT INTO documentos (
+                id, poliza_id, nombre_archivo, ruta_archivo, tipo_mime, tamano_bytes, hash_sha256,
+                estado_extraccion, intentos, created_at, updated_at
+            ) VALUES (
+                :id, NULL, 'doc_test.pdf', '/tmp/fake.pdf', 'application/pdf', 1024, 'dummyhash',
+                'requiere_revision_manual', 1, NOW(), NOW()
+            )
+            """
+        ),
+        {"id": doc_id},
+    )
+    await db_session.execute(
+        text(
+            """
+            INSERT INTO resultados_extraccion (
+                id, documento_id, texto_completo, metodo, confianza, campos_extraidos, created_at
+            ) VALUES (
+                :id, :doc_id, 'Texto prueba', 'pdfplumber', 80.00, '{"placa": "XYZ-9999"}', NOW()
+            )
+            """
+        ),
+        {"id": res_id, "doc_id": doc_id},
+    )
+    await db_session.commit()
+
+    async with make_client(token_cliente) as client:
+        res = await client.patch(
+            f"/api/v1/documentos/{doc_id}/revision",
+            json={"campos_extraidos": {"placa": "HACK-000"}, "estado_extraccion": "completado"},
+        )
+        assert res.status_code == 403
+        assert "Solo administradores y agentes" in res.json()["detail"]
+
+
+async def test_revisar_campos_documento_estado_invalido_422(seed_data: dict, db_session):
+    """Enviar un estado de extracción no permitido retorna HTTP 422 Unprocessable Entity."""
+    admin_token = seed_data["tokens"]["admin"]
+    doc_id = uuid.uuid4()
+    res_id = uuid.uuid4()
+
+    await db_session.execute(
+        text(
+            """
+            INSERT INTO documentos (
+                id, poliza_id, nombre_archivo, ruta_archivo, tipo_mime, tamano_bytes, hash_sha256,
+                estado_extraccion, intentos, created_at, updated_at
+            ) VALUES (
+                :id, NULL, 'doc_test_422.pdf', '/tmp/fake.pdf', 'application/pdf', 1024, 'dummyhash',
+                'pendiente', 0, NOW(), NOW()
+            )
+            """
+        ),
+        {"id": doc_id},
+    )
+    await db_session.execute(
+        text(
+            """
+            INSERT INTO resultados_extraccion (
+                id, documento_id, texto_completo, metodo, confianza, campos_extraidos, created_at
+            ) VALUES (
+                :id, :doc_id, 'Texto prueba', 'pdfplumber', 80.00, '{}', NOW()
+            )
+            """
+        ),
+        {"id": res_id, "doc_id": doc_id},
+    )
+    await db_session.commit()
+
+    async with make_client(admin_token) as client:
+        res = await client.patch(
+            f"/api/v1/documentos/{doc_id}/revision",
+            json={"campos_extraidos": {}, "estado_extraccion": "estado_invalido_xyz"},
+        )
+        assert res.status_code == 422
+        assert "Estado de extracción inválido" in res.json()["detail"]
+
+
+async def test_revisar_campos_documento_no_encontrado_404(seed_data: dict):
+    """Revisión de documento inexistente retorna HTTP 404 Not Found."""
+    admin_token = seed_data["tokens"]["admin"]
+    fake_id = uuid.uuid4()
+
+    async with make_client(admin_token) as client:
+        res = await client.patch(
+            f"/api/v1/documentos/{fake_id}/revision",
+            json={"campos_extraidos": {"placa": "ABC-1234"}},
+        )
+        assert res.status_code == 404
