@@ -125,7 +125,7 @@ Un ciclo de integración se considerará **APROBADO** si y solo si:
 
 ## 8. Aprobación del Plan Maestro
 
-* **Responsable QA & V&V:** Ing. Carlos Medina — *Aprobado*
-* **Líder de Desarrollo Backend:** Ing. Leonardo Macías — *Aprobado*
-* **Arquitecto Frontend:** Ing. Sofía Morales — *Aprobado*
-* **Product Owner (RJ Seguros):** Dr. Javier Restrepo — *Aprobado*
+* **Responsable QA & V&V:** — *Aprobado*
+* **Líder de Desarrollo Backend:** — *Aprobado*
+* **Arquitecto Frontend:**  — *Aprobado*
+* **Product Owner (RJ Seguros):**  — *Aprobado*

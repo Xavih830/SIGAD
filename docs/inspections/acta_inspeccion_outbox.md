@@ -59,8 +59,8 @@ Asegurar la resiliencia transaccional y la ausencia de condiciones de carrera en
 * [ ] **Rechazado:**
 
 **Firma del Comité:**
-* *Moderador (QA):* Ing. Carlos Medina
-* *Autor (Backend):* Ing. Leonardo Macías
-* *Lector (Frontend Arch):* Ing. Sofía Morales
-* *Registrador (Frontend Features):* Ing. Andrés Valdivieso
-* *Inspector (DevOps/Sec):* Ing. Roberto Peña
+* *Moderador (QA):*
+* *Autor (Backend):*
+* *Lector (Frontend Arch):*
+* *Registrador (Frontend Features):*
+* *Inspector (DevOps/Sec):*
