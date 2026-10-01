@@ -29,7 +29,7 @@ class _AlertsTabViewState extends State<AlertsTabView> {
 
   String? _getAuthToken() {
     final state = context.read<AuthBloc>().state;
-    return state is AuthSuccess ? (state.user['token'] as String? ?? state.user['access_token'] as String?) : null;
+    return state is AuthSuccess ? state.token : null;
   }
 
   Future<void> _loadPolicies() async {
