@@ -86,7 +86,7 @@ void main() {
   });
 
   group('DeductibleModel Tests', () {
-    test('fromJson supports both FastAPI and UI schemas', () {
+    test('fromJson deserializa con claves canonicas del backend', () {
       final jsonFastApi = {
         'id': 'ded-1',
         'tipo_siniestro': 'robo',
@@ -95,14 +95,14 @@ void main() {
       };
 
       final model = DeductibleModel.fromJson(jsonFastApi);
-      expect(model.coverageName, equals('robo'));
-      expect(model.percentage, equals(10.5));
-      expect(model.minAmount, equals(200.0));
+      expect(model.tipoSiniestro, equals('robo'));
+      expect(model.porcentajeValor, equals(10.5));
+      expect(model.montoMinimoUsd, equals(200.0));
 
       final outJson = model.toJson();
-      expect(outJson['nombre_cobertura'], equals('robo'));
-      expect(outJson['porcentaje'], equals(10.5));
-      expect(outJson['monto_minimo'], equals(200.0));
+      expect(outJson['tipo_siniestro'], equals('robo'));
+      expect(outJson['porcentaje_valor'], equals(10.5));
+      expect(outJson['monto_minimo_usd'], equals(200.0));
     });
   });
 
@@ -130,20 +130,24 @@ void main() {
         },
         'deducibles': [
           {
-            'nombre_cobertura': 'Pérdida Parcial',
-            'porcentaje': 10.0,
-            'monto_minimo': 150.0,
+            'id': 'ded-1',
+            'tipo_siniestro': 'general',
+            'porcentaje_valor': 10.0,
+            'monto_minimo_usd': 150.0,
           }
         ],
-        'coberturas': ['Todo Riesgo', 'Responsabilidad Civil'],
+        'coberturas': [
+          {'id': 'cov-1', 'nombre': 'Todo Riesgo', 'monto': 5000},
+          {'id': 'cov-2', 'nombre': 'Responsabilidad Civil', 'monto': 3000},
+        ],
       };
 
       final policy = PolicyModel.fromJson(activePolicyJson);
       expect(policy.number, equals('POL-2026-001'));
       expect(policy.vehicle?.plate, equals('PBA-1234'));
       expect(policy.deductibles.length, equals(1));
-      expect(policy.deductibles.first.percentage, equals(10.0));
-      expect(policy.coverages, contains('Todo Riesgo'));
+      expect(policy.deductibles.first.porcentajeValor, equals(10.0));
+      expect(policy.coverages.map((c) => c.nombre), contains('Todo Riesgo'));
       expect(policy.isExpired, isFalse);
       expect(policy.isExpiringSoon, isTrue); // 15 days is <= 30
       expect(policy.daysUntilExpiration, inInclusiveRange(14, 16));
@@ -170,7 +174,7 @@ void main() {
         'rol': 'admin_system',
         'access_token': 'jwt_mock_token',
         'refresh_token': 'jwt_refresh_mock',
-        'is_active': true,
+        'activo': true,
       };
 
       final user = UserModel.fromJson(userJson);

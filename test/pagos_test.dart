@@ -33,7 +33,11 @@ void main() {
     insuredValue: 28000.0,
     monthlyPremium: 85.0,
     emissionMileage: 12000,
-    coverages: const ['Pérdida Total', 'Responsabilidad Civil'],
+    coverages: const [
+      CoverageModel(id: 'cov-1', nombre: 'Pérdida Total', monto: 10000),
+      CoverageModel(id: 'cov-2', nombre: 'Responsabilidad Civil', monto: 5000),
+    ],
+
   );
 
   group('HU-20: PaymentModel Unit Tests', () {
