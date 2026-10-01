@@ -11,6 +11,7 @@ from app.domain.poliza_evaluator import (
     validar_limite_vigencia_maxima,
     validar_y_calcular_estado_inicial,
 )
+from app.schemas.base import StrictBaseSchema
 from app.schemas.deducible import DeducibleCreate, DeducibleResponse
 
 
@@ -20,8 +21,9 @@ class CoberturaBase(BaseModel):
     monto: Decimal = Field(gt=0, description="Monto asegurado para la cobertura")
 
 
-class CoberturaCreate(CoberturaBase):
-    pass
+class CoberturaCreate(StrictBaseSchema):
+    nombre: str = Field(..., min_length=2, max_length=100)
+    monto: Decimal = Field(..., gt=0, strict=False, description="Monto asegurado para la cobertura")
 
 
 class CoberturaResponse(CoberturaBase):
@@ -32,19 +34,19 @@ class CoberturaResponse(CoberturaBase):
     created_at: datetime
 
 
-class PolizaCreate(BaseModel):
+class PolizaCreate(StrictBaseSchema):
     """Schema para emisión de una nueva póliza.
     
     Exige snapshot inmutable de kilometraje_emision y valida vigencia.
     """
     numero_poliza: str = Field(min_length=3, max_length=50)
-    cliente_id: uuid.UUID
-    vehiculo_id: uuid.UUID
-    inspeccion_id: uuid.UUID | None = None
-    fecha_inicio: date
-    fecha_fin: date
-    valor_asegurado: Decimal = Field(gt=0, description="Valor comercial asegurado")
-    prima_mensual: Decimal = Field(gt=0, description="Prima mensual calculada")
+    cliente_id: uuid.UUID = Field(..., strict=False)
+    vehiculo_id: uuid.UUID = Field(..., strict=False)
+    inspeccion_id: uuid.UUID | None = Field(None, strict=False)
+    fecha_inicio: date = Field(..., strict=False)
+    fecha_fin: date = Field(..., strict=False)
+    valor_asegurado: Decimal = Field(gt=0, strict=False, description="Valor comercial asegurado")
+    prima_mensual: Decimal = Field(gt=0, strict=False, description="Prima mensual calculada")
     kilometraje_emision: int = Field(ge=0, description="Snapshot contractual inmutable al emitir")
     deducibles: list[DeducibleCreate] | None = None
     coberturas: list[CoberturaCreate] | None = None
@@ -59,7 +61,7 @@ class PolizaCreate(BaseModel):
         return self
 
 
-class PolizaUpdateEstado(BaseModel):
+class PolizaUpdateEstado(StrictBaseSchema):
     """Schema para transición de estado de póliza."""
     estado: EstadoPoliza
 

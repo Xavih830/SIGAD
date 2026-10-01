@@ -72,7 +72,10 @@ def validar_complejidad_password(password: str) -> str:
 
 
 
-class ClienteCreate(BaseModel):
+from app.schemas.base import StrictBaseSchema
+
+
+class ClienteCreate(StrictBaseSchema):
     """Schema para creación y onboarding de un cliente por un agente."""
 
     identificacion: str = Field(..., description="Cédula de 10 dígitos ecuatoriana")
@@ -104,7 +107,7 @@ class ClienteResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class VinculacionRequest(BaseModel):
+class VinculacionRequest(StrictBaseSchema):
     """Payload para el flujo de vinculación móvil con OTP y contraseña."""
 
     cedula: str = Field(..., alias="identificacion")
@@ -113,7 +116,13 @@ class VinculacionRequest(BaseModel):
     password_confirmacion: Optional[str] = None
     email_opcional: Optional[str] = Field(None, alias="email")
 
-    model_config = ConfigDict(populate_by_name=True)
+    model_config = ConfigDict(
+        extra="forbid",
+        strict=True,
+        str_strip_whitespace=True,
+        populate_by_name=True,
+        from_attributes=True,
+    )
 
     @field_validator("cedula")
     @classmethod

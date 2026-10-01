@@ -7,6 +7,9 @@ import uuid
 from pydantic import BaseModel, ConfigDict, Field
 
 
+from app.schemas.base import StrictBaseSchema
+
+
 class PagoResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -21,7 +24,7 @@ class PagoResponse(BaseModel):
     comprobante_ref: Optional[str] = None
 
 
-class RegistrarPagoRequest(BaseModel):
-    metodo_pago: str = Field(..., description="transferencia, tarjeta, debito_bancario")
-    comprobante_ref: str = Field(..., min_length=4, max_length=100)
-    fecha_pago: Optional[date] = None
+class RegistrarPagoRequest(StrictBaseSchema):
+    metodo_pago: str = Field(..., min_length=3, max_length=50, description="transferencia, tarjeta, debito_bancario")
+    comprobante_ref: str = Field(..., min_length=3, max_length=100)
+    fecha_pago: Optional[date] = Field(None, strict=False)

@@ -2,10 +2,12 @@
 
 from pydantic import BaseModel, Field, field_validator
 
+from app.schemas.base import StrictBaseSchema
 
-class LoginRequest(BaseModel):
+
+class LoginRequest(StrictBaseSchema):
     """Login payload — accepts email (contains @) or cédula (numeric)."""
-    identificador: str = Field(..., min_length=1, description="Email or cédula")
+    identificador: str = Field(..., min_length=1, max_length=100, description="Email or cédula")
     password: str = Field(..., min_length=1)
 
     @field_validator("identificador", "password")

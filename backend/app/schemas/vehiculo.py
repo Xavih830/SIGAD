@@ -4,8 +4,9 @@ import re
 from datetime import datetime
 import uuid
 
-from pydantic import BaseModel, ConfigDict, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
+from app.schemas.base import StrictBaseSchema
 
 # ANT Ecuador License Plate Formats (Section 11.2):
 # 1. Particular & Público: 3 Letters + 4 Digits (e.g. PBA-1234, PTA-1234)
@@ -21,13 +22,13 @@ def validar_placa_ecuador(placa: str) -> bool:
     return bool(ANT_PLATE_REGEX.match(placa.strip()))
 
 
-class VehiculoBase(BaseModel):
-    """Atributos base de un vehículo."""
-    placa: str
-    marca: str
-    modelo: str
-    anio: int
-    cliente_id: uuid.UUID
+class VehiculoCreate(StrictBaseSchema):
+    """Schema para registrar un nuevo vehículo."""
+    placa: str = Field(..., min_length=6, max_length=8)
+    marca: str = Field(..., min_length=2, max_length=50)
+    modelo: str = Field(..., min_length=2, max_length=50)
+    anio: int = Field(..., ge=1900, le=2100)
+    cliente_id: uuid.UUID = Field(..., strict=False)
 
     @field_validator("placa")
     @classmethod
@@ -42,14 +43,14 @@ class VehiculoBase(BaseModel):
         return placa_limpia
 
 
-class VehiculoCreate(VehiculoBase):
-    """Schema para registrar un nuevo vehículo."""
-    pass
-
-
-class VehiculoResponse(VehiculoBase):
+class VehiculoResponse(BaseModel):
     """Schema de respuesta de vehículo."""
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
+    placa: str
+    marca: str
+    modelo: str
+    anio: int
+    cliente_id: uuid.UUID
     created_at: datetime
