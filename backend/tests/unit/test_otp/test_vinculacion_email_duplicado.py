@@ -1,6 +1,5 @@
 """TEST 17: Detección de colisión de email lanzando EmailDuplicadoException (HTTP 409)."""
 
-import uuid
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -10,8 +9,12 @@ from app.core.exceptions import EmailDuplicadoException
 from app.core.rate_limit import rate_limiter
 from app.db.session import get_db
 from app.main import app
-from app.models.cliente import Cliente
-from app.models.usuario import Usuario
+from tests.factories import (
+    MSG_EMAIL_DUPLICADO,
+    create_mock_cliente,
+    create_mock_user,
+    vinculacion_payload,
+)
 
 
 @pytest.mark.asyncio
@@ -19,15 +22,9 @@ async def test_vinculacion_email_duplicado():
     """When target email is already registered in usuarios, abort immediately with EmailDuplicadoException (HTTP 409)."""
     rate_limiter.reset()
 
-    fake_cliente = MagicMock(spec=Cliente)
-    fake_cliente.id = uuid.uuid4()
-    fake_cliente.identificacion = "0926687856"
-    fake_cliente.nombres = "Juan Fernando Perez"
-    fake_cliente.email = "duplicado@cliente.ec"
-
-    fake_usuario = MagicMock(spec=Usuario)
-    fake_usuario.id = uuid.uuid4()
-    fake_usuario.email = "duplicado@cliente.ec"
+    duplicate_email = "duplicado@cliente.ec"
+    fake_cliente = create_mock_cliente(email=duplicate_email)
+    fake_usuario = create_mock_user(email=duplicate_email)
 
     # Mock DB session
     mock_session = AsyncMock()
@@ -56,17 +53,12 @@ async def test_vinculacion_email_duplicado():
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.post(
                 "/api/v1/auth/vinculacion",
-                json={
-                    "cedula": "0926687856",
-                    "codigo_otp": "123456",
-                    "password": "PasswordSeguro2026*",
-                    "password_confirmacion": "PasswordSeguro2026*",
-                },
+                json=vinculacion_payload(),
             )
 
         assert response.status_code == 409, f"Expected 409, got {response.status_code}: {response.text}"
         data = response.json()
-        assert data["detail"] == "El correo electrónico ya se encuentra registrado"
+        assert data["detail"] == MSG_EMAIL_DUPLICADO
 
         # Verify that no changes were committed or flushed before aborting
         mock_session.commit.assert_not_called()

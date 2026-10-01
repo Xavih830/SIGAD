@@ -1,8 +1,8 @@
 """TEST 19: Bloqueo e invalidación forzosa del OTP tras 3 intentos fallidos consecutivos."""
 
-import uuid
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock
+import uuid
 
 import pytest
 from httpx import ASGITransport, AsyncClient
@@ -12,8 +12,12 @@ from app.core.rate_limit import rate_limiter
 from app.core.security import compute_otp_hmac
 from app.db.session import get_db
 from app.main import app
-from app.models.cliente import Cliente
 from app.models.codigo_vinculacion import CodigoVinculacion
+from tests.factories import (
+    CLIENTE_PASSWORD,
+    create_mock_cliente,
+    vinculacion_payload,
+)
 
 
 @pytest.mark.asyncio
@@ -21,11 +25,7 @@ async def test_otp_bruteforce_invalidates_at_third_failed_attempt():
     """Verify that 3 consecutive failed OTP attempts immediately mark the code as consumido=True."""
     rate_limiter.reset()
 
-    fake_cliente = MagicMock(spec=Cliente)
-    fake_cliente.id = uuid.uuid4()
-    fake_cliente.identificacion = "0926687856"
-    fake_cliente.nombres = "Carlos Mendoza"
-    fake_cliente.email = "carlos@test.ec"
+    fake_cliente = create_mock_cliente(nombres="Carlos Mendoza", email="carlos@test.ec")
 
     # Real OTP is 654321, attacker will guess 000001, 000002, 000003
     real_otp = "654321"
@@ -74,7 +74,11 @@ async def test_otp_bruteforce_invalidates_at_third_failed_attempt():
             # Attempt 1: wrong OTP
             r1 = await client.post(
                 "/api/v1/auth/vinculacion",
-                json={"cedula": "0926687856", "codigo_otp": "000001", "password": "PasswordSeguro2026*"},
+                json=vinculacion_payload(
+                    cedula=fake_cliente.identificacion,
+                    codigo_otp="000001",
+                    password=CLIENTE_PASSWORD,
+                ),
             )
             assert r1.status_code == 400
             assert codigo_obj.intentos_fallidos == 1
@@ -83,7 +87,11 @@ async def test_otp_bruteforce_invalidates_at_third_failed_attempt():
             # Attempt 2: wrong OTP
             r2 = await client.post(
                 "/api/v1/auth/vinculacion",
-                json={"cedula": "0926687856", "codigo_otp": "000002", "password": "PasswordSeguro2026*"},
+                json=vinculacion_payload(
+                    cedula=fake_cliente.identificacion,
+                    codigo_otp="000002",
+                    password=CLIENTE_PASSWORD,
+                ),
             )
             assert r2.status_code == 400
             assert codigo_obj.intentos_fallidos == 2
@@ -92,7 +100,11 @@ async def test_otp_bruteforce_invalidates_at_third_failed_attempt():
             # Attempt 3: wrong OTP -> Must trigger lockout & invalidation
             r3 = await client.post(
                 "/api/v1/auth/vinculacion",
-                json={"cedula": "0926687856", "codigo_otp": "000003", "password": "PasswordSeguro2026*"},
+                json=vinculacion_payload(
+                    cedula=fake_cliente.identificacion,
+                    codigo_otp="000003",
+                    password=CLIENTE_PASSWORD,
+                ),
             )
             assert r3.status_code == 400
             assert codigo_obj.intentos_fallidos == 3

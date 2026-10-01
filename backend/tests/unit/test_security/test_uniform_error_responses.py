@@ -6,22 +6,23 @@ Verifies that the error message returned is exactly the same whether:
 This prevents user enumeration attacks.
 """
 
-import uuid
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from app.core.security import hash_password
+from app.db.session import get_db
 from app.main import app
-from app.models.usuario import RolEnum
+from tests.factories import (
+    ADMIN_EMAIL,
+    create_mock_admin_user,
+    login_payload,
+)
 
 
 @pytest.mark.asyncio
 async def test_uniform_error_responses():
     """Error responses must be identical for non-existent user vs wrong password."""
-    from app.db.session import get_db
-
     # ── Scenario A: User does NOT exist ──────────────────────────
     mock_result_none = MagicMock()
     mock_result_none.scalar_one_or_none.return_value = None
@@ -39,17 +40,11 @@ async def test_uniform_error_responses():
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         resp_no_user = await client.post(
             "/api/v1/auth/login",
-            json={"identificador": "nonexistent@example.com", "password": "anything"},
+            json=login_payload("nonexistent@example.com", "anything"),
         )
 
     # ── Scenario B: User exists but password is wrong ────────────
-    fake_user = MagicMock()
-    fake_user.id = uuid.uuid4()
-    fake_user.email = "admin@sigad.ec"
-    fake_user.password_hash = hash_password("CorrectPassword")
-    fake_user.nombre = "Admin"
-    fake_user.rol = RolEnum.ADMIN
-    fake_user.activo = True
+    fake_user = create_mock_admin_user(password="CorrectPassword")
 
     mock_result_found = MagicMock()
     mock_result_found.scalar_one_or_none.return_value = fake_user
@@ -66,7 +61,7 @@ async def test_uniform_error_responses():
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         resp_wrong_pw = await client.post(
             "/api/v1/auth/login",
-            json={"identificador": "admin@sigad.ec", "password": "WrongPassword"},
+            json=login_payload(ADMIN_EMAIL, "WrongPassword"),
         )
 
     app.dependency_overrides.clear()

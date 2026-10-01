@@ -5,6 +5,7 @@ import uuid
 import httpx
 import pytest
 from app.services.smtp_service import smtp_service
+from tests.factories import CLIENTE_NAME, DEFAULT_OTP
 
 pytestmark = pytest.mark.asyncio
 
@@ -15,8 +16,8 @@ async def test_smtp_mailpit_delivery_and_otp_matching():
     mailpit_host = os.getenv("MAILPIT_HOST", "localhost")
     mailpit_api_url = f"http://{mailpit_host}:{mailpit_http_port}/api/v1/messages"
 
-    test_otp = "987321"
-    test_client_name = "Carlos Pérez"
+    test_otp = DEFAULT_OTP
+    test_client_name = CLIENTE_NAME
     test_email = f"carlos.{uuid.uuid4().hex[:6]}@cliente.ec"
 
     # Enviar correo mediante el servicio real

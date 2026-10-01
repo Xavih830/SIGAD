@@ -12,6 +12,7 @@ from app.core import security
 from app.core.rate_limit import rate_limiter
 from app.db.session import get_db
 from app.main import app
+from tests.factories import vinculacion_payload
 
 
 def test_constant_time_vinculacion_structural_ast():
@@ -62,11 +63,7 @@ async def test_constant_time_vinculacion_functional_nonexistent_cedula():
         async with AsyncClient(transport=transport, base_url="http://test") as client:
             response = await client.post(
                 "/api/v1/auth/vinculacion",
-                json={
-                    "cedula": "0926687856",
-                    "codigo_otp": "123456",
-                    "password": "PasswordSeguro2026*",
-                },
+                json=vinculacion_payload(),
             )
 
         assert response.status_code == 400

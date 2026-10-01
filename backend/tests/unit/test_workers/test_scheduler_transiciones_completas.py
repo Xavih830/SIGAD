@@ -1,14 +1,13 @@
 """Test 6: Verificación de las 3 transiciones de pólizas con registro en auditoría e idempotencia."""
 
-from datetime import date, timedelta
-from decimal import Decimal
+from datetime import date
 from unittest.mock import AsyncMock, MagicMock
-import uuid
+
 import pytest
 
 from app.domain.poliza_evaluator import EstadoPoliza
-from app.models.poliza import Poliza
 from app.workers.scheduler import ejecutar_transiciones_polizas
+from tests.factories import create_mock_poliza
 
 
 @pytest.mark.asyncio
@@ -16,17 +15,9 @@ async def test_scheduler_transiciones_completas_e_idempotencia():
     """El scheduler ejecuta las 3 transiciones de pólizas y es estrictamente idempotente."""
     hoy = date.today()
 
-    p_pendiente = MagicMock(spec=Poliza)
-    p_pendiente.id = uuid.uuid4()
-    p_pendiente.estado = EstadoPoliza.PENDIENTE
-
-    p_activa = MagicMock(spec=Poliza)
-    p_activa.id = uuid.uuid4()
-    p_activa.estado = EstadoPoliza.ACTIVA
-
-    p_por_vencer = MagicMock(spec=Poliza)
-    p_por_vencer.id = uuid.uuid4()
-    p_por_vencer.estado = EstadoPoliza.ACTIVA
+    p_pendiente = create_mock_poliza(estado=EstadoPoliza.PENDIENTE)
+    p_activa = create_mock_poliza(estado=EstadoPoliza.ACTIVA)
+    p_por_vencer = create_mock_poliza(estado=EstadoPoliza.ACTIVA)
 
     # Mock DB execution for Run 1:
     mock_res_activar = MagicMock()
