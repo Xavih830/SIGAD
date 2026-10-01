@@ -112,23 +112,44 @@ class _OcrTabViewState extends State<OcrTabView> {
     }
   }
 
-  Future<void> _vincularNuevaPoliza() async {
-    if (_selectedDocument == null) return;
+  Future<void> _vincularNuevaPoliza(Map<String, dynamic> campos) async {
     List<Map<String, dynamic>> clients = [];
     try {
       final res = await http.get(Uri.parse('${ApiConfig.baseUrl}/api/v1/clientes'), headers: ApiConfig.authHeaders(_getAuthToken()));
       if (res.statusCode == 200) clients = (jsonDecode(res.body) as List).map((c) => Map<String, dynamic>.from(c as Map)).toList();
     } catch (_) {}
     if (!mounted) return;
+
+    // Parsear datos extraídos con tipado seguro
+    final double valorAsegurado = double.tryParse(campos['valor_asegurado']?.toString().replaceAll(RegExp(r'[^0-9.]'), '') ?? '') ?? 15000.0;
+    final double primaMensual = double.tryParse(campos['prima_mensual']?.toString().replaceAll(RegExp(r'[^0-9.]'), '') ?? '') ?? 35.0;
+    final int kilometraje = int.tryParse(campos['kilometraje']?.toString().replaceAll(RegExp(r'[^0-9]'), '') ?? '') ?? 5000;
+    final String numeroPoliza = campos['numero_poliza']?.toString().isNotEmpty == true
+        ? campos['numero_poliza']!.toString()
+        : 'POL-OCR-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+
     final policy = PolicyModel(
-      id: '', number: 'POL-OCR-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}',
-      clientId: clients.isNotEmpty ? (clients.first['id']?.toString() ?? '') : '', vehicleId: '',
-      startDate: DateTime.now(), endDate: DateTime.now().add(const Duration(days: 365)),
-      status: 'activa', insuredValue: 18000.0, monthlyPremium: 45.0, emissionMileage: 10000,
+      id: '',
+      number: numeroPoliza,
+      clientId: clients.isNotEmpty ? (clients.first['id']?.toString() ?? '') : '',
+      vehicleId: '',
+      startDate: DateTime.now(),
+      endDate: DateTime.now().add(const Duration(days: 365)),
+      status: 'activa',
+      insuredValue: valorAsegurado,
+      monthlyPremium: primaMensual,
+      emissionMileage: kilometraje,
     );
-    final created = await showDialog<PolicyModel>(context: context, builder: (_) => PolicyFormDialog(initialPolicy: policy, clients: clients));
+
+    final created = await showDialog<PolicyModel>(
+      context: context,
+      builder: (_) => PolicyFormDialog(initialPolicy: policy, clients: clients),
+    );
+
     if (created != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Póliza ${created.number} vinculada.'), backgroundColor: AppTheme.successColor));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Póliza ${created.number} emitida con datos de OCR.'), backgroundColor: AppTheme.successColor),
+      );
     }
   }
 
@@ -163,6 +184,7 @@ class _OcrTabViewState extends State<OcrTabView> {
                 isLoading: _isLoadingDetail,
                 onRefresh: () => _selectedDocument != null ? _seleccionarDocumento(_selectedDocument!['id'] as String) : null,
                 onLinkPolicy: _vincularNuevaPoliza,
+                authToken: _getAuthToken() ?? '',
               ),
             ),
           ],
