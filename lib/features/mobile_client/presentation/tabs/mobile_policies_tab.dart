@@ -3,12 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:sigad/core/config/api_config.dart';
 import 'package:sigad/core/models/policy_model.dart';
+import 'package:sigad/core/models/user_model.dart';
 import 'package:sigad/core/theme/app_theme.dart';
 import 'package:sigad/core/widgets/error_view.dart';
 import 'package:sigad/features/mobile_client/presentation/pages/policy_detail_page.dart';
 
 class MobilePoliciesTab extends StatefulWidget {
-  final Map<String, dynamic> user;
+  final UserModel user; //  UserModel
   final VoidCallback onNavigateToContact;
 
   const MobilePoliciesTab({super.key, required this.user, required this.onNavigateToContact});
@@ -32,7 +33,7 @@ class _MobilePoliciesTabState extends State<MobilePoliciesTab> {
     setState(() { _isLoading = true; _errorMessage = null; });
 
     try {
-      final token = widget.user['access_token'] as String?;
+      final token = widget.user.accessToken;
       final response = await http.get(
         Uri.parse('${ApiConfig.baseUrl}/api/v1/polizas'),
         headers: ApiConfig.authHeaders(token),
@@ -76,7 +77,7 @@ class _MobilePoliciesTabState extends State<MobilePoliciesTab> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Hola, ${widget.user['name'] ?? 'Cliente'}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                Text('Hola, ${widget.user.name}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
                 const SizedBox(height: 4),
                 Text('Tienes $activeCount póliza(s) vehicular(es) activa(s).', style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.9))),
               ],
@@ -104,7 +105,7 @@ class _MobilePoliciesTabState extends State<MobilePoliciesTab> {
           builder: (_) => PolicyDetailPage(
             policy: p,
             onReportError: widget.onNavigateToContact,
-            authToken: widget.user['access_token'] as String?,
+            authToken: widget.user.accessToken,
           ),
         )),
         child: Padding(

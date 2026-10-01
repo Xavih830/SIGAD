@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:sigad/core/models/user_model.dart';
 import 'package:sigad/core/theme/app_theme.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_event.dart';
@@ -15,7 +16,7 @@ import 'package:sigad/features/web_dashboard/presentation/widgets/dashboard_head
 import 'package:sigad/features/web_dashboard/presentation/widgets/dashboard_sidebar.dart';
 
 class WebDashboardPage extends StatefulWidget {
-  final Map<String, dynamic> user;
+  final UserModel user; //  UserModel en vez de Map<String, dynamic>
   const WebDashboardPage({super.key, required this.user});
 
   @override
@@ -39,7 +40,7 @@ class _WebDashboardPageState extends State<WebDashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    final role = widget.user['role']?.toString() ?? 'client';
+    final role = widget.user.role; // Acceso directo por propiedad tipada
     final isSysAdmin = role == 'admin_system';
     if (_activeTab == 'users' && !isSysAdmin) _activeTab = 'policies';
 
@@ -59,7 +60,7 @@ class _WebDashboardPageState extends State<WebDashboardPage> {
             DashboardSidebar(
               activeTab: _activeTab,
               isSystemAdmin: isSysAdmin,
-              userName: widget.user['name']?.toString() ?? 'Usuario',
+              userName: widget.user.name,
               userRole: role,
               onTabSelected: (tab) => setState(() => _activeTab = tab),
               onLogout: () => context.read<AuthBloc>().add(LogoutRequested()),

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/theme/app_theme.dart';
-import '../../../../core/widgets/sigad_logo.dart';
+import 'package:sigad/core/models/user_model.dart';
+import 'package:sigad/core/theme/app_theme.dart';
+import 'package:sigad/core/widgets/sigad_logo.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_event.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_state.dart';
@@ -48,10 +49,8 @@ class _SplashScreenState extends State<SplashScreen> {
       body: BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthSuccess) {
-            // Already logged in
             _navigateToDashboard(state.user);
           } else if (state is AuthInitial || state is AuthFailure || state is AuthLockedOut) {
-            // Navigate to login
             _navigateToLogin();
           }
         },
@@ -63,7 +62,7 @@ class _SplashScreenState extends State<SplashScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 SigadLogo(size: logoSize),
-                SizedBox(height: logoSize), // Distance equal to logo height
+                SizedBox(height: logoSize),
                 const SizedBox(
                   height: 36,
                   width: 36,
@@ -80,11 +79,10 @@ class _SplashScreenState extends State<SplashScreen> {
     );
   }
 
-  void _navigateToDashboard(Map<String, dynamic> user) {
+  void _navigateToDashboard(UserModel user) {
     final route = PageRouteBuilder(
       pageBuilder: (c, a1, a2) {
-        final role = user['role'];
-        if (role == 'admin_system' || role == 'admin_rjseguros') {
+        if (user.role == 'admin_system' || user.role == 'admin_rjseguros') {
           return WebDashboardPage(user: user);
         } else {
           return MobileDashboardPage(user: user);

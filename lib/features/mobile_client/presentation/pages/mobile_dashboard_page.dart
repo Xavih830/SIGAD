@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:sigad/core/models/user_model.dart';
 import 'package:sigad/core/services/notifications_manager.dart';
 import 'package:sigad/core/theme/app_theme.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_bloc.dart';
@@ -12,7 +13,7 @@ import 'package:sigad/features/mobile_client/presentation/tabs/mobile_policies_t
 import 'package:sigad/features/mobile_client/presentation/tabs/mobile_workshops_tab.dart';
 
 class MobileDashboardPage extends StatefulWidget {
-  final Map<String, dynamic> user;
+  final UserModel user; //  UserModel
   const MobileDashboardPage({super.key, required this.user});
 
   @override
@@ -25,7 +26,7 @@ class _MobileDashboardPageState extends State<MobileDashboardPage> {
   @override
   void initState() {
     super.initState();
-    NotificationsManager.showWelcomeNotification(widget.user['email']);
+    NotificationsManager.showWelcomeNotification(widget.user.email);
   }
 
   @override

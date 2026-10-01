@@ -48,7 +48,7 @@ class _LoginPageState extends State<LoginPage> {
       body: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthSuccess) {
-            final role = state.user['role'];
+            final role = state.user.role;
             final dashboard = (role == 'admin_system' || role == 'admin_rjseguros')
                 ? WebDashboardPage(user: state.user)
                 : MobileDashboardPage(user: state.user);
