@@ -18,6 +18,8 @@ from typing import Dict, List, Optional, Tuple
 from cachetools import LRUCache
 from fastapi import HTTPException, Request, status
 
+from app.core.config import settings
+
 
 class RateLimitExceeded(HTTPException):
     """Exception raised when any rate limit tier is violated."""
@@ -218,6 +220,9 @@ class RateLimiter:
         3. Check IP Rate Limit (Layer 1)
         4. Apply Tarpitting Delay (Layer 3)
         """
+        if not getattr(settings, "RATE_LIMITING_ENABLED", True):
+            return
+
         now = now if now is not None else time.time()
 
         # Layer 4: Account Lockout

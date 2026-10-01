@@ -53,7 +53,7 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(me
 logger = logging.getLogger("sigad.seeder")
 
 
-DEV_DEFAULT_PASSWORD = "123456789"
+DEV_DEFAULT_PASSWORD = "PasswordSeguro2026*"
 
 
 async def clean_database(session: AsyncSession) -> None:
@@ -89,7 +89,7 @@ async def seed_data(session: AsyncSession, clean: bool = False) -> None:
 
     # ─────────────────────────────────────────────────────────────────────────
     # 1. USUARIOS (Roles: Admin, Broker RJ Seguros, Agente)
-    # Contraseña unificada para testing local: 123456789
+    # Contraseña unificada para testing local: PasswordSeguro2026*
     # ─────────────────────────────────────────────────────────────────────────
     logger.info("Seeding system and broker users (password: %s)...", DEV_DEFAULT_PASSWORD)
     base_users = [
@@ -98,6 +98,12 @@ async def seed_data(session: AsyncSession, clean: bool = False) -> None:
             "nombre": "Administrador del Sistema",
             "password": DEV_DEFAULT_PASSWORD,
             "rol": RolEnum.ADMIN,
+        },
+        {
+            "email": "agente@sigad.ec",
+            "nombre": "Agente Autorizado SIGAD",
+            "password": DEV_DEFAULT_PASSWORD,
+            "rol": RolEnum.AGENTE,
         },
         {
             "email": "ariana@rjseguros.ec",

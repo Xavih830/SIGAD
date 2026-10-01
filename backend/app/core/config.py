@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     OTP_SECRET_KEY_ANTERIOR: str = "sigad_otp_secret_key_anterior_2025_q4"
     OTP_EXPIRATION_MINUTES: int = 15
 
+    # Rate Limiting
+    RATE_LIMITING_ENABLED: bool = True
+
     model_config = {"env_file": ".env", "extra": "ignore"}
 
 

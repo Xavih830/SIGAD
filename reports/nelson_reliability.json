@@ -1,16 +1,16 @@
 {
   "nelson_reliability": {
-    "total_transactions": 5000,
+    "total_transactions": 6016,
     "failed_transactions": 0,
     "reliability_score": 1.0,
     "meets_objective": true
   },
   "musa_model_statement": {
     "applicable": false,
-    "justification": "Durante las 16 semanas de ciclo de desarrollo y pruebas UAT, la muestra de fallas acumuladas observadas es n <= 5. Con dicho tamaño muestral, cualquier intento de regresión no lineal para estimar parámetros del Modelo Básico o Logarítmico de Musa carece de significancia estadística (p > 0.05). Fabricar datos sintéticos para forzar una curva representaría una mala práctica de ingeniería; por ende, se adopta formalmente el Modelo de Nelson con perfil operacional real de 5.000 transacciones."
+    "justification": "Durante las 16 semanas de ciclo de desarrollo y pruebas UAT, la muestra de fallas acumuladas observadas es n <= 5. Con dicho tama\u00f1o muestral, cualquier intento de regresi\u00f3n no lineal para estimar par\u00e1metros del Modelo B\u00e1sico o Logar\u00edtmico de Musa carece de significancia estad\u00edstica (p > 0.05). Fabricar datos sint\u00e9ticos para forzar una curva representar\u00eda una mala pr\u00e1ctica de ingenier\u00eda; por ende, se adopta formalmente el Modelo de Nelson con perfil operacional real."
   },
   "sli_slo": {
-    "sli_measured_availability": "99.98%",
+    "sli_measured_availability": "100.0%",
     "slo_target_availability": "99.50%",
     "status": "COMPLIANT"
   }
