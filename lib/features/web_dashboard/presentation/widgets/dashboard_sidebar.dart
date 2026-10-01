@@ -40,14 +40,23 @@ class DashboardSidebar extends StatelessWidget {
           ),
           const Divider(color: Colors.white12, height: 1),
           const SizedBox(height: 12),
-          _item(Icons.description_outlined, 'Pólizas Vehiculares', 'policies'),
-          _item(Icons.people_outline, 'Clientes', 'clients'),
-          if (isSystemAdmin) _item(Icons.admin_panel_settings_outlined, 'Usuarios del Sistema', 'users'),
-          _item(Icons.document_scanner_outlined, 'Lector Documental OCR', 'ocr'),
-          _item(Icons.analytics_outlined, 'Reportes y Estadísticas', 'reports'),
-          _item(Icons.notification_important_outlined, 'Alertas de Vencimiento', 'alerts'),
-          const Spacer(),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _item(Icons.description_outlined, 'Pólizas Vehiculares', 'policies'),
+                  _item(Icons.people_outline, 'Clientes', 'clients'),
+                  if (isSystemAdmin) _item(Icons.admin_panel_settings_outlined, 'Usuarios del Sistema', 'users'),
+                  _item(Icons.document_scanner_outlined, 'Lector Documental OCR', 'ocr'),
+                  _item(Icons.analytics_outlined, 'Reportes y Estadísticas', 'reports'),
+                  _item(Icons.notification_important_outlined, 'Alertas de Vencimiento', 'alerts'),
+                ],
+              ),
+            ),
+          ),
           const Divider(color: Colors.white12, height: 1),
+
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: Row(
@@ -80,12 +89,25 @@ class DashboardSidebar extends StatelessWidget {
         color: isSelected ? AppTheme.primaryColor : Colors.transparent,
         borderRadius: BorderRadius.circular(10),
       ),
-      child: ListTile(
-        dense: true,
-        leading: Icon(icon, color: isSelected ? Colors.white : Colors.white70, size: 20),
-        title: Text(title, style: TextStyle(color: isSelected ? Colors.white : Colors.white70, fontWeight: isSelected ? FontWeight.bold : FontWeight.w500, fontSize: 13)),
-        onTap: () => onTabSelected(tabId),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(10),
+        child: ListTile(
+          dense: true,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          leading: Icon(icon, color: isSelected ? Colors.white : Colors.white70, size: 20),
+          title: Text(
+            title,
+            style: TextStyle(
+              color: isSelected ? Colors.white : Colors.white70,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+              fontSize: 13,
+            ),
+          ),
+          onTap: () => onTabSelected(tabId),
+        ),
       ),
     );
   }
 }
+
