@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
 import 'package:sigad/core/config/api_config.dart';
+import 'package:sigad/core/models/user_model.dart';
 import 'package:sigad/core/services/hive_helper.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_event.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_state.dart';
@@ -22,11 +23,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   void _onCheckSession(CheckSession event, Emitter<AuthState> emit) {
-    final activeUser = HiveHelper.sessionBox.get('active_user');
-    if (activeUser != null) {
-      final userMap = Map<String, dynamic>.from(activeUser);
-      if (userMap['isActive'] != false) {
-        emit(AuthSuccess(user: userMap));
+    final raw = HiveHelper.sessionBox.get('active_user');
+    if (raw != null) {
+      final json = Map<String, dynamic>.from(raw as Map);
+      final user = UserModel.fromJson(json);
+      final token = json['access_token'] as String? ?? '';
+      if (user.isActive) {
+        emit(AuthSuccess(token: token, user: user));
         return;
       }
       HiveHelper.sessionBox.delete('active_user');
@@ -54,22 +57,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final user = data['user'] as Map<String, dynamic>;
+        final token = data['access_token'] as String;
+        final userMap = data['user'] as Map<String, dynamic>;
 
-        final sessionData = {
-          ...user,
-          'access_token': data['access_token'],
+        // Enriquecer el mapa con tokens para que UserModel.fromJson los tome
+        final enriched = {
+          ...userMap,
+          'access_token': token,
           'refresh_token': data['refresh_token'],
-          'role': _mapRol(user['rol'] ?? ''),
-          'name': user['nombre'] ?? '',
-          'email': user['email'] ?? '',
-          'isActive': true,
         };
+
+        final user = UserModel.fromJson(enriched);
 
         _failedAttempts = 0;
         _lockoutUntil = null;
-        await HiveHelper.sessionBox.put('active_user', sessionData);
-        emit(AuthSuccess(user: sessionData));
+        await HiveHelper.sessionBox.put('active_user', enriched);
+        emit(AuthSuccess(token: token, user: user));
       } else {
         _handleLoginFailure(emit);
       }
@@ -85,19 +88,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthLockedOut(unlockTime: _lockoutUntil!));
     } else {
       emit(const AuthFailure(message: 'Las credenciales ingresadas no son válidas.'));
-    }
-  }
-
-  String _mapRol(String backendRol) {
-    switch (backendRol) {
-      case 'admin':
-        return 'admin_system';
-      case 'agente':
-        return 'admin_rjseguros';
-      case 'cliente':
-        return 'client';
-      default:
-        return backendRol;
     }
   }
 
@@ -133,22 +123,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final user = data['user'] as Map<String, dynamic>;
+        final token = data['access_token'] as String;
+        final userMap = data['user'] as Map<String, dynamic>;
 
-        final sessionData = {
-          ...user,
-          'access_token': data['access_token'],
+        final enriched = {
+          ...userMap,
+          'access_token': token,
           'refresh_token': data['refresh_token'],
-          'role': _mapRol(user['rol'] ?? ''),
-          'name': user['nombre'] ?? '',
-          'email': user['email'] ?? '',
-          'isActive': true,
         };
+
+        final user = UserModel.fromJson(enriched);
 
         _failedAttempts = 0;
         _lockoutUntil = null;
-        await HiveHelper.sessionBox.put('active_user', sessionData);
-        emit(AuthSuccess(user: sessionData));
+        await HiveHelper.sessionBox.put('active_user', enriched);
+        emit(AuthSuccess(token: token, user: user));
       } else {
         final body = jsonDecode(response.body);
         final msg = (body is Map && body.containsKey('detail'))
