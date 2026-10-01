@@ -15,6 +15,11 @@ abstract class AppConstants {
   static const int maxPolicyYears = 5;
   static const int defaultPolicyDurationDays = 365;
 
+  // Valores por defecto de precarga OCR (usados cuando el texto extraído no es parseable)
+  static const double ocrDefaultInsuredValue = 15000.0;
+  static const double ocrDefaultMonthlyPremium = 35.0;
+  static const int ocrDefaultEmissionMileage = 5000;
+
   // Formatos ANT Ecuador
   static const int minPlateLength = 6;
   static const int maxPlateLength = 8;

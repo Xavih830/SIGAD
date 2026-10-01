@@ -5,7 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:sigad/core/config/api_config.dart';
-
+import 'package:sigad/core/constants/app_constants.dart';
 
 import 'package:sigad/core/models/policy_model.dart';
 import 'package:sigad/core/theme/app_theme.dart';
@@ -120,18 +120,27 @@ class _OcrTabViewState extends State<OcrTabView> {
     } catch (_) {}
     if (!mounted) return;
 
-    // Parsear datos extraídos con tipado seguro
-    final double valorAsegurado = double.tryParse(campos['valor_asegurado']?.toString().replaceAll(RegExp(r'[^0-9.]'), '') ?? '') ?? 15000.0;
-    final double primaMensual = double.tryParse(campos['prima_mensual']?.toString().replaceAll(RegExp(r'[^0-9.]'), '') ?? '') ?? 35.0;
-    final int kilometraje = int.tryParse(campos['kilometraje']?.toString().replaceAll(RegExp(r'[^0-9]'), '') ?? '') ?? 5000;
+    // Parsear datos extraídos con tipado seguro — valores por defecto en AppConstants
+    final double valorAsegurado = double.tryParse(campos['valor_asegurado']?.toString().replaceAll(RegExp(r'[^0-9.]'), '') ?? '') ?? AppConstants.ocrDefaultInsuredValue;
+    final double primaMensual = double.tryParse(campos['prima_mensual']?.toString().replaceAll(RegExp(r'[^0-9.]'), '') ?? '') ?? AppConstants.ocrDefaultMonthlyPremium;
+    final int kilometraje = int.tryParse(campos['kilometraje']?.toString().replaceAll(RegExp(r'[^0-9]'), '') ?? '') ?? AppConstants.ocrDefaultEmissionMileage;
     final String numeroPoliza = campos['numero_poliza']?.toString().isNotEmpty == true
         ? campos['numero_poliza']!.toString()
         : 'POL-OCR-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
 
+    if (clients.isEmpty) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No hay clientes registrados. Cree un cliente antes de vincular una póliza OCR.'), backgroundColor: Colors.red));
+      return;
+    }
+    final String clientId = clients.first['id']?.toString() ?? '';
+    if (clientId.isEmpty) {
+      throw StateError('El primer cliente del listado no tiene ID. Respuesta inesperada del backend.');
+    }
+
     final policy = PolicyModel(
       id: '',
       number: numeroPoliza,
-      clientId: clients.isNotEmpty ? (clients.first['id']?.toString() ?? '') : '',
+      clientId: clientId,
       vehicleId: '',
       startDate: DateTime.now(),
       endDate: DateTime.now().add(const Duration(days: 365)),
@@ -184,7 +193,7 @@ class _OcrTabViewState extends State<OcrTabView> {
                 isLoading: _isLoadingDetail,
                 onRefresh: () => _selectedDocument != null ? _seleccionarDocumento(_selectedDocument!['id'] as String) : null,
                 onLinkPolicy: _vincularNuevaPoliza,
-                authToken: _getAuthToken() ?? '',
+                authToken: _getAuthToken() ?? (throw StateError('OcrTabView renderizado con sesión nula. El BLoC de autenticación está en estado inválido.')),
               ),
             ),
           ],
