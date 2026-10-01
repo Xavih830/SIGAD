@@ -1,4 +1,5 @@
 import 'package:equatable/equatable.dart';
+import 'package:sigad/core/models/user_model.dart';
 
 abstract class AuthState extends Equatable {
   const AuthState();
@@ -12,12 +13,13 @@ class AuthInitial extends AuthState {}
 class AuthLoading extends AuthState {}
 
 class AuthSuccess extends AuthState {
-  final Map<String, dynamic> user;
+  final String token;
+  final UserModel user; //  TIPADO FUERTE: Ya no es Map<String, dynamic>
 
-  const AuthSuccess({required this.user});
+  const AuthSuccess({required this.token, required this.user});
 
   @override
-  List<Object?> get props => [user];
+  List<Object?> get props => [token, user];
 }
 
 class AuthFailure extends AuthState {
