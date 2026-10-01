@@ -84,3 +84,10 @@ class Poliza(Base):
         cascade="all, delete-orphan",
         lazy="selectin",
     )
+    pagos = relationship(
+        "Pago",
+        back_populates="poliza",
+        cascade="all, delete-orphan",
+        order_by="Pago.numero_cuota",
+        lazy="selectin",
+    )
