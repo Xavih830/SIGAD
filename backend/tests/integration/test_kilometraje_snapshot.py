@@ -17,9 +17,10 @@ from sqlalchemy import inspect, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.poliza_evaluator import EstadoPoliza
-from app.models.inspeccion import Inspeccion
 from app.models.poliza import Poliza
 from app.models.vehiculo import Vehiculo
+from tests.factories import create_inspeccion, poliza_payload
+from tests.factories.scenarios import ScenarioBundle
 from tests.integration.conftest import make_client
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")
@@ -35,52 +36,48 @@ async def test_vehiculo_no_tiene_columna_kilometraje():
     )
 
 
-async def test_kilometraje_snapshot_inmutable(db_session: AsyncSession, seed_data: dict):
+async def test_kilometraje_snapshot_inmutable(db_session: AsyncSession, base_scenario: ScenarioBundle):
     """Verify that issuing a policy freezes kilometraje_emision independently of future inspections."""
-    cliente_a = seed_data["cliente_a"]
-    vehiculo_a = seed_data["vehiculo_a"]
-    admin_token = seed_data["tokens"]["admin"]
+    cliente_a = base_scenario.cliente_a
+    vehiculo_a = base_scenario.vehiculo_a
+    admin_token = base_scenario.admin_token
 
     # 1. Crear una inspección previa con 25,000 km
-    inspeccion_1 = Inspeccion(
-        id=uuid.uuid4(),
+    inspeccion_1 = await create_inspeccion(
+        db_session,
         vehiculo_id=vehiculo_a.id,
         kilometraje=25000,
         observaciones="Inspección de emisión",
     )
-    db_session.add(inspeccion_1)
     await db_session.commit()
 
     # 2. Emitir póliza via API con snapshot de 25,000 km
     poliza_num = f"POL-SNAP-{uuid.uuid4().hex[:6].upper()}"
+    payload = poliza_payload(
+        cliente_a.id,
+        vehiculo_a.id,
+        inspeccion_id=inspeccion_1.id,
+        numero_poliza=poliza_num,
+        fecha_inicio=date.today() - timedelta(days=5),
+        fecha_fin=date.today() + timedelta(days=360),
+        valor_asegurado=22000.00,
+        prima_mensual=65.00,
+        kilometraje_emision=25000,
+    )
     async with make_client(admin_token) as client:
-        response = await client.post(
-            "/api/v1/polizas",
-            json={
-                "numero_poliza": poliza_num,
-                "cliente_id": str(cliente_a.id),
-                "vehiculo_id": str(vehiculo_a.id),
-                "inspeccion_id": str(inspeccion_1.id),
-                "fecha_inicio": (date.today() - timedelta(days=5)).isoformat(),
-                "fecha_fin": (date.today() + timedelta(days=360)).isoformat(),
-                "valor_asegurado": 22000.00,
-                "prima_mensual": 65.00,
-                "kilometraje_emision": 25000,
-            },
-        )
+        response = await client.post("/api/v1/polizas", json=payload)
         assert response.status_code == 201, response.text
         created_data = response.json()
         poliza_id = created_data["id"]
         assert created_data["kilometraje_emision"] == 25000
 
     # 3. Registrar una nueva inspección 6 meses después con 38,000 km
-    inspeccion_2 = Inspeccion(
-        id=uuid.uuid4(),
+    inspeccion_2 = await create_inspeccion(
+        db_session,
         vehiculo_id=vehiculo_a.id,
         kilometraje=38000,
         observaciones="Inspección semestral",
     )
-    db_session.add(inspeccion_2)
     await db_session.commit()
 
     # 4. Verificar en BD que kilometraje_emision de la póliza sigue siendo exactamente 25,000 km

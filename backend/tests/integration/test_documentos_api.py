@@ -16,6 +16,8 @@ import pypdfium2 as pdfium
 from sqlalchemy import text
 
 from app.models.documento import Documento
+from tests.factories import DEFAULT_CAMPOS_EXTRAIDOS, revision_documento_payload
+from tests.factories.scenarios import ScenarioBundle
 from tests.integration.conftest import make_client
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")
@@ -32,12 +34,12 @@ def _generar_pdf_bytes(num_paginas: int = 1) -> bytes:
     return buf.getvalue()
 
 
-async def test_idor_documentos(seed_data: dict, db_session):
+async def test_idor_documentos(base_scenario: ScenarioBundle, db_session):
     """Anti-IDOR: Cliente B no puede descargar documentos asociados a la póliza de Cliente A (HTTP 403)."""
-    admin_token = seed_data["tokens"]["admin"]
-    token_a = seed_data["tokens"]["cliente_a"]
-    token_b = seed_data["tokens"]["cliente_b"]
-    poliza_a = seed_data["poliza_a"]
+    admin_token = base_scenario.admin_token
+    token_a = base_scenario.token_a
+    token_b = base_scenario.token_b
+    poliza_a = base_scenario.poliza_a
 
     # 1. Crear archivo físico temporal y registro de documento asociado a poliza_a
     from app.services.storage_service import storage_service
@@ -96,9 +98,9 @@ async def test_idor_documentos(seed_data: dict, db_session):
 
 
 
-async def test_subida_documento_tamano_excedido_413(seed_data: dict):
+async def test_subida_documento_tamano_excedido_413(base_scenario: ScenarioBundle):
     """Archivos mayores a 15 MB deben ser rechazados con HTTP 413 Payload Too Large."""
-    admin_token = seed_data["tokens"]["admin"]
+    admin_token = base_scenario.admin_token
     # 15.5 MB payload
     contenido_gigante = b"X" * (15 * 1024 * 1024 + 500 * 1024)
 
@@ -110,9 +112,9 @@ async def test_subida_documento_tamano_excedido_413(seed_data: dict):
         assert res.status_code == 413, f"Se esperaba 413 pero se obtuvo {res.status_code}: {res.text}"
 
 
-async def test_subida_documento_maximo_paginas_400(seed_data: dict):
+async def test_subida_documento_maximo_paginas_400(base_scenario: ScenarioBundle):
     """PDFs con más de 10 páginas deben ser rechazados con HTTP 400 Bad Request."""
-    admin_token = seed_data["tokens"]["admin"]
+    admin_token = base_scenario.admin_token
     pdf_11_paginas = _generar_pdf_bytes(11)
 
     async with make_client(admin_token) as client:
@@ -124,9 +126,9 @@ async def test_subida_documento_maximo_paginas_400(seed_data: dict):
         assert "10 páginas" in res.json()["detail"]
 
 
-async def test_subida_y_consulta_documento_valido(seed_data: dict):
+async def test_subida_y_consulta_documento_valido(base_scenario: ScenarioBundle):
     """Carga exitosa de documento válido retorna HTTP 201 y estado pendiente."""
-    admin_token = seed_data["tokens"]["admin"]
+    admin_token = base_scenario.admin_token
     pdf_2_paginas = _generar_pdf_bytes(2)
 
     async with make_client(admin_token) as client:
@@ -147,9 +149,9 @@ async def test_subida_y_consulta_documento_valido(seed_data: dict):
         assert res_get.json()["estado_extraccion"] == "pendiente"
 
 
-async def test_revisar_campos_documento_exitoso(seed_data: dict, db_session):
+async def test_revisar_campos_documento_exitoso(base_scenario: ScenarioBundle, db_session):
     """Admin o Agente puede revisar y corregir campos extraídos OCR (HU-06)."""
-    admin_token = seed_data["tokens"]["admin"]
+    admin_token = base_scenario.admin_token
     doc_id = uuid.uuid4()
     res_id = uuid.uuid4()
 
@@ -183,35 +185,27 @@ async def test_revisar_campos_documento_exitoso(seed_data: dict, db_session):
 
     # 1. Ejecutar PATCH /revision con nuevos campos corregidos
     async with make_client(admin_token) as client:
-        payload = {
-            "campos_extraidos": {
-                "placa": "ABC-1234",
-                "valor_asegurado": 18500.0,
-                "prima_mensual": 45.0,
-                "numero_poliza": "POL-2026-999",
-            },
-            "estado_extraccion": "completado",
-        }
+        payload = revision_documento_payload()
         res = await client.patch(f"/api/v1/documentos/{doc_id}/revision", json=payload)
         assert res.status_code == 200, res.text
         data = res.json()
         assert data["id"] == str(doc_id)
         assert data["estado_extraccion"] == "completado"
-        assert data["campos_extraidos"]["placa"] == "ABC-1234"
-        assert data["campos_extraidos"]["valor_asegurado"] == 18500.0
+        assert data["campos_extraidos"]["placa"] == DEFAULT_CAMPOS_EXTRAIDOS["placa"]
+        assert data["campos_extraidos"]["valor_asegurado"] == DEFAULT_CAMPOS_EXTRAIDOS["valor_asegurado"]
 
         # 2. Consultar GET /documentos/{id} para confirmar persistencia en BD
         res_get = await client.get(f"/api/v1/documentos/{doc_id}")
         assert res_get.status_code == 200
         get_data = res_get.json()
         assert get_data["estado_extraccion"] == "completado"
-        assert get_data["resultado"]["campos_extraidos"]["placa"] == "ABC-1234"
-        assert get_data["resultado"]["campos_extraidos"]["numero_poliza"] == "POL-2026-999"
+        assert get_data["resultado"]["campos_extraidos"]["placa"] == DEFAULT_CAMPOS_EXTRAIDOS["placa"]
+        assert get_data["resultado"]["campos_extraidos"]["numero_poliza"] == DEFAULT_CAMPOS_EXTRAIDOS["numero_poliza"]
 
 
-async def test_revisar_campos_documento_prohibido_cliente(seed_data: dict, db_session):
+async def test_revisar_campos_documento_prohibido_cliente(base_scenario: ScenarioBundle, db_session):
     """Clientes no tienen autorización para revisar o alterar campos OCR (HTTP 403)."""
-    token_cliente = seed_data["tokens"]["cliente_a"]
+    token_cliente = base_scenario.token_a
     doc_id = uuid.uuid4()
     res_id = uuid.uuid4()
 
@@ -252,9 +246,9 @@ async def test_revisar_campos_documento_prohibido_cliente(seed_data: dict, db_se
         assert "Solo administradores y agentes" in res.json()["detail"]
 
 
-async def test_revisar_campos_documento_estado_invalido_422(seed_data: dict, db_session):
+async def test_revisar_campos_documento_estado_invalido_422(base_scenario: ScenarioBundle, db_session):
     """Enviar un estado de extracción no permitido retorna HTTP 422 Unprocessable Entity."""
-    admin_token = seed_data["tokens"]["admin"]
+    admin_token = base_scenario.admin_token
     doc_id = uuid.uuid4()
     res_id = uuid.uuid4()
 
@@ -295,9 +289,9 @@ async def test_revisar_campos_documento_estado_invalido_422(seed_data: dict, db_
         assert "Estado de extracción inválido" in res.json()["detail"]
 
 
-async def test_revisar_campos_documento_no_encontrado_404(seed_data: dict):
+async def test_revisar_campos_documento_no_encontrado_404(base_scenario: ScenarioBundle):
     """Revisión de documento inexistente retorna HTTP 404 Not Found."""
-    admin_token = seed_data["tokens"]["admin"]
+    admin_token = base_scenario.admin_token
     fake_id = uuid.uuid4()
 
     async with make_client(admin_token) as client:

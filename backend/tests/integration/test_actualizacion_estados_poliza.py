@@ -21,15 +21,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.domain.poliza_evaluator import EstadoPoliza
 from app.models.historial_cambio import HistorialCambio
 from app.models.poliza import Poliza
+from tests.factories.scenarios import ScenarioBundle
 from tests.integration.conftest import make_client
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")
 
 
-async def test_actualizacion_estado_dispara_trigger_auditoria(db_session: AsyncSession, seed_data: dict):
+async def test_actualizacion_estado_dispara_trigger_auditoria(db_session: AsyncSession, base_scenario: ScenarioBundle):
     """Verify state transition and PostgreSQL trigger audit logging."""
-    admin_token = seed_data["tokens"]["admin"]
-    poliza_a = seed_data["poliza_a"]
+    admin_token = base_scenario.admin_token
+    poliza_a = base_scenario.poliza_a
 
     assert poliza_a.estado == EstadoPoliza.ACTIVA
 

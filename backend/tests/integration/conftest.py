@@ -79,11 +79,6 @@ async def base_scenario(db_session: AsyncSession) -> ScenarioBundle:
     return await create_base_scenario(db_session)
 
 
-@pytest_asyncio.fixture(scope="function")
-async def seed_data(base_scenario: ScenarioBundle) -> dict:
-    """Backward-compatible fixture providing dictionary format for legacy test suites."""
-    return base_scenario.to_dict()
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Factory-as-Fixture Helpers (Eliminates test data scattering)

@@ -37,27 +37,10 @@ class ScenarioBundle:
     poliza_b: Poliza
     token_b: str
 
-    def to_dict(self) -> dict:
-        """Compatibility dictionary format for legacy seed_data fixtures."""
-        return {
-            "admin_user": self.admin_user,
-            "user_a": self.user_a,
-            "cliente_a": self.cliente_a,
-            "user_b": self.user_b,
-            "cliente_b": self.cliente_b,
-            "vehiculo_a": self.vehiculo_a,
-            "vehiculo_b": self.vehiculo_b,
-            "poliza_a": self.poliza_a,
-            "poliza_b": self.poliza_b,
-            "admin_token": self.admin_token,
-            "agente_token": self.broker_token,
-            "tokens": {
-                "admin": self.admin_token,
-                "broker": self.broker_token,
-                "cliente_a": self.token_a,
-                "cliente_b": self.token_b,
-            },
-        }
+    @property
+    def agente_token(self) -> str:
+        """Typed alias for broker_token."""
+        return self.broker_token
 
 
 async def create_base_scenario(session: AsyncSession) -> ScenarioBundle:

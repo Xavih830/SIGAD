@@ -20,29 +20,31 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.domain.poliza_evaluator import EstadoPoliza
 from app.models.deducible import Deducible, TipoSiniestroEnum
 from app.models.poliza import Poliza
+from tests.factories import create_poliza
+from tests.factories.scenarios import ScenarioBundle
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")
 
 
-async def test_migracion_deducibles_historicos_idempotente(db_session: AsyncSession, seed_data: dict):
+async def test_migracion_deducibles_historicos_idempotente(db_session: AsyncSession, base_scenario: ScenarioBundle):
     """Verify Section 12.4 migration SQL successfully backfills legacy policies."""
-    cliente_a = seed_data["cliente_a"]
-    vehiculo_a = seed_data["vehiculo_a"]
+    cliente_a = base_scenario.cliente_a
+    vehiculo_a = base_scenario.vehiculo_a
 
     # 1. Crear una póliza "histórica" sin ningún deducible asociado
-    poliza_historica = Poliza(
-        id=uuid.uuid4(),
-        numero_poliza=f"POL-HIST-{uuid.uuid4().hex[:6].upper()}",
+    poliza_historica = await create_poliza(
+        db_session,
         cliente_id=cliente_a.id,
         vehiculo_id=vehiculo_a.id,
+        numero_poliza=f"POL-HIST-{uuid.uuid4().hex[:6].upper()}",
         fecha_inicio=date.today() - timedelta(days=200),
         fecha_fin=date.today() + timedelta(days=165),
         estado=EstadoPoliza.ACTIVA,
         valor_asegurado=Decimal("20000.00"),
         prima_mensual=Decimal("50.00"),
         kilometraje_emision=12000,
+        with_default_deductible=False,
     )
-    db_session.add(poliza_historica)
     await db_session.commit()
 
     # Verificar que no tiene deducibles

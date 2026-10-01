@@ -97,10 +97,10 @@ async def test_happy_path_login_polimorfico(base_scenario: ScenarioBundle):
         assert res_email.status_code == 200, res_email.text
         assert "access_token" in res_email.json()
 
-        # 2. Login by Cédula (Cliente A: 0926687856)
+        # 2. Login by Cédula (Cliente A)
         res_cedula = await client.post(
             "/api/v1/auth/login",
-            json=login_payload("0926687856"),
+            json=login_payload(base_scenario.cliente_a.identificacion),
         )
         assert res_cedula.status_code == 200, res_cedula.text
         assert "access_token" in res_cedula.json()

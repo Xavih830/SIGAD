@@ -12,16 +12,17 @@ Verifies:
 
 import pytest
 
+from tests.factories.scenarios import ScenarioBundle
 from tests.integration.conftest import make_client
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")
 
 
-async def test_cliente_solo_ve_sus_propias_polizas(seed_data: dict):
+async def test_cliente_solo_ve_sus_propias_polizas(base_scenario: ScenarioBundle):
     """Anti-BOLA query level: Cliente A list view must not contain Cliente B's policies."""
-    token_a = seed_data["tokens"]["cliente_a"]
-    poliza_a = seed_data["poliza_a"]
-    poliza_b = seed_data["poliza_b"]
+    token_a = base_scenario.token_a
+    poliza_a = base_scenario.poliza_a
+    poliza_b = base_scenario.poliza_b
 
     async with make_client(token_a) as client:
         response = await client.get("/api/v1/polizas")
@@ -35,10 +36,10 @@ async def test_cliente_solo_ve_sus_propias_polizas(seed_data: dict):
         )
 
 
-async def test_cliente_no_puede_acceder_a_poliza_ajena_por_id(seed_data: dict):
+async def test_cliente_no_puede_acceder_a_poliza_ajena_por_id(base_scenario: ScenarioBundle):
     """Anti-BOLA: Direct access to another client's policy must return 404."""
-    token_a = seed_data["tokens"]["cliente_a"]
-    poliza_b = seed_data["poliza_b"]
+    token_a = base_scenario.token_a
+    poliza_b = base_scenario.poliza_b
 
     async with make_client(token_a) as client:
         # Client A requests Client B's policy
@@ -48,31 +49,31 @@ async def test_cliente_no_puede_acceder_a_poliza_ajena_por_id(seed_data: dict):
         )
 
 
-async def test_cliente_no_puede_acceder_a_deducibles_ajenos(seed_data: dict):
+async def test_cliente_no_puede_acceder_a_deducibles_ajenos(base_scenario: ScenarioBundle):
     """Anti-BOLA: Querying deductibles of another client's policy must return 404."""
-    token_a = seed_data["tokens"]["cliente_a"]
-    poliza_b = seed_data["poliza_b"]
+    token_a = base_scenario.token_a
+    poliza_b = base_scenario.poliza_b
 
     async with make_client(token_a) as client:
         response = await client.get(f"/api/v1/polizas/{poliza_b.id}/deducibles")
         assert response.status_code == 404
 
 
-async def test_cliente_no_puede_acceder_a_vehiculo_ajeno(seed_data: dict):
+async def test_cliente_no_puede_acceder_a_vehiculo_ajeno(base_scenario: ScenarioBundle):
     """Anti-BOLA: Querying another client's vehicle must return 404."""
-    token_a = seed_data["tokens"]["cliente_a"]
-    vehiculo_b = seed_data["vehiculo_b"]
+    token_a = base_scenario.token_a
+    vehiculo_b = base_scenario.vehiculo_b
 
     async with make_client(token_a) as client:
         response = await client.get(f"/api/v1/vehiculos/{vehiculo_b.id}")
         assert response.status_code == 404
 
 
-async def test_admin_puede_ver_todas_las_polizas(seed_data: dict):
+async def test_admin_puede_ver_todas_las_polizas(base_scenario: ScenarioBundle):
     """Corporate users (admin) have global visibility across all tenants."""
-    admin_token = seed_data["tokens"]["admin"]
-    poliza_a = seed_data["poliza_a"]
-    poliza_b = seed_data["poliza_b"]
+    admin_token = base_scenario.admin_token
+    poliza_a = base_scenario.poliza_a
+    poliza_b = base_scenario.poliza_b
 
     async with make_client(admin_token) as client:
         response = await client.get("/api/v1/polizas")

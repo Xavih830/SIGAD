@@ -10,16 +10,17 @@ import uuid
 import pytest
 
 from tests.factories.payloads import poliza_payload, vehiculo_payload
+from tests.factories.scenarios import ScenarioBundle
 from tests.integration.conftest import make_client
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")
 
 
-async def test_crear_poliza_flujo_completo(seed_data: dict):
+async def test_crear_poliza_flujo_completo(base_scenario: ScenarioBundle):
     """Test full policy creation flow including automatic default deductible."""
-    admin_token = seed_data["tokens"]["admin"]
-    cliente_a = seed_data["cliente_a"]
-    vehiculo_a = seed_data["vehiculo_a"]
+    admin_token = base_scenario.admin_token
+    cliente_a = base_scenario.cliente_a
+    vehiculo_a = base_scenario.vehiculo_a
 
     poliza_num = f"POL-TEST-{uuid.uuid4().hex[:6].upper()}"
     payload = poliza_payload(
@@ -44,11 +45,11 @@ async def test_crear_poliza_flujo_completo(seed_data: dict):
         assert float(data["deducibles"][0]["monto_minimo_usd"]) == 200.0
 
 
-async def test_crear_poliza_fecha_fin_menor_rechaza_422(seed_data: dict):
+async def test_crear_poliza_fecha_fin_menor_rechaza_422(base_scenario: ScenarioBundle):
     """FechaInvalidaException causes HTTP 422."""
-    admin_token = seed_data["tokens"]["admin"]
-    cliente_a = seed_data["cliente_a"]
-    vehiculo_a = seed_data["vehiculo_a"]
+    admin_token = base_scenario.admin_token
+    cliente_a = base_scenario.cliente_a
+    vehiculo_a = base_scenario.vehiculo_a
 
     payload = poliza_payload(
         cliente_id=cliente_a.id,
@@ -69,11 +70,11 @@ async def test_crear_poliza_fecha_fin_menor_rechaza_422(seed_data: dict):
         assert "posterior a la fecha de inicio" in response.text
 
 
-async def test_crear_poliza_vigencia_mayor_a_5_anios_rechaza_422(seed_data: dict):
+async def test_crear_poliza_vigencia_mayor_a_5_anios_rechaza_422(base_scenario: ScenarioBundle):
     """VigenciaExcedidaException causes HTTP 422."""
-    admin_token = seed_data["tokens"]["admin"]
-    cliente_a = seed_data["cliente_a"]
-    vehiculo_a = seed_data["vehiculo_a"]
+    admin_token = base_scenario.admin_token
+    cliente_a = base_scenario.cliente_a
+    vehiculo_a = base_scenario.vehiculo_a
 
     fecha_inicio = date(2026, 1, 1)
     fecha_fin = date(2031, 1, 2)  # 5 años + 1 día
@@ -97,10 +98,10 @@ async def test_crear_poliza_vigencia_mayor_a_5_anios_rechaza_422(seed_data: dict
         assert "5 años" in response.text
 
 
-async def test_crear_vehiculo_con_placa_ant_valida(seed_data: dict):
+async def test_crear_vehiculo_con_placa_ant_valida(base_scenario: ScenarioBundle):
     """Register vehicle with valid ANT license plate."""
-    admin_token = seed_data["tokens"]["admin"]
-    cliente_a = seed_data["cliente_a"]
+    admin_token = base_scenario.admin_token
+    cliente_a = base_scenario.cliente_a
 
     placa_valida = f"PBA-{str(uuid.uuid4().int)[:4]}"
     payload = vehiculo_payload(
@@ -119,10 +120,10 @@ async def test_crear_vehiculo_con_placa_ant_valida(seed_data: dict):
         assert response.json()["placa"] == placa_valida
 
 
-async def test_crear_vehiculo_placa_invalida_rechaza_422(seed_data: dict):
+async def test_crear_vehiculo_placa_invalida_rechaza_422(base_scenario: ScenarioBundle):
     """Invalid plate rejected with 422 validation error."""
-    admin_token = seed_data["tokens"]["admin"]
-    cliente_a = seed_data["cliente_a"]
+    admin_token = base_scenario.admin_token
+    cliente_a = base_scenario.cliente_a
 
     payload = vehiculo_payload(
         cliente_id=cliente_a.id,

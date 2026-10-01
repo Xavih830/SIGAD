@@ -11,6 +11,7 @@ from app.domain.poliza_evaluator import EstadoPoliza
 from app.models.cliente import Cliente
 from app.models.cobertura import Cobertura
 from app.models.deducible import Deducible, TipoSiniestroEnum
+from app.models.inspeccion import Inspeccion
 from app.models.pago import Pago
 from app.models.poliza import Poliza
 from app.models.usuario import RolEnum, Usuario
@@ -159,3 +160,23 @@ async def create_pago(
     session.add(pago)
     await session.flush()
     return pago
+
+
+async def create_inspeccion(
+    session: AsyncSession,
+    *,
+    vehiculo_id: uuid.UUID,
+    kilometraje: int = 15000,
+    observaciones: str = "Inspección técnica",
+    id: uuid.UUID | None = None,
+) -> Inspeccion:
+    """Create and persist an Inspeccion model."""
+    inspeccion = Inspeccion(
+        id=id or uuid.uuid4(),
+        vehiculo_id=vehiculo_id,
+        kilometraje=kilometraje,
+        observaciones=observaciones,
+    )
+    session.add(inspeccion)
+    await session.flush()
+    return inspeccion
