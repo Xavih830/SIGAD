@@ -29,7 +29,7 @@ class UserModel {
       role: json['rol'] as String,
       accessToken: json['access_token'] as String?,
       refreshToken: json['refresh_token'] as String?,
-      isActive: json['activo'] as bool? ?? true,
+      isActive: json['activo'] as bool,
     );
   }
 
