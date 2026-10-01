@@ -12,6 +12,10 @@ from app.schemas.documento import (
     DocumentoResponse,
     DocumentoRevisionRequest,
 )
+from app.schemas.pago import (
+    PagoResponse,
+    RegistrarPagoRequest,
+)
 from app.schemas.poliza import (
     CoberturaCreate,
     CoberturaResponse,
@@ -40,4 +44,6 @@ __all__ = [
     "PolizaUpdateEstado",
     "DocumentoRevisionRequest",
     "DocumentoResponse",
+    "PagoResponse",
+    "RegistrarPagoRequest",
 ]

@@ -534,6 +534,128 @@
         }
       }
     },
+    "/api/v1/polizas/{poliza_id}/pagos": {
+      "get": {
+        "tags": [
+          "Pagos"
+        ],
+        "summary": "Listar Pagos Poliza",
+        "description": "Lists installment schedule with strict Anti-BOLA tenant protection.",
+        "operationId": "listar_pagos_poliza_api_v1_polizas__poliza_id__pagos_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "poliza_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Poliza Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PagoResponse"
+                  },
+                  "title": "Response Listar Pagos Poliza Api V1 Polizas  Poliza Id  Pagos Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/polizas/{poliza_id}/pagos/{pago_id}/registrar": {
+      "post": {
+        "tags": [
+          "Pagos"
+        ],
+        "summary": "Registrar Pago Cuota",
+        "description": "Allows Agents and Admins to register an installment payment.",
+        "operationId": "registrar_pago_cuota_api_v1_polizas__poliza_id__pagos__pago_id__registrar_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "poliza_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Poliza Id"
+            }
+          },
+          {
+            "name": "pago_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Pago Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrarPagoRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagoResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/vehiculos": {
       "get": {
         "tags": [
@@ -1774,6 +1896,81 @@
         "title": "LoginRequest",
         "description": "Login payload — accepts email (contains @) or cédula (numeric)."
       },
+      "PagoResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "poliza_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Poliza Id"
+          },
+          "numero_cuota": {
+            "type": "integer",
+            "title": "Numero Cuota"
+          },
+          "monto_usd": {
+            "type": "number",
+            "title": "Monto Usd"
+          },
+          "fecha_vencimiento": {
+            "type": "string",
+            "format": "date",
+            "title": "Fecha Vencimiento"
+          },
+          "fecha_pago": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fecha Pago"
+          },
+          "estado": {
+            "type": "string",
+            "title": "Estado"
+          },
+          "metodo_pago": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metodo Pago"
+          },
+          "comprobante_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comprobante Ref"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "poliza_id",
+          "numero_cuota",
+          "monto_usd",
+          "fecha_vencimiento",
+          "estado"
+        ],
+        "title": "PagoResponse"
+      },
       "PolizaCreate": {
         "properties": {
           "numero_poliza": {
@@ -2005,6 +2202,39 @@
         ],
         "title": "PolizaUpdateEstado",
         "description": "Schema para transición de estado de póliza."
+      },
+      "RegistrarPagoRequest": {
+        "properties": {
+          "metodo_pago": {
+            "type": "string",
+            "title": "Metodo Pago",
+            "description": "transferencia, tarjeta, debito_bancario"
+          },
+          "comprobante_ref": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 4,
+            "title": "Comprobante Ref"
+          },
+          "fecha_pago": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fecha Pago"
+          }
+        },
+        "type": "object",
+        "required": [
+          "metodo_pago",
+          "comprobante_ref"
+        ],
+        "title": "RegistrarPagoRequest"
       },
       "TallerCreate": {
         "properties": {

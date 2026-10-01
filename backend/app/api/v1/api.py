@@ -7,6 +7,7 @@ from app.api.v1.endpoints import (
     auth,
     clientes,
     documentos,
+    pagos,
     polizas,
     talleres,
     vehiculos,
@@ -16,6 +17,7 @@ api_router = APIRouter(prefix="/api/v1")
 api_router.include_router(auth.router)
 api_router.include_router(clientes.router)
 api_router.include_router(polizas.router)
+api_router.include_router(pagos.router)
 api_router.include_router(vehiculos.router)
 api_router.include_router(talleres.router)
 api_router.include_router(asistencias.router)
