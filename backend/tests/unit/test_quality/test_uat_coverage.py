@@ -166,7 +166,7 @@ UAT_MATRIX = [
         "description": "Visibilidad de cuotas y estado financiero según rol",
         "preconditions": "Usuario autenticado",
         "expected_result": "Historial de transacciones de prima",
-        "test_module": "tests/integration/test_polizas_api.py",
+        "test_module": "tests/integration/test_pagos_api.py",
     },
     {
         "id": "UAT-21",

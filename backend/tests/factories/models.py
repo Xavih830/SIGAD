@@ -11,6 +11,7 @@ from app.domain.poliza_evaluator import EstadoPoliza
 from app.models.cliente import Cliente
 from app.models.cobertura import Cobertura
 from app.models.deducible import Deducible, TipoSiniestroEnum
+from app.models.pago import Pago
 from app.models.poliza import Poliza
 from app.models.usuario import RolEnum, Usuario
 from app.models.vehiculo import Vehiculo
@@ -129,3 +130,32 @@ async def create_poliza(
         await session.flush()
 
     return poliza
+
+
+async def create_pago(
+    session: AsyncSession,
+    *,
+    poliza_id: uuid.UUID,
+    numero_cuota: int = 1,
+    monto_usd: Decimal = Decimal("70.00"),
+    fecha_vencimiento: date | None = None,
+    fecha_pago: date | None = None,
+    estado: str = "pendiente",
+    metodo_pago: str | None = None,
+    comprobante_ref: str | None = None,
+) -> Pago:
+    """Create and persist a Pago installment model."""
+    f_venc = fecha_vencimiento or date.today()
+    pago = Pago(
+        poliza_id=poliza_id,
+        numero_cuota=numero_cuota,
+        monto_usd=monto_usd,
+        fecha_vencimiento=f_venc,
+        fecha_pago=fecha_pago,
+        estado=estado,
+        metodo_pago=metodo_pago,
+        comprobante_ref=comprobante_ref,
+    )
+    session.add(pago)
+    await session.flush()
+    return pago
