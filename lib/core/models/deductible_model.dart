@@ -19,16 +19,24 @@ class DeductibleModel {
           json['coverageName'] ??
           json['nombre'] ??
           '',
-      percentage: (json['porcentaje'] as num?)?.toDouble() ??
-          (json['porcentaje_valor'] as num?)?.toDouble() ??
-          (json['percentage'] as num?)?.toDouble() ??
+      percentage: double.tryParse(
+            json['porcentaje']?.toString() ??
+                json['porcentaje_valor']?.toString() ??
+                json['percentage']?.toString() ??
+                '',
+          ) ??
           0.0,
-      minAmount: (json['monto_minimo'] as num?)?.toDouble() ??
-          (json['monto_minimo_usd'] as num?)?.toDouble() ??
-          (json['minAmount'] as num?)?.toDouble() ??
+      minAmount: double.tryParse(
+            json['monto_minimo']?.toString() ??
+                json['monto_minimo_usd']?.toString() ??
+                json['minAmount']?.toString() ??
+                '',
+          ) ??
           0.0,
     );
   }
+
+
 
   Map<String, dynamic> toJson() => {
     if (id != null) 'id': id,

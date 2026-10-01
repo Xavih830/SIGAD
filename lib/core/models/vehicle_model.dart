@@ -30,9 +30,13 @@ class VehicleModel {
           : int.tryParse(json['anio']?.toString() ?? '2020') ?? 2020,
       color: json['color']?.toString(),
       type: json['tipo'] ?? json['type'],
-      tonnage: (json['tonelaje'] as num?)?.toDouble() ?? (json['tonnage'] as num?)?.toDouble(),
+      tonnage: double.tryParse(
+        json['tonelaje']?.toString() ?? json['tonnage']?.toString() ?? '',
+      ),
     );
   }
+
+
 
   Map<String, dynamic> toJson() => {
     if (id != null) 'id': id,

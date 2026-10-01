@@ -72,9 +72,24 @@ class PolicyModel {
       startDate: DateTime.tryParse(json['fecha_inicio']?.toString() ?? json['startDate']?.toString() ?? '') ?? DateTime.now(),
       endDate: DateTime.tryParse(json['fecha_fin']?.toString() ?? json['endDate']?.toString() ?? '') ?? DateTime.now(),
       status: json['estado'] ?? json['status'] ?? 'activa',
-      insuredValue: (json['valor_asegurado'] as num?)?.toDouble() ?? (json['value'] as num?)?.toDouble() ?? 0.0,
-      monthlyPremium: (json['prima_mensual'] as num?)?.toDouble() ?? (json['prima'] as num?)?.toDouble() ?? 0.0,
-      emissionMileage: (json['kilometraje_emision'] as num?)?.toInt() ?? (json['mileage'] as num?)?.toInt() ?? 0,
+      insuredValue: double.tryParse(
+            json['valor_asegurado']?.toString() ??
+                json['value']?.toString() ??
+                '',
+          ) ??
+          0.0,
+      monthlyPremium: double.tryParse(
+            json['prima_mensual']?.toString() ??
+                json['prima']?.toString() ??
+                '',
+          ) ??
+          0.0,
+      emissionMileage: int.tryParse(
+            json['kilometraje_emision']?.toString() ??
+                json['mileage']?.toString() ??
+                '',
+          ) ??
+          0,
       deductibles: deds,
       coverages: covs,
       clientName: json['clientName']?.toString() ?? json['cliente_nombre']?.toString(),
@@ -82,6 +97,8 @@ class PolicyModel {
       lastPaymentDate: json['lastPaymentDate']?.toString() ?? json['ultimo_pago']?.toString(),
     );
   }
+
+
 
   Map<String, dynamic> toJson() => {
     'id': id,
