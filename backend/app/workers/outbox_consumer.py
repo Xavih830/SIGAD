@@ -8,6 +8,10 @@ import uuid
 from sqlalchemy import select, text, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.constants import (
+    OCR_PROCESS_TIMEOUT_SECONDS,
+    OUTBOX_POLL_INTERVAL_SECONDS,
+)
 from app.db.session import async_session_factory
 from app.models.documento import Documento, EstadoExtraccionEnum
 from app.models.resultado_extraccion import ResultadoExtraccion
@@ -63,7 +67,7 @@ async def procesar_documento_adquirido(
     doc_id: uuid.UUID,
     ruta_archivo: str,
     lease_token: uuid.UUID,
-    timeout_seconds: float = 120.0,
+    timeout_seconds: float = float(OCR_PROCESS_TIMEOUT_SECONDS),
 ) -> bool:
     """Executes extraction in resilient pool and safely commits results with fencing token check."""
     try:
@@ -161,7 +165,7 @@ async def procesar_documento_adquirido(
 
 async def procesar_un_ciclo_outbox(
     db: AsyncSession | None = None,
-    timeout_seconds: float = 120.0,
+    timeout_seconds: float = float(OCR_PROCESS_TIMEOUT_SECONDS),
 ) -> bool:
     """Process a single pending job from the outbox. Returns True if a job was processed."""
     if db is not None:
@@ -179,7 +183,7 @@ async def procesar_un_ciclo_outbox(
         return await procesar_documento_adquirido(session, doc_id, ruta, lease, timeout_seconds=timeout_seconds)
 
 
-async def loop_consumidor_outbox(intervalo_segundos: float = 2.0) -> None:
+async def loop_consumidor_outbox(intervalo_segundos: float = OUTBOX_POLL_INTERVAL_SECONDS) -> None:
     """Continuous background loop for the outbox consumer worker."""
     logger.info("Outbox consumer worker started.")
     while True:

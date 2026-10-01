@@ -7,6 +7,7 @@ specified in SOFG1008 and Section 4 of poryecto.md.
 from datetime import date
 import enum
 
+from app.core.constants import MAX_VIGENCIA_ANIOS
 from app.core.exceptions import FechaInvalidaException, VigenciaExcedidaException
 
 
@@ -85,10 +86,10 @@ def validar_y_calcular_estado_inicial(
 def calcular_fecha_limite_vigencia(fecha_inicio: date) -> date:
     """Calculate the maximum 5-year contractual limit handling leap years."""
     try:
-        return fecha_inicio.replace(year=fecha_inicio.year + 5)
+        return fecha_inicio.replace(year=fecha_inicio.year + MAX_VIGENCIA_ANIOS)
     except ValueError:
         # Leap year leap-day (e.g. Feb 29 -> Feb 28 on non-leap year + 5)
-        return fecha_inicio.replace(year=fecha_inicio.year + 5, day=28)
+        return fecha_inicio.replace(year=fecha_inicio.year + MAX_VIGENCIA_ANIOS, day=28)
 
 
 def validar_limite_vigencia_maxima(fecha_inicio: date, fecha_fin: date) -> None:

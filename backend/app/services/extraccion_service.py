@@ -12,6 +12,13 @@ import pdfplumber
 import pypdfium2 as pdfium
 import pytesseract
 
+from app.core.constants import (
+    GATE1_TEXT_LENGTH_THRESHOLD,
+    MAX_PDF_PAGES_PERMITTED,
+    OCR_HIGH_CONFIDENCE_THRESHOLD,
+    TESSERACT_STANDARD_DPI,
+)
+
 COMMON_BRANDS = [
     "TOYOTA", "CHEVROLET", "HYUNDAI", "KIA", "NISSAN",
     "FORD", "MAZDA", "HINO", "SUZUKI", "RENAULT",
@@ -130,8 +137,8 @@ def _extraer_compuerta_2_tesseract_200dpi(file_path: str) -> str:
 
     elif ext == ".pdf":
         pdf = pdfium.PdfDocument(file_path)
-        total_pages = min(len(pdf), 10)
-        scale = 200.0 / 72.0  # Exact 200 DPI scale factor (PDF base is 72 pt)
+        total_pages = min(len(pdf), MAX_PDF_PAGES_PERMITTED)
+        scale = float(TESSERACT_STANDARD_DPI) / 72.0  # Exact 200 DPI scale factor (PDF base is 72 pt)
 
         for page_idx in range(total_pages):
             page = pdf[page_idx]
@@ -171,7 +178,7 @@ def extraer_documento_sync(file_path: str) -> dict[str, Any]:
     # Compuerta 1: Solo aplica para PDFs
     if ext == ".pdf":
         texto_digital = _extraer_compuerta_1_pdfplumber(file_path)
-        if len(texto_digital.strip()) > 50:
+        if len(texto_digital.strip()) > GATE1_TEXT_LENGTH_THRESHOLD:
             campos, confianza = extraer_campos_regex(texto_digital)
             return {
                 "metodo": "pdfplumber",
@@ -210,7 +217,7 @@ def evaluar_decision_extraccion(
         return "Rechazar Documento"
 
     conf = Decimal(str(confianza))
-    if conf < Decimal("80.0"):
+    if conf < OCR_HIGH_CONFIDENCE_THRESHOLD:
         return "Revisión Manual Obligatoria"
 
     if placa_duplicada:

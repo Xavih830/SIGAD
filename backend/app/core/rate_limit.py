@@ -19,6 +19,21 @@ from cachetools import LRUCache
 from fastapi import HTTPException, Request, status
 
 from app.core.config import settings
+from app.core.constants import (
+    RATE_LIMIT_LOCKOUT_DURATION_SECONDS,
+    RATE_LIMIT_LOCKOUT_MAX_FAILS,
+    RATE_LIMIT_LOCKOUT_WINDOW_SECONDS,
+    RATE_LIMIT_LOGIN_MAX_REQUESTS,
+    RATE_LIMIT_LOGIN_WINDOW_SECONDS,
+    RATE_LIMIT_LRU_MAXSIZE,
+    RATE_LIMIT_TARPIT_BASE_DELAY_SECONDS,
+    RATE_LIMIT_TARPIT_BURST_THRESHOLD,
+    RATE_LIMIT_TARPIT_BURST_WINDOW_SECONDS,
+    RATE_LIMIT_TARPIT_MAX_DELAY_SECONDS,
+    RATE_LIMIT_VINCULACION_IDENTITY_WINDOW_SECONDS,
+    RATE_LIMIT_VINCULACION_MAX_REQUESTS,
+    RATE_LIMIT_VINCULACION_WINDOW_SECONDS,
+)
 
 
 class RateLimitExceeded(HTTPException):
@@ -38,33 +53,34 @@ class AccountLockedOut(HTTPException):
 class RateLimiter:
     """Multi-layer in-memory rate limiter backed by a bounded LRUCache."""
 
-    MAX_CACHE_SIZE: int = 10000
+    MAX_CACHE_SIZE: int = RATE_LIMIT_LRU_MAXSIZE
 
-    def __init__(self, maxsize: int = 10000) -> None:
+    def __init__(self, maxsize: int = RATE_LIMIT_LRU_MAXSIZE) -> None:
         self.MAX_CACHE_SIZE = maxsize
         self.cache: LRUCache = LRUCache(maxsize=maxsize)
 
         # Layer 1: IP limits (max_requests, window_seconds)
         self.ip_limits: Dict[str, Tuple[int, int]] = {
-            "login": (5, 900),        # 5 per 15 min
-            "vinculacion": (3, 60),    # 3 per 1 min
+            "login": (RATE_LIMIT_LOGIN_MAX_REQUESTS, RATE_LIMIT_LOGIN_WINDOW_SECONDS),
+            "vinculacion": (RATE_LIMIT_VINCULACION_MAX_REQUESTS, RATE_LIMIT_VINCULACION_WINDOW_SECONDS),
         }
 
         # Layer 2: Identity limits (max_requests, window_seconds)
         self.identity_limits: Dict[str, Tuple[int, int]] = {
-            "login": (5, 900),         # 5 per 15 min
-            "vinculacion": (3, 3600),   # 3 per 1 hour
+            "login": (RATE_LIMIT_LOGIN_MAX_REQUESTS, RATE_LIMIT_LOGIN_WINDOW_SECONDS),
+            "vinculacion": (RATE_LIMIT_VINCULACION_MAX_REQUESTS, RATE_LIMIT_VINCULACION_IDENTITY_WINDOW_SECONDS),
         }
 
         # Layer 3: Tarpitting thresholds
-        self.tarpit_burst_threshold: int = 2
-        self.tarpit_base_delay: float = 0.5  # seconds
-        self.tarpit_max_delay: float = 5.0   # seconds
+        self.tarpit_burst_threshold: int = RATE_LIMIT_TARPIT_BURST_THRESHOLD
+        self.tarpit_burst_window: float = RATE_LIMIT_TARPIT_BURST_WINDOW_SECONDS
+        self.tarpit_base_delay: float = RATE_LIMIT_TARPIT_BASE_DELAY_SECONDS
+        self.tarpit_max_delay: float = RATE_LIMIT_TARPIT_MAX_DELAY_SECONDS
 
         # Layer 4: Account lockout
-        self.lockout_threshold: int = 10     # 10 failed attempts
-        self.lockout_window: int = 3600      # 1 hour
-        self.lockout_duration: int = 1800    # 30 minutes
+        self.lockout_threshold: int = RATE_LIMIT_LOCKOUT_MAX_FAILS
+        self.lockout_window: int = RATE_LIMIT_LOCKOUT_WINDOW_SECONDS
+        self.lockout_duration: int = RATE_LIMIT_LOCKOUT_DURATION_SECONDS
 
     # ── Internal Cache Access ────────────────────────────────────────
 
@@ -85,7 +101,9 @@ class RateLimiter:
             return
         now = now if now is not None else time.time()
         endpoint_key = "vinculacion" if "vinculacion" in endpoint.lower() else "login"
-        max_req, window = self.ip_limits.get(endpoint_key, (5, 900))
+        max_req, window = self.ip_limits.get(
+            endpoint_key, (RATE_LIMIT_LOGIN_MAX_REQUESTS, RATE_LIMIT_LOGIN_WINDOW_SECONDS)
+        )
 
         cache_key = f"ip:{endpoint_key}:{ip}"
         cutoff = now - window
@@ -114,7 +132,9 @@ class RateLimiter:
         now = now if now is not None else time.time()
         clean_id = identity.strip().lower()
         endpoint_key = "vinculacion" if "vinculacion" in endpoint.lower() else "login"
-        max_req, window = self.identity_limits.get(endpoint_key, (5, 900))
+        max_req, window = self.identity_limits.get(
+            endpoint_key, (RATE_LIMIT_LOGIN_MAX_REQUESTS, RATE_LIMIT_LOGIN_WINDOW_SECONDS)
+        )
 
         cache_key = f"id:{endpoint_key}:{clean_id}"
         cutoff = now - window
@@ -142,9 +162,9 @@ class RateLimiter:
         if not ip:
             return 0.0
         now = now if now is not None else time.time()
-        # Track attempts in the last 10 seconds for burst detection
+        # Track attempts in the burst window for burst detection
         burst_key = f"burst:{ip}"
-        history = [t for t in self._get_history(burst_key) if t > now - 10.0]
+        history = [t for t in self._get_history(burst_key) if t > now - self.tarpit_burst_window]
 
         if len(history) < self.tarpit_burst_threshold:
             return 0.0
@@ -253,4 +273,4 @@ class RateLimiter:
 
 
 # Global Singleton instance
-rate_limiter = RateLimiter(maxsize=10000)
+rate_limiter = RateLimiter(maxsize=RATE_LIMIT_LRU_MAXSIZE)

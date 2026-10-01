@@ -7,6 +7,9 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
+from app.core.constants import MIN_PASSWORD_LENGTH, OTP_LENGTH
+from app.schemas.base import StrictBaseSchema
+
 
 def validar_cedula_ecuatoriana(cedula: str) -> bool:
     """Valida formalmente una cédula de identidad ecuatoriana mediante Módulo 10.
@@ -52,14 +55,14 @@ def validar_cedula_ecuatoriana(cedula: str) -> bool:
 def validar_complejidad_password(password: str) -> str:
     """Valida complejidad obligatoria de contraseña:
     
-    - Mínimo 12 caracteres.
+    - Mínimo MIN_PASSWORD_LENGTH caracteres.
     - Al menos 1 letra mayúscula.
     - Al menos 1 letra minúscula.
     - Al menos 1 número.
     - Al menos 1 carácter especial.
     """
-    if len(password) < 12:
-        raise ValueError("La contraseña debe tener al menos 12 caracteres.")
+    if len(password) < MIN_PASSWORD_LENGTH:
+        raise ValueError(f"La contraseña debe tener al menos {MIN_PASSWORD_LENGTH} caracteres.")
     if not re.search(r"[A-Z]", password):
         raise ValueError("La contraseña debe incluir al menos una letra mayúscula.")
     if not re.search(r"[a-z]", password):
@@ -69,10 +72,6 @@ def validar_complejidad_password(password: str) -> str:
     if not re.search(r"[^a-zA-Z0-9\s]", password):
         raise ValueError("La contraseña debe incluir al menos un carácter especial.")
     return password
-
-
-
-from app.schemas.base import StrictBaseSchema
 
 
 class ClienteCreate(StrictBaseSchema):
@@ -136,8 +135,8 @@ class VinculacionRequest(StrictBaseSchema):
     @classmethod
     def validate_otp_format(cls, v: str) -> str:
         v_clean = v.strip()
-        if len(v_clean) != 6 or not v_clean.isdigit():
-            raise ValueError("El código OTP debe contener exactamente 6 dígitos numéricos.")
+        if len(v_clean) != OTP_LENGTH or not v_clean.isdigit():
+            raise ValueError(f"El código OTP debe contener exactamente {OTP_LENGTH} dígitos numéricos.")
         return v_clean
 
     @field_validator("password")

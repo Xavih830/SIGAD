@@ -21,9 +21,9 @@ from app.schemas.documento import (
     DocumentoRevisionResponse,
     ResultadoExtraccionResponse,
 )
+from app.core.constants import MAX_DOCUMENT_SIZE_BYTES
 from app.services.storage_service import (
     InvalidMimeTypeException,
-    MAX_FILE_SIZE_BYTES,
     MaxPagesExceededException,
     StorageSecurityException,
     StorageSizeLimitException,
@@ -72,7 +72,7 @@ async def cargar_documento(
     content = await file.read()
 
     # Pre-check tamaño máximo
-    if len(content) > MAX_FILE_SIZE_BYTES:
+    if len(content) > MAX_DOCUMENT_SIZE_BYTES:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail="El archivo excede el tamaño máximo permitido de 15 MB.",

@@ -5,6 +5,8 @@ from concurrent.futures import ProcessPoolExecutor
 import multiprocessing as mp
 from typing import Any, Callable
 
+from app.core.constants import OCR_PROCESS_TIMEOUT_SECONDS
+
 
 class DocumentProcessingTimeoutException(TimeoutError):
     """Raised when document extraction exceeds the operational timeout."""
@@ -61,7 +63,7 @@ class ResilientProcessPool:
         self,
         func: Callable[..., Any],
         *args: Any,
-        timeout: float = 120.0,
+        timeout: float = float(OCR_PROCESS_TIMEOUT_SECONDS),
     ) -> Any:
         """Executes a CPU/IO-bound sync function in the process pool with strict timeout.
         

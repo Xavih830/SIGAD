@@ -8,6 +8,7 @@ from sqlalchemy import BigInteger, CheckConstraint, DateTime, ForeignKey, Intege
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.constants import MAX_DOCUMENT_SIZE_BYTES
 from app.db.base import Base
 
 
@@ -25,7 +26,7 @@ class Documento(Base):
 
     __tablename__ = "documentos"
     __table_args__ = (
-        CheckConstraint("tamano_bytes <= 15728640", name="chk_documentos_max_size_15mb"),
+        CheckConstraint(f"tamano_bytes <= {MAX_DOCUMENT_SIZE_BYTES}", name="chk_documentos_max_size_15mb"),
         CheckConstraint(
             "estado_extraccion IN ('pendiente', 'procesando', 'completado', 'requiere_revision_manual', 'error', 'error_permanente')",
             name="chk_documentos_estado_extraccion",

@@ -9,15 +9,15 @@ import uuid
 
 import pypdfium2 as pdfium
 
-ALLOWED_MIME_TYPES = {
-    "application/pdf",
-    "image/jpeg",
-    "image/png",
-    "image/tiff",
-}
+from app.core.constants import (
+    MAX_DOCUMENT_SIZE_BYTES,
+    MAX_PDF_PAGES_PERMITTED,
+    PERMITTED_MIME_TYPES,
+)
 
-MAX_FILE_SIZE_BYTES = 15 * 1024 * 1024  # 15 MB = 15,728,640 bytes
-MAX_PDF_PAGES = 10
+ALLOWED_MIME_TYPES = set(PERMITTED_MIME_TYPES)
+MAX_FILE_SIZE_BYTES = MAX_DOCUMENT_SIZE_BYTES
+MAX_PDF_PAGES = MAX_PDF_PAGES_PERMITTED
 
 
 class StorageException(Exception):
