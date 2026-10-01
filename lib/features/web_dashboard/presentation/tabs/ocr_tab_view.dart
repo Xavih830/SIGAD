@@ -3,7 +3,10 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:sigad/core/config/api_config.dart';
+
+
 import 'package:sigad/core/models/policy_model.dart';
 import 'package:sigad/core/theme/app_theme.dart';
 import 'package:sigad/core/utils/file_picker_helper.dart';
@@ -76,8 +79,22 @@ class _OcrTabViewState extends State<OcrTabView> {
       final token = _getAuthToken();
       final req = http.MultipartRequest('POST', Uri.parse('${ApiConfig.baseUrl}/api/v1/documentos/cargar'));
       if (token != null && token.isNotEmpty) req.headers['Authorization'] = 'Bearer $token';
-      req.files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename));
+
+      final ext = filename.toLowerCase().split('.').last;
+      MediaType mediaType;
+      if (ext == 'pdf') {
+        mediaType = MediaType('application', 'pdf');
+      } else if (ext == 'png') {
+        mediaType = MediaType('image', 'png');
+      } else if (ext == 'tif' || ext == 'tiff') {
+        mediaType = MediaType('image', 'tiff');
+      } else {
+        mediaType = MediaType('image', 'jpeg');
+      }
+
+      req.files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename, contentType: mediaType));
       final res = await req.send().timeout(const Duration(seconds: 30));
+
       final body = await res.stream.bytesToString();
       if (!mounted) return;
       if (res.statusCode == 201) {
