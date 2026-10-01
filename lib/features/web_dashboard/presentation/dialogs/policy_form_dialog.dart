@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sigad/core/constants/app_constants.dart';
 import 'package:sigad/core/models/policy_model.dart';
 import 'package:sigad/core/models/vehicle_model.dart';
 import 'package:sigad/core/utils/plate_validator.dart';
@@ -35,13 +36,23 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
     _plateCtrl = TextEditingController(text: p?.vehicle?.plate ?? '');
     _valCtrl = TextEditingController(text: p != null ? p.insuredValue.toStringAsFixed(2) : '');
     _primaCtrl = TextEditingController(text: p != null ? p.monthlyPremium.toStringAsFixed(2) : '');
-    _startCtrl = TextEditingController(text: p != null ? p.startDate.toIso8601String().substring(0, 10) : DateTime.now().toIso8601String().substring(0, 10));
-    _endCtrl = TextEditingController(text: p != null ? p.endDate.toIso8601String().substring(0, 10) : DateTime.now().add(const Duration(days: 365)).toIso8601String().substring(0, 10));
+    _startCtrl = TextEditingController(
+      text: p != null
+          ? p.startDate.toIso8601String().substring(0, 10)
+          : DateTime.now().toIso8601String().substring(0, 10),
+    );
+    _endCtrl = TextEditingController(
+      text: p != null
+          ? p.endDate.toIso8601String().substring(0, 10)
+          : DateTime.now()
+              .add(const Duration(days: AppConstants.defaultPolicyDurationDays))
+              .toIso8601String()
+              .substring(0, 10),
+    );
 
     _status = p?.status ?? 'activa';
     _selectedClientDoc = p?.clientId ?? (widget.clients.isNotEmpty ? (widget.clients.first['id']?.toString() ?? '') : '');
     _selectedCoverages.addAll(p != null ? p.coverages : ['Responsabilidad Civil']);
-
   }
 
   @override
@@ -54,11 +65,44 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
 
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
-    final start = DateTime.tryParse(_startCtrl.text) ?? DateTime.now();
-    final end = DateTime.tryParse(_endCtrl.text) ?? DateTime.now().add(const Duration(days: 365));
+    final start = DateTime.tryParse(_startCtrl.text.trim());
+    final end = DateTime.tryParse(_endCtrl.text.trim());
+
+    if (start == null || end == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Formato de fechas inválido (debe ser AAAA-MM-DD)')),
+      );
+      return;
+    }
 
     if (end.isBefore(start)) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('La fecha de fin debe ser posterior al inicio')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('La fecha de fin debe ser posterior al inicio')),
+      );
+      return;
+    }
+
+    final year = int.tryParse(_yearCtrl.text.trim());
+    if (year == null || year < 1900 || year > DateTime.now().year + 1) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('El año del vehículo no es válido')),
+      );
+      return;
+    }
+
+    final insuredVal = double.tryParse(_valCtrl.text.trim());
+    if (insuredVal == null || insuredVal <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('El valor asegurado debe ser mayor a 0')),
+      );
+      return;
+    }
+
+    final prima = double.tryParse(_primaCtrl.text.trim());
+    if (prima == null || prima < 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('La prima mensual debe ser un valor positivo')),
+      );
       return;
     }
 
@@ -71,13 +115,13 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
         plate: _plateCtrl.text.trim().toUpperCase(),
         brand: _brandCtrl.text.trim(),
         model: _modelCtrl.text.trim(),
-        year: int.tryParse(_yearCtrl.text.trim()) ?? 2022,
+        year: year,
       ),
       startDate: start,
       endDate: end,
       status: _status,
-      insuredValue: double.tryParse(_valCtrl.text.trim()) ?? 0.0,
-      monthlyPremium: double.tryParse(_primaCtrl.text.trim()) ?? 0.0,
+      insuredValue: insuredVal,
+      monthlyPremium: prima,
       emissionMileage: 0,
       coverages: List.from(_selectedCoverages),
       deductibles: widget.initialPolicy?.deductibles ?? const [],
@@ -126,7 +170,19 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
                     const SizedBox(width: 12),
                     Expanded(child: TextFormField(controller: _modelCtrl, decoration: const InputDecoration(labelText: 'Modelo'), validator: (v) => (v == null || v.isEmpty) ? 'Requerido' : null)),
                     const SizedBox(width: 12),
-                    Expanded(child: TextFormField(controller: _yearCtrl, decoration: const InputDecoration(labelText: 'Año'), keyboardType: TextInputType.number, validator: (v) => (v == null || v.isEmpty) ? 'Requerido' : null)),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _yearCtrl,
+                        decoration: const InputDecoration(labelText: 'Año'),
+                        keyboardType: TextInputType.number,
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) return 'Requerido';
+                          final y = int.tryParse(v.trim());
+                          if (y == null || y < 1900 || y > DateTime.now().year + 1) return 'Año inválido';
+                          return null;
+                        },
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
@@ -138,17 +194,61 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Expanded(child: TextFormField(controller: _valCtrl, decoration: const InputDecoration(labelText: 'Valor Asegurado (USD)'), keyboardType: TextInputType.number, validator: (v) => (v == null || v.isEmpty) ? 'Requerido' : null)),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _valCtrl,
+                        decoration: const InputDecoration(labelText: 'Valor Asegurado (USD)'),
+                        keyboardType: TextInputType.number,
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) return 'Requerido';
+                          final val = double.tryParse(v.trim());
+                          if (val == null || val <= 0) return 'Valor inválido';
+                          return null;
+                        },
+                      ),
+                    ),
                     const SizedBox(width: 12),
-                    Expanded(child: TextFormField(controller: _primaCtrl, decoration: const InputDecoration(labelText: 'Prima Mensual (USD)'), keyboardType: TextInputType.number, validator: (v) => (v == null || v.isEmpty) ? 'Requerido' : null)),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _primaCtrl,
+                        decoration: const InputDecoration(labelText: 'Prima Mensual (USD)'),
+                        keyboardType: TextInputType.number,
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) return 'Requerido';
+                          final p = double.tryParse(v.trim());
+                          if (p == null || p < 0) return 'Prima inválida';
+                          return null;
+                        },
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Expanded(child: TextFormField(controller: _startCtrl, decoration: const InputDecoration(labelText: 'Inicio (AAAA-MM-DD)'), validator: (v) => (v == null || v.isEmpty) ? 'Requerido' : null)),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _startCtrl,
+                        decoration: const InputDecoration(labelText: 'Inicio (AAAA-MM-DD)'),
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) return 'Requerido';
+                          if (DateTime.tryParse(v.trim()) == null) return 'Formato AAAA-MM-DD';
+                          return null;
+                        },
+                      ),
+                    ),
                     const SizedBox(width: 12),
-                    Expanded(child: TextFormField(controller: _endCtrl, decoration: const InputDecoration(labelText: 'Fin (AAAA-MM-DD)'), validator: (v) => (v == null || v.isEmpty) ? 'Requerido' : null)),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _endCtrl,
+                        decoration: const InputDecoration(labelText: 'Fin (AAAA-MM-DD)'),
+                        validator: (v) {
+                          if (v == null || v.trim().isEmpty) return 'Requerido';
+                          if (DateTime.tryParse(v.trim()) == null) return 'Formato AAAA-MM-DD';
+                          return null;
+                        },
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 14),

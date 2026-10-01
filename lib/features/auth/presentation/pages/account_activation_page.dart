@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:sigad/core/constants/app_constants.dart';
 import 'package:sigad/core/theme/app_theme.dart';
 import 'package:sigad/core/utils/ecuadorian_id_validator.dart';
 import 'package:sigad/core/widgets/sigad_logo.dart';
@@ -51,7 +52,7 @@ class _AccountActivationPageState extends State<AccountActivationPage> {
 
   String? _validatePassword(String? v) {
     if (v == null || v.isEmpty) return 'Ingresa una contraseña';
-    if (v.length < 12) return 'Debe tener al menos 12 caracteres';
+    if (v.length < AppConstants.minPasswordLength) return 'Debe tener al menos ${AppConstants.minPasswordLength} caracteres';
     if (!v.contains(RegExp(r'[A-Z]'))) return 'Debe incluir al menos una mayúscula';
     if (!v.contains(RegExp(r'[a-z]'))) return 'Debe incluir al menos una minúscula';
     if (!v.contains(RegExp(r'[0-9]'))) return 'Debe incluir al menos un número';
@@ -163,13 +164,13 @@ class _AccountActivationPageState extends State<AccountActivationPage> {
                         key: const Key('otp_field'),
                         controller: _otpCtrl,
                         keyboardType: TextInputType.number,
-                        maxLength: 6,
-                        decoration: const InputDecoration(
-                          labelText: 'Código OTP (6 dígitos)',
-                          prefixIcon: Icon(Icons.key_outlined),
+                        maxLength: AppConstants.otpLength,
+                        decoration: InputDecoration(
+                          labelText: 'Código OTP (${AppConstants.otpLength} dígitos)',
+                          prefixIcon: const Icon(Icons.key_outlined),
                           counterText: '',
                         ),
-                        validator: (v) => (v == null || v.trim().length != 6) ? 'Ingresa los 6 dígitos del código' : null,
+                        validator: (v) => (v == null || v.trim().length != AppConstants.otpLength) ? 'Ingresa los ${AppConstants.otpLength} dígitos del código' : null,
                       ),
                       const SizedBox(height: 14),
                       TextFormField(
@@ -177,7 +178,7 @@ class _AccountActivationPageState extends State<AccountActivationPage> {
                         controller: _passCtrl,
                         obscureText: _obscurePass,
                         decoration: InputDecoration(
-                          labelText: 'Nueva Contraseña (mínimo 12 caracteres)',
+                          labelText: 'Nueva Contraseña (mínimo ${AppConstants.minPasswordLength} caracteres)',
                           prefixIcon: const Icon(Icons.lock_outline),
                           suffixIcon: IconButton(
                             icon: Icon(_obscurePass ? Icons.visibility_off : Icons.visibility),
