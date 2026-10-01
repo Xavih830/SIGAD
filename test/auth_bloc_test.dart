@@ -64,7 +64,7 @@ void main() {
     await expectLater(
       authBloc.stream,
       emitsInOrder([
-        isA<AuthSuccess>().having((s) => s.user['email'], 'email', 'admin@sigad.ec'),
+        isA<AuthSuccess>().having((s) => s.user.email, 'email', 'admin@sigad.ec'),
       ]),
     );
   });
@@ -95,7 +95,7 @@ void main() {
       authBloc.stream,
       emitsInOrder([
         AuthLoading(),
-        isA<AuthSuccess>().having((s) => s.user['email'], 'email', 'admin@sigad.ec'),
+        isA<AuthSuccess>().having((s) => s.user.email, 'email', 'admin@sigad.ec'),
       ]),
     );
   });
@@ -213,7 +213,7 @@ void main() {
         authBloc.stream,
         emitsInOrder([
           AuthLoading(),
-          isA<AuthSuccess>().having((s) => s.user['email'], 'email', 'cliente@seguro.ec'),
+          isA<AuthSuccess>().having((s) => s.user.email, 'email', 'cliente@seguro.ec'),
         ]),
       );
 
