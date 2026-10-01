@@ -100,7 +100,13 @@ class _MobilePoliciesTabState extends State<MobilePoliciesTab> {
       margin: const EdgeInsets.only(bottom: 14),
       child: InkWell(
         borderRadius: BorderRadius.circular(16),
-        onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => PolicyDetailPage(policy: p, onReportError: widget.onNavigateToContact))),
+        onTap: () => Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => PolicyDetailPage(
+            policy: p,
+            onReportError: widget.onNavigateToContact,
+            authToken: widget.user['access_token'] as String?,
+          ),
+        )),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Column(

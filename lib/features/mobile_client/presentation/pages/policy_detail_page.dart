@@ -1,19 +1,121 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:http/http.dart' as http;
+import 'package:sigad/core/config/api_config.dart';
+import 'package:sigad/core/models/payment_model.dart';
 import 'package:sigad/core/models/policy_model.dart';
+import 'package:sigad/core/services/hive_helper.dart';
 import 'package:sigad/core/theme/app_theme.dart';
 
-class PolicyDetailPage extends StatelessWidget {
+class PolicyDetailPage extends StatefulWidget {
   final PolicyModel policy;
   final VoidCallback onReportError;
+  final String? authToken;
+  final http.Client? httpClient;
+  final List<PaymentModel>? initialPayments;
 
   const PolicyDetailPage({
     super.key,
     required this.policy,
     required this.onReportError,
+    this.authToken,
+    this.httpClient,
+    this.initialPayments,
   });
 
   @override
+  State<PolicyDetailPage> createState() => _PolicyDetailPageState();
+}
+
+class _PolicyDetailPageState extends State<PolicyDetailPage> {
+  List<PaymentModel> _payments = [];
+  bool _isLoadingPayments = true;
+  String? _paymentsError;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialPayments != null) {
+      _payments = widget.initialPayments!;
+      _isLoadingPayments = false;
+    } else {
+      _loadPayments();
+    }
+  }
+
+  Future<void> _loadPayments() async {
+    setState(() {
+      _isLoadingPayments = true;
+      _paymentsError = null;
+    });
+
+    try {
+      String? token = widget.authToken;
+      if ((token == null || token.isEmpty) && Hive.isBoxOpen(HiveHelper.sessionBoxName)) {
+        token = HiveHelper.sessionBox.get('access_token') as String?;
+      }
+
+      final client = widget.httpClient ?? http.Client();
+      final url = Uri.parse('${ApiConfig.baseUrl}/api/v1/polizas/${widget.policy.id}/pagos');
+      final response = await client
+          .get(url, headers: ApiConfig.authHeaders(token))
+          .timeout(ApiConfig.defaultTimeout);
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final List<dynamic> jsonList = jsonDecode(response.body);
+        final list = jsonList
+            .whereType<Map<String, dynamic>>()
+            .map((e) => PaymentModel.fromJson(e))
+            .toList();
+        list.sort((a, b) => a.installmentNumber.compareTo(b.installmentNumber));
+        setState(() {
+          _payments = list;
+          _isLoadingPayments = false;
+        });
+      } else {
+        setState(() {
+          _paymentsError = 'No se pudieron cargar las cuotas (${response.statusCode})';
+          _isLoadingPayments = false;
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _paymentsError = 'Error de conexión al cargar cuotas.';
+        _isLoadingPayments = false;
+      });
+    }
+  }
+
+  String get _financialStatusText {
+    if (_payments.isEmpty) {
+      return widget.policy.paymentStatus ?? 'Sin cuotas registradas';
+    }
+    if (_payments.any((p) => p.isOverdue)) {
+      return 'En mora';
+    }
+    if (_payments.every((p) => p.isPaid)) {
+      return 'Pagada';
+    }
+    return 'Al día';
+  }
+
+  Color get _financialStatusColor {
+    if (_payments.isEmpty) {
+      return AppTheme.textMuted;
+    }
+    if (_payments.any((p) => p.isOverdue)) {
+      return AppTheme.errorColor;
+    }
+    return AppTheme.successColor;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final policy = widget.policy;
     final veh = policy.vehicle;
     final isExp = policy.isExpired;
     final daysLeft = policy.daysUntilExpiration;
@@ -91,19 +193,191 @@ class PolicyDetailPage extends StatelessWidget {
               rows: [
                 _RowData('Valor Asegurado', '\$${policy.insuredValue.toStringAsFixed(2)} USD'),
                 _RowData('Prima Mensual', '\$${policy.monthlyPremium.toStringAsFixed(2)} USD'),
-                _RowData('Estado de Pago', policy.paymentStatus ?? 'Al día', color: AppTheme.successColor),
+                _RowData('Estado Financiero', _financialStatusText, color: _financialStatusColor),
               ],
             ),
+            const SizedBox(height: 16),
+            _buildPaymentsSection(),
             const SizedBox(height: 24),
             OutlinedButton.icon(
               onPressed: () {
                 Navigator.of(context).pop();
-                onReportError();
+                widget.onReportError();
               },
               icon: const Icon(Icons.report_problem_outlined, color: AppTheme.primaryColor),
               label: const Text('Reportar un error en la póliza', style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.bold)),
               style: OutlinedButton.styleFrom(side: const BorderSide(color: AppTheme.primaryColor), padding: const EdgeInsets.symmetric(vertical: 14)),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPaymentsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(left: 4.0, bottom: 8.0),
+          child: Row(
+            children: [
+              Icon(Icons.receipt_long, color: AppTheme.primaryColor, size: 18),
+              SizedBox(width: 8),
+              Text(
+                'Cronograma de Pagos y Cuotas',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textDark),
+              ),
+            ],
+          ),
+        ),
+        if (_isLoadingPayments)
+          const Card(
+            child: Padding(
+              padding: EdgeInsets.all(24.0),
+              child: Center(
+                child: SizedBox(
+                  width: 28,
+                  height: 28,
+                  child: CircularProgressIndicator(strokeWidth: 2.5),
+                ),
+              ),
+            ),
+          )
+        else if (_paymentsError != null)
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.error_outline, color: AppTheme.errorColor, size: 20),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _paymentsError!,
+                          style: const TextStyle(fontSize: 13, color: AppTheme.errorColor),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  ElevatedButton.icon(
+                    onPressed: _loadPayments,
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: const Text('Reintentar'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primaryColor,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else if (_payments.isEmpty)
+          const Card(
+            child: Padding(
+              padding: EdgeInsets.all(20.0),
+              child: Center(
+                child: Text(
+                  'No hay cuotas registradas para esta póliza.',
+                  style: TextStyle(fontSize: 13, color: AppTheme.textMuted),
+                ),
+              ),
+            ),
+          )
+        else
+          ..._payments.map((p) => _buildPaymentItemCard(p)),
+      ],
+    );
+  }
+
+  Widget _buildPaymentItemCard(PaymentModel payment) {
+    Color badgeBg;
+    Color badgeColor;
+    String badgeText = payment.status.toUpperCase();
+
+    if (payment.isPaid) {
+      badgeBg = AppTheme.successColor.withOpacity(0.12);
+      badgeColor = AppTheme.successColor;
+    } else if (payment.isOverdue) {
+      badgeBg = AppTheme.errorColor.withOpacity(0.12);
+      badgeColor = AppTheme.errorColor;
+    } else {
+      badgeBg = AppTheme.warningColor.withOpacity(0.2);
+      badgeColor = Colors.orange.shade800;
+    }
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 10),
+      child: Padding(
+        padding: const EdgeInsets.all(14.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Cuota ${payment.installmentNumber}',
+                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.textDark),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: badgeBg,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    badgeText,
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: badgeColor),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '\$${payment.amountUsd.toStringAsFixed(2)} USD',
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.primaryColor),
+            ),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(Icons.event_outlined, size: 14, color: AppTheme.textMuted),
+                const SizedBox(width: 4),
+                Text(
+                  'Vence: ${payment.dueDate.toIso8601String().substring(0, 10)}',
+                  style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                ),
+                if (payment.paymentDate != null) ...[
+                  const SizedBox(width: 12),
+                  const Icon(Icons.check_circle_outline, size: 14, color: AppTheme.successColor),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Pagado: ${payment.paymentDate!.toIso8601String().substring(0, 10)}',
+                    style: const TextStyle(fontSize: 12, color: AppTheme.successColor, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ],
+            ),
+            if (payment.paymentMethod != null || payment.receiptRef != null) ...[
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  const Icon(Icons.confirmation_number_outlined, size: 14, color: AppTheme.textMuted),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      '${payment.paymentMethod ?? 'Pago'} • Ref: ${payment.receiptRef ?? 'N/A'}',
+                      style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
@@ -116,7 +390,11 @@ class PolicyDetailPage extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.only(left: 4.0, bottom: 8.0),
-          child: Row(children: [Icon(icon, color: AppTheme.primaryColor, size: 18), const SizedBox(width: 8), Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textDark))]),
+          child: Row(children: [
+            Icon(icon, color: AppTheme.primaryColor, size: 18),
+            const SizedBox(width: 8),
+            Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
+          ]),
         ),
         Card(
           child: Padding(
@@ -150,7 +428,11 @@ class PolicyDetailPage extends StatelessWidget {
       children: [
         const Padding(
           padding: EdgeInsets.only(left: 4.0, bottom: 8.0),
-          child: Row(children: [Icon(Icons.verified_user, color: AppTheme.primaryColor, size: 18), SizedBox(width: 8), Text('Coberturas Contratadas', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textDark))]),
+          child: Row(children: [
+            Icon(Icons.verified_user, color: AppTheme.primaryColor, size: 18),
+            SizedBox(width: 8),
+            Text('Coberturas Contratadas', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
+          ]),
         ),
         Card(
           child: Padding(
@@ -158,7 +440,11 @@ class PolicyDetailPage extends StatelessWidget {
             child: Column(
               children: coverages.map((cov) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4.0),
-                child: Row(children: [const Icon(Icons.check_circle_outline, color: AppTheme.successColor, size: 18), const SizedBox(width: 10), Expanded(child: Text(cov, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textDark)))]),
+                child: Row(children: [
+                  const Icon(Icons.check_circle_outline, color: AppTheme.successColor, size: 18),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(cov, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textDark))),
+                ]),
               )).toList(),
             ),
           ),
