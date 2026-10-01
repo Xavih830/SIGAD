@@ -96,14 +96,14 @@ class RateLimiter:
     # ── Layer 1: IP Limiting ─────────────────────────────────────────
 
     def check_ip(self, ip: str, endpoint: str = "login", now: Optional[float] = None) -> None:
-        """Check Layer 1 IP rate limit."""
+        """Check Layer 1 IP rate limit. Raises KeyError si el endpoint no tiene política registrada."""
         if not ip:
             return
         now = now if now is not None else time.time()
         endpoint_key = "vinculacion" if "vinculacion" in endpoint.lower() else "login"
-        max_req, window = self.ip_limits.get(
-            endpoint_key, (RATE_LIMIT_LOGIN_MAX_REQUESTS, RATE_LIMIT_LOGIN_WINDOW_SECONDS)
-        )
+        if endpoint_key not in self.ip_limits:
+            raise KeyError(f"Endpoint '{endpoint_key}' sin política de IP Rate Limit definida.")
+        max_req, window = self.ip_limits[endpoint_key]
 
         cache_key = f"ip:{endpoint_key}:{ip}"
         cutoff = now - window
@@ -126,15 +126,15 @@ class RateLimiter:
     # ── Layer 2: Identity Limiting ───────────────────────────────────
 
     def check_identity(self, identity: str, endpoint: str = "login", now: Optional[float] = None) -> None:
-        """Check Layer 2 Identity rate limit (cédula or email)."""
+        """Check Layer 2 Identity rate limit (cédula or email). Raises KeyError si el endpoint no tiene política registrada."""
         if not identity:
             return
         now = now if now is not None else time.time()
         clean_id = identity.strip().lower()
         endpoint_key = "vinculacion" if "vinculacion" in endpoint.lower() else "login"
-        max_req, window = self.identity_limits.get(
-            endpoint_key, (RATE_LIMIT_LOGIN_MAX_REQUESTS, RATE_LIMIT_LOGIN_WINDOW_SECONDS)
-        )
+        if endpoint_key not in self.identity_limits:
+            raise KeyError(f"Endpoint '{endpoint_key}' sin política de identidad Rate Limit definida.")
+        max_req, window = self.identity_limits[endpoint_key]
 
         cache_key = f"id:{endpoint_key}:{clean_id}"
         cutoff = now - window
