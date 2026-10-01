@@ -1,47 +1,33 @@
+/// Modelo canónico para Deducibles en SIGAD.
+///
+/// Contrato estricto OpenAPI — sin shims ni fallbacks silenciosos.
+/// Claves canonicas backend: tipo_siniestro, porcentaje_valor, monto_minimo_usd.
 class DeductibleModel {
   final String? id;
-  final String coverageName;
-  final double percentage;
-  final double minAmount;
+  final String tipoSiniestro;
+  final double porcentajeValor;
+  final double montoMinimoUsd;
 
   const DeductibleModel({
     this.id,
-    required this.coverageName,
-    required this.percentage,
-    required this.minAmount,
+    required this.tipoSiniestro,
+    required this.porcentajeValor,
+    required this.montoMinimoUsd,
   });
 
   factory DeductibleModel.fromJson(Map<String, dynamic> json) {
     return DeductibleModel(
-      id: json['id']?.toString(),
-      coverageName: json['nombre_cobertura'] ??
-          json['tipo_siniestro'] ??
-          json['coverageName'] ??
-          json['nombre'] ??
-          '',
-      percentage: double.tryParse(
-            json['porcentaje']?.toString() ??
-                json['porcentaje_valor']?.toString() ??
-                json['percentage']?.toString() ??
-                '',
-          ) ??
-          0.0,
-      minAmount: double.tryParse(
-            json['monto_minimo']?.toString() ??
-                json['monto_minimo_usd']?.toString() ??
-                json['minAmount']?.toString() ??
-                '',
-          ) ??
-          0.0,
+      id: json['id'] as String?,
+      tipoSiniestro: json['tipo_siniestro'] as String,
+      porcentajeValor: (json['porcentaje_valor'] as num).toDouble(),
+      montoMinimoUsd: (json['monto_minimo_usd'] as num).toDouble(),
     );
   }
 
-
-
   Map<String, dynamic> toJson() => {
-    if (id != null) 'id': id,
-    'nombre_cobertura': coverageName,
-    'porcentaje': percentage,
-    'monto_minimo': minAmount,
-  };
+        if (id != null) 'id': id,
+        'tipo_siniestro': tipoSiniestro,
+        'porcentaje_valor': porcentajeValor,
+        'monto_minimo_usd': montoMinimoUsd,
+      };
 }

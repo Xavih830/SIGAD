@@ -1,6 +1,39 @@
 import 'package:sigad/core/models/deductible_model.dart';
 import 'package:sigad/core/models/vehicle_model.dart';
 
+/// Modelo canónico para Coberturas en SIGAD.
+///
+/// Contrato estricto OpenAPI — claves: id, nombre, monto.
+class CoverageModel {
+  final String id;
+  final String nombre;
+  final double monto;
+
+  const CoverageModel({
+    required this.id,
+    required this.nombre,
+    required this.monto,
+  });
+
+  factory CoverageModel.fromJson(Map<String, dynamic> json) {
+    return CoverageModel(
+      id: json['id'] as String,
+      nombre: json['nombre'] as String,
+      monto: (json['monto'] as num).toDouble(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'nombre': nombre,
+        'monto': monto,
+      };
+}
+
+/// Modelo canónico para Pólizas de Seguro en SIGAD.
+///
+/// Contrato estricto OpenAPI — sin shims bilingüe ni fallbacks silenciosos.
+/// Falla-Rápido: lanza TypeError si el backend omite campos requeridos.
 class PolicyModel {
   final String id;
   final String number;
@@ -14,7 +47,7 @@ class PolicyModel {
   final double monthlyPremium;
   final int emissionMileage;
   final List<DeductibleModel> deductibles;
-  final List<String> coverages;
+  final List<CoverageModel> coverages;
   final String? clientName;
   final String? paymentStatus;
   final String? lastPaymentDate;
@@ -40,15 +73,15 @@ class PolicyModel {
 
   // Getters de Negocio Puros (Anti-Tangling en Widgets)
   int get daysUntilExpiration => endDate.difference(DateTime.now()).inDays;
-  bool get isExpired => DateTime.now().isAfter(endDate) || status.toLowerCase() == 'vencida';
-  bool get isExpiringSoon => !isExpired && daysUntilExpiration <= 30 && daysUntilExpiration >= 0;
+  bool get isExpired =>
+      DateTime.now().isAfter(endDate) || status.toLowerCase() == 'vencida';
+  bool get isExpiringSoon =>
+      !isExpired && daysUntilExpiration <= 30 && daysUntilExpiration >= 0;
 
   factory PolicyModel.fromJson(Map<String, dynamic> json) {
     VehicleModel? veh;
     if (json['vehiculo'] is Map<String, dynamic>) {
       veh = VehicleModel.fromJson(json['vehiculo'] as Map<String, dynamic>);
-    } else if (json['plate'] != null || json['placa'] != null) {
-      veh = VehicleModel.fromJson(json);
     }
 
     final dedsList = json['deducibles'] as List<dynamic>? ?? [];
@@ -58,64 +91,47 @@ class PolicyModel {
         .toList();
 
     final covsList = json['coberturas'] as List<dynamic>? ?? [];
-    final covs = covsList.map((c) {
-      if (c is Map) return c['nombre']?.toString() ?? '';
-      return c.toString();
-    }).where((c) => c.isNotEmpty).toList();
+    final covs = covsList
+        .whereType<Map<String, dynamic>>()
+        .map((c) => CoverageModel.fromJson(c))
+        .toList();
 
     return PolicyModel(
-      id: json['id']?.toString() ?? '',
-      number: json['numero_poliza'] ?? json['number'] ?? '',
-      clientId: json['cliente_id']?.toString() ?? json['clientId']?.toString() ?? '',
-      vehicleId: json['vehiculo_id']?.toString() ?? json['vehicleId']?.toString() ?? '',
+      id: json['id'] as String,
+      number: json['numero_poliza'] as String,
+      clientId: json['cliente_id'] as String,
+      vehicleId: json['vehiculo_id'] as String,
       vehicle: veh,
-      startDate: DateTime.tryParse(json['fecha_inicio']?.toString() ?? json['startDate']?.toString() ?? '') ?? DateTime.now(),
-      endDate: DateTime.tryParse(json['fecha_fin']?.toString() ?? json['endDate']?.toString() ?? '') ?? DateTime.now(),
-      status: json['estado'] ?? json['status'] ?? 'activa',
-      insuredValue: double.tryParse(
-            json['valor_asegurado']?.toString() ??
-                json['value']?.toString() ??
-                '',
-          ) ??
-          0.0,
-      monthlyPremium: double.tryParse(
-            json['prima_mensual']?.toString() ??
-                json['prima']?.toString() ??
-                '',
-          ) ??
-          0.0,
-      emissionMileage: int.tryParse(
-            json['kilometraje_emision']?.toString() ??
-                json['mileage']?.toString() ??
-                '',
-          ) ??
-          0,
+      startDate: DateTime.parse(json['fecha_inicio'] as String),
+      endDate: DateTime.parse(json['fecha_fin'] as String),
+      status: json['estado'] as String,
+      insuredValue: (json['valor_asegurado'] as num).toDouble(),
+      monthlyPremium: (json['prima_mensual'] as num).toDouble(),
+      emissionMileage: json['kilometraje_emision'] as int,
       deductibles: deds,
       coverages: covs,
-      clientName: json['clientName']?.toString() ?? json['cliente_nombre']?.toString(),
-      paymentStatus: json['paymentStatus']?.toString() ?? json['estado_pago']?.toString(),
-      lastPaymentDate: json['lastPaymentDate']?.toString() ?? json['ultimo_pago']?.toString(),
+      clientName: json['cliente_nombre'] as String?,
+      paymentStatus: json['estado_pago'] as String?,
+      lastPaymentDate: json['ultimo_pago'] as String?,
     );
   }
 
-
-
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'numero_poliza': number,
-    'cliente_id': clientId,
-    'vehiculo_id': vehicleId,
-    if (vehicle != null) 'vehiculo': vehicle!.toJson(),
-    'fecha_inicio': startDate.toIso8601String().substring(0, 10),
-    'fecha_fin': endDate.toIso8601String().substring(0, 10),
-    'estado': status,
-    'valor_asegurado': insuredValue,
-    'prima_mensual': monthlyPremium,
-    'kilometraje_emision': emissionMileage,
-    'deducibles': deductibles.map((d) => d.toJson()).toList(),
-    'coberturas': coverages,
-    if (clientName != null) 'clientName': clientName,
-    if (paymentStatus != null) 'paymentStatus': paymentStatus,
-    if (lastPaymentDate != null) 'lastPaymentDate': lastPaymentDate,
-  };
+        'id': id,
+        'numero_poliza': number,
+        'cliente_id': clientId,
+        'vehiculo_id': vehicleId,
+        if (vehicle != null) 'vehiculo': vehicle!.toJson(),
+        'fecha_inicio': startDate.toIso8601String().substring(0, 10),
+        'fecha_fin': endDate.toIso8601String().substring(0, 10),
+        'estado': status,
+        'valor_asegurado': insuredValue,
+        'prima_mensual': monthlyPremium,
+        'kilometraje_emision': emissionMileage,
+        'deducibles': deductibles.map((d) => d.toJson()).toList(),
+        'coberturas': coverages.map((c) => c.toJson()).toList(),
+        if (clientName != null) 'cliente_nombre': clientName,
+        if (paymentStatus != null) 'estado_pago': paymentStatus,
+        if (lastPaymentDate != null) 'ultimo_pago': lastPaymentDate,
+      };
 }

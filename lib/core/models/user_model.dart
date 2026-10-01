@@ -1,8 +1,12 @@
+/// Modelo canónico para Usuarios en SIGAD.
+///
+/// Contrato estricto OpenAPI — sin shims bilingüe ni fallbacks silenciosos.
+/// Falla-Rápido: lanza TypeError si el backend omite campos requeridos.
 class UserModel {
   final String id;
   final String email;
   final String name;
-  final String role; // 'admin_system', 'admin_rjseguros', 'client'
+  final String role; // 'admin_system', 'admin_rjseguros', 'agente', 'cliente'
   final String? accessToken;
   final String? refreshToken;
   final bool isActive;
@@ -19,23 +23,23 @@ class UserModel {
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      id: json['id']?.toString() ?? '',
-      email: json['email'] ?? '',
-      name: json['nombre'] ?? json['name'] ?? '',
-      role: json['rol'] ?? json['role'] ?? 'client',
-      accessToken: json['access_token'] ?? json['accessToken'],
-      refreshToken: json['refresh_token'] ?? json['refreshToken'],
-      isActive: json['is_active'] ?? json['isActive'] ?? true,
+      id: json['id'] as String,
+      email: json['email'] as String,
+      name: json['nombre'] as String,
+      role: json['rol'] as String,
+      accessToken: json['access_token'] as String?,
+      refreshToken: json['refresh_token'] as String?,
+      isActive: json['activo'] as bool? ?? true,
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'email': email,
-    'name': name,
-    'role': role,
-    if (accessToken != null) 'access_token': accessToken,
-    if (refreshToken != null) 'refresh_token': refreshToken,
-    'isActive': isActive,
-  };
+        'id': id,
+        'email': email,
+        'nombre': name,
+        'rol': role,
+        'activo': isActive,
+        if (accessToken != null) 'access_token': accessToken,
+        if (refreshToken != null) 'refresh_token': refreshToken,
+      };
 }
