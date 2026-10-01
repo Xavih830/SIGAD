@@ -134,41 +134,52 @@ class _UsersTabViewState extends State<UsersTabView> {
               ],
             ),
             const SizedBox(height: 16),
-            Expanded(
-              child: SingleChildScrollView(
-                child: DataTable(
-                  headingRowColor: WidgetStateProperty.all(AppTheme.lightBg),
-                  columns: const [
-                    DataColumn(label: Text('Correo', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Nombre', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Rol', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Estado', style: TextStyle(fontWeight: FontWeight.bold))),
-                    DataColumn(label: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold))),
-                  ],
-                  rows: users.map((u) {
-                    final email = u['email']?.toString() ?? '';
-                    final isActive = u['isActive'] == true;
-                    return DataRow(cells: [
-                      DataCell(Text(email, style: const TextStyle(fontWeight: FontWeight.bold))),
-                      DataCell(Text(u['name']?.toString() ?? '')),
-                      DataCell(Text(u['role']?.toString() ?? '')),
-                      DataCell(Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(color: isActive ? Colors.green.shade50 : Colors.red.shade50, borderRadius: BorderRadius.circular(6)),
-                        child: Text(isActive ? 'ACTIVO' : 'INACTIVO', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: isActive ? Colors.green.shade700 : Colors.red.shade700)),
-                      )),
-                      DataCell(Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(icon: const Icon(Icons.edit_outlined, color: Colors.blue, size: 20), tooltip: 'Editar', onPressed: () => _openUserDialog(u)),
-                          IconButton(icon: const Icon(Icons.delete_outline, color: AppTheme.errorColor, size: 20), tooltip: 'Eliminar', onPressed: () => _deleteUser(email)),
-                        ],
-                      )),
-                    ]);
-                  }).toList(),
+            if (users.isEmpty)
+              const Expanded(
+                child: Center(
+                  child: Text(
+                    'No hay usuarios registrados.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: Colors.grey, height: 1.5),
+                  ),
+                ),
+              )
+            else
+              Expanded(
+                child: SingleChildScrollView(
+                  child: DataTable(
+                    headingRowColor: WidgetStateProperty.all(AppTheme.lightBg),
+                    columns: const [
+                      DataColumn(label: Text('Correo', style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text('Nombre', style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text('Rol', style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text('Estado', style: TextStyle(fontWeight: FontWeight.bold))),
+                      DataColumn(label: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold))),
+                    ],
+                    rows: users.map((u) {
+                      final email = u['email']?.toString() ?? '';
+                      final isActive = u['isActive'] == true;
+                      return DataRow(cells: [
+                        DataCell(Text(email, style: const TextStyle(fontWeight: FontWeight.bold))),
+                        DataCell(Text(u['name']?.toString() ?? '')),
+                        DataCell(Text(u['role']?.toString() ?? '')),
+                        DataCell(Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(color: isActive ? Colors.green.shade50 : Colors.red.shade50, borderRadius: BorderRadius.circular(6)),
+                          child: Text(isActive ? 'ACTIVO' : 'INACTIVO', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: isActive ? Colors.green.shade700 : Colors.red.shade700)),
+                        )),
+                        DataCell(Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(icon: const Icon(Icons.edit_outlined, color: Colors.blue, size: 20), tooltip: 'Editar', onPressed: () => _openUserDialog(u)),
+                            IconButton(icon: const Icon(Icons.delete_outline, color: AppTheme.errorColor, size: 20), tooltip: 'Eliminar', onPressed: () => _deleteUser(email)),
+                          ],
+                        )),
+                      ]);
+                    }).toList(),
+                  ),
                 ),
               ),
-            ),
           ],
         ),
       ),
