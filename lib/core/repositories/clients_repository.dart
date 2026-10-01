@@ -1,55 +1,34 @@
-import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:sigad/core/config/api_config.dart';
 import 'package:sigad/core/models/client_model.dart';
+import 'package:sigad/core/network/api_client.dart';
 
 /// Repositorio canónico para gestión de clientes y OTP.
 /// Desacopla la lógica HTTP y deserialización de las vistas de presentación.
 class ClientsRepository {
-  final http.Client _client;
+  final ApiClient _client;
 
-  ClientsRepository({http.Client? client}) : _client = client ?? http.Client();
+  ClientsRepository({ApiClient? client, http.Client? httpClient})
+      : _client = client ?? ApiClient(client: httpClient);
 
   Future<List<ClientModel>> getClients({String? token}) async {
-    final response = await _client.get(
-      Uri.parse('${ApiConfig.baseUrl}/api/v1/clientes'),
-      headers: ApiConfig.authHeaders(token),
-    ).timeout(ApiConfig.defaultTimeout);
-
-    if (response.statusCode == 200) {
-      final list = jsonDecode(response.body) as List;
-      return list
-          .whereType<Map<String, dynamic>>()
-          .map((item) => ClientModel.fromJson(item))
-          .toList();
-    }
-    throw StateError('Error ${response.statusCode} al obtener clientes: ${response.body}');
+    final list = await _client.getList('/api/v1/clientes', token: token);
+    return list.map((item) => ClientModel.fromJson(item)).toList();
   }
 
   Future<ClientModel> createClient(CreateClientRequest request, {String? token}) async {
-    final response = await _client.post(
-      Uri.parse('${ApiConfig.baseUrl}/api/v1/clientes'),
-      headers: ApiConfig.authHeaders(token),
-      body: jsonEncode(request.toJson()),
-    ).timeout(ApiConfig.defaultTimeout);
-
-    if (response.statusCode == 201) {
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      return ClientModel.fromJson(data);
-    }
-    throw StateError('Error ${response.statusCode} al crear cliente: ${response.body}');
+    final data = await _client.post(
+      '/api/v1/clientes',
+      body: request.toJson(),
+      token: token,
+    );
+    return ClientModel.fromJson(data);
   }
 
   Future<ClientModel> requestOtp(String clientId, {String? token}) async {
-    final response = await _client.post(
-      Uri.parse('${ApiConfig.baseUrl}/api/v1/clientes/$clientId/otp'),
-      headers: ApiConfig.authHeaders(token),
-    ).timeout(ApiConfig.defaultTimeout);
-
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body) as Map<String, dynamic>;
-      return ClientModel.fromJson(data);
-    }
-    throw StateError('Error ${response.statusCode} al generar código OTP: ${response.body}');
+    final data = await _client.post(
+      '/api/v1/clientes/$clientId/otp',
+      token: token,
+    );
+    return ClientModel.fromJson(data);
   }
 }

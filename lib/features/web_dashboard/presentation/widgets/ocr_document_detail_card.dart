@@ -1,7 +1,5 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:sigad/core/config/api_config.dart';
+import 'package:sigad/core/repositories/documents_repository.dart';
 import 'package:sigad/core/theme/app_theme.dart';
 
 class OcrDocumentDetailCard extends StatefulWidget {
@@ -10,6 +8,7 @@ class OcrDocumentDetailCard extends StatefulWidget {
   final VoidCallback onRefresh;
   final Function(Map<String, dynamic> confirmedFields) onLinkPolicy;
   final String authToken;
+  final DocumentsRepository? documentsRepository;
 
   const OcrDocumentDetailCard({
     super.key,
@@ -18,6 +17,7 @@ class OcrDocumentDetailCard extends StatefulWidget {
     required this.onRefresh,
     required this.onLinkPolicy,
     required this.authToken,
+    this.documentsRepository,
   });
 
   @override
@@ -75,40 +75,27 @@ class _OcrDocumentDetailCardState extends State<OcrDocumentDetailCard> {
     });
 
     try {
-      final res = await http.patch(
-        Uri.parse('${ApiConfig.baseUrl}/api/v1/documentos/$docId/revision'),
-        headers: ApiConfig.authHeaders(widget.authToken),
-        body: jsonEncode({
-          'campos_extraidos': updatedCampos,
-          'estado_extraccion': 'completado',
-        }),
+      final repo = widget.documentsRepository ?? DocumentsRepository();
+      await repo.confirmRevision(
+        documentId: docId,
+        camposCorregidos: updatedCampos,
+        token: widget.authToken,
       );
 
-      if (res.statusCode == 200) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Campos OCR revisados y confirmados con éxito.'),
-              backgroundColor: AppTheme.successColor,
-            ),
-          );
-          widget.onRefresh();
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error al guardar revisión: ${res.body}'),
-              backgroundColor: AppTheme.errorColor,
-            ),
-          );
-        }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Campos OCR revisados y confirmados con éxito.'),
+            backgroundColor: AppTheme.successColor,
+          ),
+        );
+        widget.onRefresh();
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error de conexión: $e'),
+            content: Text('Error al guardar revisión: $e'),
             backgroundColor: AppTheme.errorColor,
           ),
         );

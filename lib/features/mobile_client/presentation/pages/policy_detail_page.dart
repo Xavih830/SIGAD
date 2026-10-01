@@ -1,11 +1,8 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:http/http.dart' as http;
-import 'package:sigad/core/config/api_config.dart';
 import 'package:sigad/core/models/payment_model.dart';
 import 'package:sigad/core/models/policy_model.dart';
-import 'package:sigad/core/services/hive_helper.dart';
+import 'package:sigad/core/repositories/payments_repository.dart';
 import 'package:sigad/core/theme/app_theme.dart';
 
 class PolicyDetailPage extends StatefulWidget {
@@ -13,6 +10,7 @@ class PolicyDetailPage extends StatefulWidget {
   final VoidCallback onReportError;
   final String? authToken;
   final http.Client? httpClient;
+  final PaymentsRepository? paymentsRepository;
   final List<PaymentModel>? initialPayments;
 
   const PolicyDetailPage({
@@ -21,6 +19,7 @@ class PolicyDetailPage extends StatefulWidget {
     required this.onReportError,
     this.authToken,
     this.httpClient,
+    this.paymentsRepository,
     this.initialPayments,
   });
 
@@ -51,40 +50,19 @@ class _PolicyDetailPageState extends State<PolicyDetailPage> {
     });
 
     try {
-      String? token = widget.authToken;
-      if ((token == null || token.isEmpty) && Hive.isBoxOpen(HiveHelper.sessionBoxName)) {
-        token = HiveHelper.sessionBox.get('access_token') as String?;
-      }
+      final repo = widget.paymentsRepository ?? PaymentsRepository(httpClient: widget.httpClient);
+      final list = await repo.getPaymentsByPolicy(widget.policy.id, token: widget.authToken);
 
-      final client = widget.httpClient ?? http.Client();
-      final url = Uri.parse('${ApiConfig.baseUrl}/api/v1/polizas/${widget.policy.id}/pagos');
-      final response = await client
-          .get(url, headers: ApiConfig.authHeaders(token))
-          .timeout(ApiConfig.defaultTimeout);
-
-      if (!mounted) return;
-
-      if (response.statusCode == 200) {
-        final List<dynamic> jsonList = jsonDecode(response.body);
-        final list = jsonList
-            .whereType<Map<String, dynamic>>()
-            .map((e) => PaymentModel.fromJson(e))
-            .toList();
-        list.sort((a, b) => a.installmentNumber.compareTo(b.installmentNumber));
-        setState(() {
-          _payments = list;
-          _isLoadingPayments = false;
-        });
-      } else {
-        setState(() {
-          _paymentsError = 'No se pudieron cargar las cuotas (${response.statusCode})';
-          _isLoadingPayments = false;
-        });
-      }
-    } catch (e) {
       if (!mounted) return;
       setState(() {
-        _paymentsError = 'Error de conexión al cargar cuotas.';
+        _payments = list;
+        _isLoadingPayments = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      final msg = e.toString().contains('500') ? 'No se pudieron cargar las cuotas (500)' : 'Error de conexión al cargar cuotas.';
+      setState(() {
+        _paymentsError = msg;
         _isLoadingPayments = false;
       });
     }

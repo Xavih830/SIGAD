@@ -1,21 +1,22 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:http/http.dart' as http;
-import 'package:sigad/core/config/api_config.dart';
 import 'package:sigad/core/models/policy_model.dart';
+import 'package:sigad/core/repositories/policies_repository.dart';
 import 'package:sigad/core/theme/app_theme.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_state.dart';
 
 class AlertsTabView extends StatefulWidget {
-  const AlertsTabView({super.key});
+  final PoliciesRepository? policiesRepository;
+
+  const AlertsTabView({super.key, this.policiesRepository});
 
   @override
   State<AlertsTabView> createState() => _AlertsTabViewState();
 }
 
 class _AlertsTabViewState extends State<AlertsTabView> {
+  late final PoliciesRepository _policiesRepo;
   int _thresholdDays = 30;
   List<PolicyModel> _policies = [];
   bool _isLoading = false;
@@ -24,6 +25,7 @@ class _AlertsTabViewState extends State<AlertsTabView> {
   @override
   void initState() {
     super.initState();
+    _policiesRepo = widget.policiesRepository ?? PoliciesRepository();
     _loadPolicies();
   }
 
@@ -38,27 +40,12 @@ class _AlertsTabViewState extends State<AlertsTabView> {
       _errorMessage = null;
     });
     try {
-      final res = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}/api/v1/polizas'),
-        headers: ApiConfig.authHeaders(_getAuthToken()),
-      ).timeout(ApiConfig.defaultTimeout);
-
+      final list = await _policiesRepo.getPolicies(token: _getAuthToken());
       if (!mounted) return;
-      if (res.statusCode == 200) {
-        final list = (jsonDecode(res.body) as List)
-            .whereType<Map<String, dynamic>>()
-            .map((i) => PolicyModel.fromJson(i))
-            .toList();
-        setState(() {
-          _policies = list;
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _isLoading = false;
-          _errorMessage = 'Error ${res.statusCode}: ${res.body}';
-        });
-      }
+      setState(() {
+        _policies = list;
+        _isLoading = false;
+      });
     } catch (e) {
       if (mounted) {
         setState(() {

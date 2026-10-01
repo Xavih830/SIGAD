@@ -1,14 +1,11 @@
-import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:http/http.dart' as http;
-import 'package:http_parser/http_parser.dart';
-import 'package:sigad/core/config/api_config.dart';
 import 'package:sigad/core/constants/app_constants.dart';
 import 'package:sigad/core/models/client_model.dart';
 import 'package:sigad/core/models/policy_model.dart';
 import 'package:sigad/core/repositories/clients_repository.dart';
+import 'package:sigad/core/repositories/documents_repository.dart';
 import 'package:sigad/core/theme/app_theme.dart';
 import 'package:sigad/core/utils/file_picker_helper.dart';
 import 'package:sigad/core/widgets/error_view.dart';
@@ -19,13 +16,22 @@ import 'package:sigad/features/web_dashboard/presentation/widgets/ocr_document_d
 import 'package:sigad/features/web_dashboard/presentation/widgets/ocr_document_list_panel.dart';
 
 class OcrTabView extends StatefulWidget {
-  const OcrTabView({super.key});
+  final DocumentsRepository? documentsRepository;
+  final ClientsRepository? clientsRepository;
+
+  const OcrTabView({
+    super.key,
+    this.documentsRepository,
+    this.clientsRepository,
+  });
 
   @override
   State<OcrTabView> createState() => _OcrTabViewState();
 }
 
 class _OcrTabViewState extends State<OcrTabView> {
+  late final DocumentsRepository _docsRepo;
+  late final ClientsRepository _clientsRepo;
   bool _isLoadingList = false, _isUploading = false, _isLoadingDetail = false;
   String? _errorMessage;
   List<Map<String, dynamic>> _documentos = [];
@@ -34,6 +40,8 @@ class _OcrTabViewState extends State<OcrTabView> {
   @override
   void initState() {
     super.initState();
+    _docsRepo = widget.documentsRepository ?? DocumentsRepository();
+    _clientsRepo = widget.clientsRepository ?? ClientsRepository();
     _cargarDocumentos();
   }
 
@@ -45,14 +53,14 @@ class _OcrTabViewState extends State<OcrTabView> {
   Future<void> _cargarDocumentos() async {
     setState(() { _isLoadingList = true; _errorMessage = null; });
     try {
-      final res = await http.get(Uri.parse('${ApiConfig.baseUrl}/api/v1/documentos'), headers: ApiConfig.authHeaders(_getAuthToken())).timeout(ApiConfig.defaultTimeout);
+      final list = await _docsRepo.getDocuments(token: _getAuthToken());
       if (!mounted) return;
-      if (res.statusCode == 200) {
-        final list = (jsonDecode(res.body) as List<dynamic>).map((e) => Map<String, dynamic>.from(e as Map)).toList();
-        setState(() { _documentos = list; _isLoadingList = false; });
-        if (_documentos.isNotEmpty && _selectedDocument == null) _seleccionarDocumento(_documentos.first['id'] as String);
-      } else {
-        setState(() { _isLoadingList = false; _errorMessage = 'Error ${res.statusCode}: ${res.body}'; });
+      setState(() {
+        _documentos = list;
+        _isLoadingList = false;
+      });
+      if (_documentos.isNotEmpty && _selectedDocument == null) {
+        _seleccionarDocumento(_documentos.first['id'] as String);
       }
     } catch (e) {
       if (mounted) setState(() { _isLoadingList = false; _errorMessage = e.toString(); });
@@ -62,8 +70,8 @@ class _OcrTabViewState extends State<OcrTabView> {
   Future<void> _seleccionarDocumento(String docId) async {
     setState(() => _isLoadingDetail = true);
     try {
-      final res = await http.get(Uri.parse('${ApiConfig.baseUrl}/api/v1/documentos/$docId'), headers: ApiConfig.authHeaders(_getAuthToken())).timeout(ApiConfig.defaultTimeout);
-      if (mounted && res.statusCode == 200) setState(() => _selectedDocument = jsonDecode(res.body) as Map<String, dynamic>);
+      final doc = await _docsRepo.getDocumentById(docId, token: _getAuthToken());
+      if (mounted) setState(() => _selectedDocument = doc);
     } finally {
       if (mounted) setState(() => _isLoadingDetail = false);
     }
@@ -77,37 +85,23 @@ class _OcrTabViewState extends State<OcrTabView> {
   Future<void> _subirArchivo(Uint8List bytes, String filename) async {
     setState(() => _isUploading = true);
     try {
-      final token = _getAuthToken();
-      final req = http.MultipartRequest('POST', Uri.parse('${ApiConfig.baseUrl}/api/v1/documentos'));
-      if (token != null && token.isNotEmpty) req.headers['Authorization'] = 'Bearer $token';
-
-      final ext = filename.toLowerCase().split('.').last;
-      MediaType mediaType;
-      if (ext == 'pdf') {
-        mediaType = MediaType('application', 'pdf');
-      } else if (ext == 'png') {
-        mediaType = MediaType('image', 'png');
-      } else if (ext == 'tif' || ext == 'tiff') {
-        mediaType = MediaType('image', 'tiff');
-      } else {
-        mediaType = MediaType('image', 'jpeg');
-      }
-
-      req.files.add(http.MultipartFile.fromBytes('file', bytes, filename: filename, contentType: mediaType));
-      final res = await req.send().timeout(const Duration(seconds: 30));
-
-      final body = await res.stream.bytesToString();
+      final doc = await _docsRepo.uploadDocument(
+        bytes: bytes,
+        filename: filename,
+        token: _getAuthToken(),
+      );
       if (!mounted) return;
-      if (res.statusCode == 201) {
-        final doc = jsonDecode(body) as Map<String, dynamic>;
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Archivo $filename subido.'), backgroundColor: AppTheme.successColor));
-        await _cargarDocumentos();
-        await _seleccionarDocumento(doc['id'] as String);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $body'), backgroundColor: AppTheme.errorColor));
-      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Archivo $filename subido.'), backgroundColor: AppTheme.successColor),
+      );
+      await _cargarDocumentos();
+      await _seleccionarDocumento(doc['id'] as String);
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: AppTheme.errorColor));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: AppTheme.errorColor),
+        );
+      }
     } finally {
       if (mounted) setState(() => _isUploading = false);
     }
@@ -116,7 +110,7 @@ class _OcrTabViewState extends State<OcrTabView> {
   Future<void> _vincularNuevaPoliza(Map<String, dynamic> campos) async {
     List<ClientModel> clients = [];
     try {
-      clients = await ClientsRepository().getClients(token: _getAuthToken());
+      clients = await _clientsRepo.getClients(token: _getAuthToken());
     } catch (_) {}
     if (!mounted) return;
 
@@ -192,6 +186,7 @@ class _OcrTabViewState extends State<OcrTabView> {
                 onRefresh: () => _selectedDocument != null ? _seleccionarDocumento(_selectedDocument!['id'] as String) : null,
                 onLinkPolicy: _vincularNuevaPoliza,
                 authToken: _getAuthToken() ?? (throw StateError('OcrTabView renderizado con sesión nula. El BLoC de autenticación está en estado inválido.')),
+                documentsRepository: _docsRepo,
               ),
             ),
           ],

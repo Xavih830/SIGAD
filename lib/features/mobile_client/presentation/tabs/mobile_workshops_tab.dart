@@ -1,44 +1,34 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
-import 'package:sigad/core/config/api_config.dart';
 import 'package:sigad/core/models/catalog_model.dart';
+import 'package:sigad/core/repositories/catalog_repository.dart';
 import 'package:sigad/core/theme/app_theme.dart';
 import 'package:sigad/core/widgets/error_view.dart';
 
 class MobileWorkshopsTab extends StatefulWidget {
-  const MobileWorkshopsTab({super.key});
+  final CatalogRepository? catalogRepository;
+
+  const MobileWorkshopsTab({super.key, this.catalogRepository});
 
   @override
   State<MobileWorkshopsTab> createState() => _MobileWorkshopsTabState();
 }
 
 class _MobileWorkshopsTabState extends State<MobileWorkshopsTab> {
+  late final CatalogRepository _repository;
   late Future<List<WorkshopModel>> _workshopsFuture;
 
   @override
   void initState() {
     super.initState();
+    _repository = widget.catalogRepository ?? CatalogRepository();
     _loadWorkshops();
   }
 
   void _loadWorkshops() {
     setState(() {
-      _workshopsFuture = _fetchWorkshops();
+      _workshopsFuture = _repository.getWorkshops();
     });
-  }
-
-  Future<List<WorkshopModel>> _fetchWorkshops() async {
-    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/talleres');
-    final response = await http.get(uri).timeout(ApiConfig.defaultTimeout);
-
-    if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
-      return data.map((json) => WorkshopModel.fromJson(json as Map<String, dynamic>)).toList();
-    } else {
-      throw Exception('Error al consultar red de talleres (${response.statusCode})');
-    }
   }
 
   Future<void> _makeCall(BuildContext context, String phone) async {

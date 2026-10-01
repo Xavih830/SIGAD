@@ -1,44 +1,34 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
-import 'package:sigad/core/config/api_config.dart';
 import 'package:sigad/core/models/catalog_model.dart';
+import 'package:sigad/core/repositories/catalog_repository.dart';
 import 'package:sigad/core/theme/app_theme.dart';
 import 'package:sigad/core/widgets/error_view.dart';
 
 class MobileAssistanceTab extends StatefulWidget {
-  const MobileAssistanceTab({super.key});
+  final CatalogRepository? catalogRepository;
+
+  const MobileAssistanceTab({super.key, this.catalogRepository});
 
   @override
   State<MobileAssistanceTab> createState() => _MobileAssistanceTabState();
 }
 
 class _MobileAssistanceTabState extends State<MobileAssistanceTab> {
+  late final CatalogRepository _repository;
   late Future<List<AssistanceModel>> _assistancesFuture;
 
   @override
   void initState() {
     super.initState();
+    _repository = widget.catalogRepository ?? CatalogRepository();
     _loadAssistances();
   }
 
   void _loadAssistances() {
     setState(() {
-      _assistancesFuture = _fetchAssistances();
+      _assistancesFuture = _repository.getAssistances();
     });
-  }
-
-  Future<List<AssistanceModel>> _fetchAssistances() async {
-    final uri = Uri.parse('${ApiConfig.baseUrl}/api/v1/asistencias');
-    final response = await http.get(uri).timeout(ApiConfig.defaultTimeout);
-
-    if (response.statusCode == 200) {
-      final List<dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
-      return data.map((json) => AssistanceModel.fromJson(json as Map<String, dynamic>)).toList();
-    } else {
-      throw Exception('Error al consultar catálogo de asistencias (${response.statusCode})');
-    }
   }
 
   Future<void> _makeCall(BuildContext context, String phone) async {

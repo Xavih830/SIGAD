@@ -1,24 +1,29 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:sigad/core/config/api_config.dart';
 import 'package:sigad/core/models/policy_model.dart';
 import 'package:sigad/core/models/user_model.dart';
+import 'package:sigad/core/repositories/policies_repository.dart';
 import 'package:sigad/core/theme/app_theme.dart';
 import 'package:sigad/core/widgets/error_view.dart';
 import 'package:sigad/features/mobile_client/presentation/pages/policy_detail_page.dart';
 
 class MobilePoliciesTab extends StatefulWidget {
-  final UserModel user; //  UserModel
+  final UserModel user;
   final VoidCallback onNavigateToContact;
+  final PoliciesRepository? policiesRepository;
 
-  const MobilePoliciesTab({super.key, required this.user, required this.onNavigateToContact});
+  const MobilePoliciesTab({
+    super.key,
+    required this.user,
+    required this.onNavigateToContact,
+    this.policiesRepository,
+  });
 
   @override
   State<MobilePoliciesTab> createState() => _MobilePoliciesTabState();
 }
 
 class _MobilePoliciesTabState extends State<MobilePoliciesTab> {
+  late final PoliciesRepository _policiesRepo;
   List<PolicyModel> _policies = [];
   bool _isLoading = true;
   String? _errorMessage;
@@ -26,6 +31,7 @@ class _MobilePoliciesTabState extends State<MobilePoliciesTab> {
   @override
   void initState() {
     super.initState();
+    _policiesRepo = widget.policiesRepository ?? PoliciesRepository();
     _loadPolicies();
   }
 
@@ -34,21 +40,11 @@ class _MobilePoliciesTabState extends State<MobilePoliciesTab> {
 
     try {
       final token = widget.user.accessToken;
-      final response = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}/api/v1/polizas'),
-        headers: ApiConfig.authHeaders(token),
-      ).timeout(ApiConfig.defaultTimeout);
-
+      final parsed = await _policiesRepo.getPolicies(token: token);
       if (!mounted) return;
 
-      if (response.statusCode == 200) {
-        final List<dynamic> list = jsonDecode(response.body);
-        final parsed = list.whereType<Map<String, dynamic>>().map((i) => PolicyModel.fromJson(i)).toList();
-        parsed.sort((a, b) => (!b.isExpired ? 1 : 0).compareTo(!a.isExpired ? 1 : 0));
-        setState(() { _policies = parsed; _isLoading = false; });
-      } else {
-        setState(() { _errorMessage = 'Error ${response.statusCode}: No se pudieron cargar las pólizas'; _isLoading = false; });
-      }
+      parsed.sort((a, b) => (!b.isExpired ? 1 : 0).compareTo(!a.isExpired ? 1 : 0));
+      setState(() { _policies = parsed; _isLoading = false; });
     } catch (e) {
       if (!mounted) return;
       setState(() { _errorMessage = 'No se pudo conectar con el servidor. Verifica tu conexión.'; _isLoading = false; });
