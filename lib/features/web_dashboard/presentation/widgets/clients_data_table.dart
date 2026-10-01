@@ -1,10 +1,11 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:sigad/core/models/client_model.dart';
 import 'package:sigad/core/theme/app_theme.dart';
 
 class ClientsDataTable extends StatefulWidget {
-  final List<Map<String, dynamic>> clients;
-  final ValueChanged<Map<String, dynamic>> onGenerateOtp;
+  final List<ClientModel> clients;
+  final ValueChanged<ClientModel> onGenerateOtp;
 
   const ClientsDataTable({
     super.key,
@@ -52,12 +53,11 @@ class _ClientsDataTableState extends State<ClientsDataTable> {
                   DataColumn(label: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold))),
                 ],
                 rows: displayedClients.map((c) {
-                  final id = c['identificacion']?.toString() ?? c['id']?.toString() ?? '';
                   return DataRow(cells: [
-                    DataCell(Text(id, style: const TextStyle(fontWeight: FontWeight.bold))),
-                    DataCell(Text(c['nombres']?.toString() ?? c['name']?.toString() ?? '')),
-                    DataCell(Text(c['email']?.toString() ?? '')),
-                    DataCell(Text(c['telefono']?.toString() ?? c['phone']?.toString() ?? '')),
+                    DataCell(Text(c.identificacion, style: const TextStyle(fontWeight: FontWeight.bold))),
+                    DataCell(Text(c.nombres)),
+                    DataCell(Text(c.email ?? '')),
+                    DataCell(Text(c.telefono ?? '')),
                     DataCell(Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [

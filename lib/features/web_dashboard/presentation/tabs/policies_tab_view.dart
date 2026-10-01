@@ -1,9 +1,9 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:http/http.dart' as http;
-import 'package:sigad/core/config/api_config.dart';
+import 'package:sigad/core/models/client_model.dart';
 import 'package:sigad/core/models/policy_model.dart';
+import 'package:sigad/core/repositories/clients_repository.dart';
+import 'package:sigad/core/repositories/policies_repository.dart';
 import 'package:sigad/core/theme/app_theme.dart';
 import 'package:sigad/core/widgets/error_view.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_bloc.dart';
@@ -12,7 +12,14 @@ import 'package:sigad/features/web_dashboard/presentation/dialogs/policy_form_di
 import 'package:sigad/features/web_dashboard/presentation/widgets/policies_data_table.dart';
 
 class PoliciesTabView extends StatefulWidget {
-  const PoliciesTabView({super.key});
+  final PoliciesRepository? policiesRepository;
+  final ClientsRepository? clientsRepository;
+
+  const PoliciesTabView({
+    super.key,
+    this.policiesRepository,
+    this.clientsRepository,
+  });
 
   @override
   State<PoliciesTabView> createState() => _PoliciesTabViewState();
@@ -20,6 +27,8 @@ class PoliciesTabView extends StatefulWidget {
 
 class _PoliciesTabViewState extends State<PoliciesTabView> {
   final _searchCtrl = TextEditingController();
+  late final PoliciesRepository _policiesRepo;
+  late final ClientsRepository _clientsRepo;
   String _statusFilter = 'all';
   List<PolicyModel> _policies = [];
   bool _isLoading = false;
@@ -28,6 +37,8 @@ class _PoliciesTabViewState extends State<PoliciesTabView> {
   @override
   void initState() {
     super.initState();
+    _policiesRepo = widget.policiesRepository ?? PoliciesRepository();
+    _clientsRepo = widget.clientsRepository ?? ClientsRepository();
     _loadPolicies();
   }
 
@@ -43,18 +54,24 @@ class _PoliciesTabViewState extends State<PoliciesTabView> {
   }
 
   Future<void> _loadPolicies() async {
-    setState(() { _isLoading = true; _errorMessage = null; });
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
     try {
-      final res = await http.get(Uri.parse('${ApiConfig.baseUrl}/api/v1/polizas'), headers: ApiConfig.authHeaders(_getAuthToken())).timeout(ApiConfig.defaultTimeout);
+      final policies = await _policiesRepo.getPolicies(token: _getAuthToken());
       if (!mounted) return;
-      if (res.statusCode == 200) {
-        final list = (jsonDecode(res.body) as List).whereType<Map<String, dynamic>>().map((i) => PolicyModel.fromJson(i)).toList();
-        setState(() { _policies = list; _isLoading = false; });
-      } else {
-        setState(() { _isLoading = false; _errorMessage = 'Error ${res.statusCode}: ${res.body}'; });
-      }
+      setState(() {
+        _policies = policies;
+        _isLoading = false;
+      });
     } catch (e) {
-      if (mounted) setState(() { _isLoading = false; _errorMessage = e.toString(); });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = e.toString();
+        });
+      }
     }
   }
 
@@ -72,26 +89,38 @@ class _PoliciesTabViewState extends State<PoliciesTabView> {
   }
 
   Future<void> _openPolicyForm([PolicyModel? existing]) async {
-    List<Map<String, dynamic>> clients = [];
+    List<ClientModel> clients = [];
     try {
-      final res = await http.get(Uri.parse('${ApiConfig.baseUrl}/api/v1/clientes'), headers: ApiConfig.authHeaders(_getAuthToken()));
-      if (res.statusCode == 200) clients = (jsonDecode(res.body) as List).map((c) => Map<String, dynamic>.from(c as Map)).toList();
+      clients = await _clientsRepo.getClients(token: _getAuthToken());
     } catch (_) {}
 
     if (!mounted) return;
-    final result = await showDialog<PolicyModel>(context: context, builder: (_) => PolicyFormDialog(initialPolicy: existing, clients: clients));
+    final result = await showDialog<PolicyModel>(
+      context: context,
+      builder: (_) => PolicyFormDialog(initialPolicy: existing, clients: clients),
+    );
     if (result != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Póliza ${result.number} registrada.'), backgroundColor: AppTheme.successColor));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Póliza ${result.number} registrada.'),
+          backgroundColor: AppTheme.successColor,
+        ),
+      );
       await _loadPolicies();
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_errorMessage != null && _policies.isEmpty) return ErrorView(message: _errorMessage!, onRetry: _loadPolicies);
+    if (_errorMessage != null && _policies.isEmpty) {
+      return ErrorView(message: _errorMessage!, onRetry: _loadPolicies);
+    }
     return Card(
       elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: AppTheme.borderLight)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: AppTheme.borderLight),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
@@ -99,7 +128,16 @@ class _PoliciesTabViewState extends State<PoliciesTabView> {
           children: [
             Row(
               children: [
-                Expanded(child: TextField(controller: _searchCtrl, onChanged: (_) => setState(() {}), decoration: const InputDecoration(hintText: 'Buscar póliza...', prefixIcon: Icon(Icons.search)))),
+                Expanded(
+                  child: TextField(
+                    controller: _searchCtrl,
+                    onChanged: (_) => setState(() {}),
+                    decoration: const InputDecoration(
+                      hintText: 'Buscar póliza...',
+                      prefixIcon: Icon(Icons.search),
+                    ),
+                  ),
+                ),
                 const SizedBox(width: 16),
                 DropdownButton<String>(
                   value: _statusFilter,
@@ -112,14 +150,27 @@ class _PoliciesTabViewState extends State<PoliciesTabView> {
                   ],
                 ),
                 const SizedBox(width: 16),
-                IconButton(tooltip: 'Refrescar', onPressed: _isLoading ? null : _loadPolicies, icon: const Icon(Icons.refresh)),
+                IconButton(
+                  tooltip: 'Refrescar',
+                  onPressed: _isLoading ? null : _loadPolicies,
+                  icon: const Icon(Icons.refresh),
+                ),
                 const SizedBox(width: 8),
-                ElevatedButton.icon(onPressed: () => _openPolicyForm(), icon: const Icon(Icons.add), label: const Text('Crear Póliza')),
+                ElevatedButton.icon(
+                  onPressed: () => _openPolicyForm(),
+                  icon: const Icon(Icons.add),
+                  label: const Text('Crear Póliza'),
+                ),
               ],
             ),
             const SizedBox(height: 16),
             Expanded(
-              child: _isLoading ? const Center(child: CircularProgressIndicator()) : PoliciesDataTable(policies: _getFilteredPolicies(), onEdit: _openPolicyForm),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : PoliciesDataTable(
+                      policies: _getFilteredPolicies(),
+                      onEdit: _openPolicyForm,
+                    ),
             ),
           ],
         ),

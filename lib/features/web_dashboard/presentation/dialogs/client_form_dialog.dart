@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:sigad/core/models/client_model.dart';
 import 'package:sigad/core/utils/ecuadorian_id_validator.dart';
 
 class ClientFormDialog extends StatefulWidget {
-  final Map<String, dynamic>? initialClient;
+  final ClientModel? initialClient;
 
   const ClientFormDialog({super.key, this.initialClient});
 
@@ -21,10 +22,10 @@ class _ClientFormDialogState extends State<ClientFormDialog> {
   void initState() {
     super.initState();
     final c = widget.initialClient;
-    _idCtrl = TextEditingController(text: c?['id']?.toString() ?? '');
-    _nameCtrl = TextEditingController(text: c?['name']?.toString() ?? '');
-    _emailCtrl = TextEditingController(text: c?['email']?.toString() ?? '');
-    _phoneCtrl = TextEditingController(text: c?['phone']?.toString() ?? '');
+    _idCtrl = TextEditingController(text: c?.identificacion ?? '');
+    _nameCtrl = TextEditingController(text: c?.nombres ?? '');
+    _emailCtrl = TextEditingController(text: c?.email ?? '');
+    _phoneCtrl = TextEditingController(text: c?.telefono ?? '');
   }
 
   @override
@@ -39,14 +40,14 @@ class _ClientFormDialogState extends State<ClientFormDialog> {
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
 
-    final clientData = {
-      'id': _idCtrl.text.trim(),
-      'name': _nameCtrl.text.trim(),
-      'email': _emailCtrl.text.trim().toLowerCase(),
-      'phone': _phoneCtrl.text.trim(),
-    };
+    final request = CreateClientRequest(
+      identificacion: _idCtrl.text.trim(),
+      nombres: _nameCtrl.text.trim(),
+      email: _emailCtrl.text.trim().toLowerCase(),
+      telefono: _phoneCtrl.text.trim(),
+    );
 
-    Navigator.of(context).pop(clientData);
+    Navigator.of(context).pop(request);
   }
 
   @override

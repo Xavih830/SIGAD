@@ -6,8 +6,9 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:sigad/core/config/api_config.dart';
 import 'package:sigad/core/constants/app_constants.dart';
-
+import 'package:sigad/core/models/client_model.dart';
 import 'package:sigad/core/models/policy_model.dart';
+import 'package:sigad/core/repositories/clients_repository.dart';
 import 'package:sigad/core/theme/app_theme.dart';
 import 'package:sigad/core/utils/file_picker_helper.dart';
 import 'package:sigad/core/widgets/error_view.dart';
@@ -113,10 +114,9 @@ class _OcrTabViewState extends State<OcrTabView> {
   }
 
   Future<void> _vincularNuevaPoliza(Map<String, dynamic> campos) async {
-    List<Map<String, dynamic>> clients = [];
+    List<ClientModel> clients = [];
     try {
-      final res = await http.get(Uri.parse('${ApiConfig.baseUrl}/api/v1/clientes'), headers: ApiConfig.authHeaders(_getAuthToken()));
-      if (res.statusCode == 200) clients = (jsonDecode(res.body) as List).map((c) => Map<String, dynamic>.from(c as Map)).toList();
+      clients = await ClientsRepository().getClients(token: _getAuthToken());
     } catch (_) {}
     if (!mounted) return;
 
@@ -132,10 +132,8 @@ class _OcrTabViewState extends State<OcrTabView> {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No hay clientes registrados. Cree un cliente antes de vincular una póliza OCR.'), backgroundColor: Colors.red));
       return;
     }
-    final String clientId = clients.first['id']?.toString() ?? '';
-    if (clientId.isEmpty) {
-      throw StateError('El primer cliente del listado no tiene ID. Respuesta inesperada del backend.');
-    }
+    final String clientId = clients.first.identificacion;
+
 
     final policy = PolicyModel(
       id: '',

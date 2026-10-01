@@ -1,8 +1,7 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:http/http.dart' as http;
-import 'package:sigad/core/config/api_config.dart';
+import 'package:sigad/core/models/client_model.dart';
+import 'package:sigad/core/repositories/clients_repository.dart';
 import 'package:sigad/core/theme/app_theme.dart';
 import 'package:sigad/core/widgets/error_view.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_bloc.dart';
@@ -12,7 +11,9 @@ import 'package:sigad/features/web_dashboard/presentation/dialogs/otp_whatsapp_d
 import 'package:sigad/features/web_dashboard/presentation/widgets/clients_data_table.dart';
 
 class ClientsTabView extends StatefulWidget {
-  const ClientsTabView({super.key});
+  final ClientsRepository? clientsRepository;
+
+  const ClientsTabView({super.key, this.clientsRepository});
 
   @override
   State<ClientsTabView> createState() => _ClientsTabViewState();
@@ -20,13 +21,15 @@ class ClientsTabView extends StatefulWidget {
 
 class _ClientsTabViewState extends State<ClientsTabView> {
   final _searchCtrl = TextEditingController();
-  List<Map<String, dynamic>> _clients = [];
+  late final ClientsRepository _repository;
+  List<ClientModel> _clients = [];
   bool _isLoading = false;
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
+    _repository = widget.clientsRepository ?? ClientsRepository();
     _loadClients();
   }
 
@@ -42,81 +45,101 @@ class _ClientsTabViewState extends State<ClientsTabView> {
   }
 
   Future<void> _loadClients() async {
-    setState(() { _isLoading = true; _errorMessage = null; });
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
     try {
-      final res = await http.get(Uri.parse('${ApiConfig.baseUrl}/api/v1/clientes'), headers: ApiConfig.authHeaders(_getAuthToken())).timeout(ApiConfig.defaultTimeout);
+      final clients = await _repository.getClients(token: _getAuthToken());
       if (!mounted) return;
-      if (res.statusCode == 200) {
-        setState(() {
-          _clients = (jsonDecode(res.body) as List).map((c) => Map<String, dynamic>.from(c as Map)).toList();
-          _isLoading = false;
-        });
-      } else {
-        setState(() { _isLoading = false; _errorMessage = 'Error ${res.statusCode}: ${res.body}'; });
-      }
+      setState(() {
+        _clients = clients;
+        _isLoading = false;
+      });
     } catch (e) {
-      if (mounted) setState(() { _isLoading = false; _errorMessage = e.toString(); });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = e.toString();
+        });
+      }
     }
   }
 
-  List<Map<String, dynamic>> _filteredClients() {
+  List<ClientModel> _filteredClients() {
     final q = _searchCtrl.text.trim().toLowerCase();
     if (q.isEmpty) return _clients;
     return _clients.where((c) {
-      final name = (c['nombres'] ?? c['name'] ?? '').toString().toLowerCase();
-      final id = (c['identificacion'] ?? c['id'] ?? '').toString().toLowerCase();
-      final email = (c['email'] ?? '').toString().toLowerCase();
+      final name = c.nombres.toLowerCase();
+      final id = c.identificacion.toLowerCase();
+      final email = (c.email ?? '').toLowerCase();
       return name.contains(q) || id.contains(q) || email.contains(q);
     }).toList();
   }
 
   Future<void> _openClientDialog() async {
-    final result = await showDialog<Map<String, dynamic>>(context: context, builder: (_) => const ClientFormDialog());
+    final result = await showDialog<CreateClientRequest>(
+      context: context,
+      builder: (_) => const ClientFormDialog(),
+    );
     if (result == null || !mounted) return;
+
     try {
-      final payload = {'identificacion': result['id'], 'nombres': result['name'], 'email': result['email'], 'telefono': result['phone']};
-      final res = await http.post(Uri.parse('${ApiConfig.baseUrl}/api/v1/clientes'), headers: ApiConfig.authHeaders(_getAuthToken()), body: jsonEncode(payload)).timeout(ApiConfig.defaultTimeout);
+      final created = await _repository.createClient(result, token: _getAuthToken());
       if (!mounted) return;
-      if (res.statusCode == 201) {
-        final data = jsonDecode(res.body) as Map<String, dynamic>;
-        await _loadClients();
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Cliente ${data['nombres']} registrado.'), backgroundColor: AppTheme.successColor));
-          final otp = data['codigo_vinculacion']?.toString();
-          if (otp != null && otp.isNotEmpty) _showOtpDialog(data, otp);
+      await _loadClients();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Cliente ${created.nombres} registrado.'),
+            backgroundColor: AppTheme.successColor,
+          ),
+        );
+        final otp = created.codigoVinculacion;
+        if (otp != null && otp.isNotEmpty) {
+          _showOtpDialog(created, otp);
         }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${res.body}'), backgroundColor: AppTheme.errorColor));
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: AppTheme.errorColor));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: AppTheme.errorColor),
+        );
+      }
     }
   }
 
-  Future<void> _regenerateOtp(Map<String, dynamic> client) async {
-    final id = client['id']?.toString();
-    if (id == null) return;
+  Future<void> _regenerateOtp(ClientModel client) async {
     try {
-      final res = await http.post(Uri.parse('${ApiConfig.baseUrl}/api/v1/clientes/$id/otp'), headers: ApiConfig.authHeaders(_getAuthToken())).timeout(ApiConfig.defaultTimeout);
+      final updated = await _repository.requestOtp(client.id, token: _getAuthToken());
       if (!mounted) return;
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body) as Map<String, dynamic>;
-        _showOtpDialog(data, data['codigo_vinculacion']?.toString() ?? '');
+      final otp = updated.codigoVinculacion;
+      if (otp != null && otp.isNotEmpty) {
+        _showOtpDialog(updated, otp);
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Error al generar código OTP.'), backgroundColor: AppTheme.errorColor));
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error al generar código OTP.'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
       }
     } catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: $e'), backgroundColor: AppTheme.errorColor));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e'), backgroundColor: AppTheme.errorColor),
+        );
+      }
     }
   }
 
-  void _showOtpDialog(Map<String, dynamic> c, String otp) {
+  void _showOtpDialog(ClientModel c, String otp) {
     showDialog(
       context: context,
       builder: (_) => OtpWhatsAppDialog(
-        clientName: c['nombres']?.toString() ?? c['name']?.toString() ?? 'Cliente',
-        clientId: c['identificacion']?.toString() ?? c['id']?.toString() ?? '',
-        clientEmail: c['email']?.toString(),
+        clientName: c.nombres,
+        clientId: c.identificacion,
+        clientEmail: c.email,
         otpCode: otp,
       ),
     );
@@ -124,10 +147,15 @@ class _ClientsTabViewState extends State<ClientsTabView> {
 
   @override
   Widget build(BuildContext context) {
-    if (_errorMessage != null && _clients.isEmpty) return ErrorView(message: _errorMessage!, onRetry: _loadClients);
+    if (_errorMessage != null && _clients.isEmpty) {
+      return ErrorView(message: _errorMessage!, onRetry: _loadClients);
+    }
     return Card(
       elevation: 0,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: const BorderSide(color: AppTheme.borderLight)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: AppTheme.borderLight),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(20.0),
         child: Column(
@@ -135,16 +163,38 @@ class _ClientsTabViewState extends State<ClientsTabView> {
           children: [
             Row(
               children: [
-                Expanded(child: TextField(controller: _searchCtrl, onChanged: (_) => setState(() {}), decoration: const InputDecoration(hintText: 'Buscar cliente...', prefixIcon: Icon(Icons.search)))),
+                Expanded(
+                  child: TextField(
+                    controller: _searchCtrl,
+                    onChanged: (_) => setState(() {}),
+                    decoration: const InputDecoration(
+                      hintText: 'Buscar cliente...',
+                      prefixIcon: Icon(Icons.search),
+                    ),
+                  ),
+                ),
                 const SizedBox(width: 16),
-                IconButton(tooltip: 'Refrescar', onPressed: _isLoading ? null : _loadClients, icon: const Icon(Icons.refresh)),
+                IconButton(
+                  tooltip: 'Refrescar',
+                  onPressed: _isLoading ? null : _loadClients,
+                  icon: const Icon(Icons.refresh),
+                ),
                 const SizedBox(width: 8),
-                ElevatedButton.icon(onPressed: _openClientDialog, icon: const Icon(Icons.person_add), label: const Text('Nuevo Cliente')),
+                ElevatedButton.icon(
+                  onPressed: _openClientDialog,
+                  icon: const Icon(Icons.person_add),
+                  label: const Text('Nuevo Cliente'),
+                ),
               ],
             ),
             const SizedBox(height: 16),
             Expanded(
-              child: _isLoading ? const Center(child: CircularProgressIndicator()) : ClientsDataTable(clients: _filteredClients(), onGenerateOtp: _regenerateOtp),
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : ClientsDataTable(
+                      clients: _filteredClients(),
+                      onGenerateOtp: _regenerateOtp,
+                    ),
             ),
           ],
         ),

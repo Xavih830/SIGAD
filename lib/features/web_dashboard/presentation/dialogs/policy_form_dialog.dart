@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:sigad/core/constants/app_constants.dart';
+import 'package:sigad/core/models/client_model.dart';
 import 'package:sigad/core/models/policy_model.dart';
 import 'package:sigad/core/models/vehicle_model.dart';
 import 'package:sigad/core/utils/plate_validator.dart';
 
 class PolicyFormDialog extends StatefulWidget {
   final PolicyModel? initialPolicy;
-  final List<Map<String, dynamic>> clients;
+  final List<ClientModel> clients;
 
   const PolicyFormDialog({super.key, this.initialPolicy, required this.clients});
 
@@ -51,7 +52,7 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
     );
 
     _status = p?.status ?? 'activa';
-    _selectedClientDoc = p?.clientId ?? (widget.clients.isNotEmpty ? (widget.clients.first['id']?.toString() ?? '') : '');
+    _selectedClientDoc = p?.clientId ?? (widget.clients.isNotEmpty ? widget.clients.first.identificacion : '');
     _selectedCoverages.addAll(p != null ? p.coverages.map((c) => c.nombre) : ['Responsabilidad Civil']);
   }
 
@@ -161,7 +162,7 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
                   DropdownButtonFormField<String>(
                     initialValue: _selectedClientDoc.isNotEmpty ? _selectedClientDoc : null,
                     decoration: const InputDecoration(labelText: 'Cliente Titular'),
-                    items: widget.clients.map((c) => DropdownMenuItem(value: c['id']?.toString() ?? '', child: Text('${c['name']} (${c['id']})'))).toList(),
+                    items: widget.clients.map((c) => DropdownMenuItem(value: c.identificacion, child: Text('${c.nombres} (${c.identificacion})'))).toList(),
                     onChanged: (v) => setState(() => _selectedClientDoc = v ?? ''),
                   ),
                 const SizedBox(height: 12),

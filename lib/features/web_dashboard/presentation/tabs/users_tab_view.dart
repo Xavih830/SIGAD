@@ -1,28 +1,31 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:http/http.dart' as http;
-import 'package:sigad/core/config/api_config.dart';
+import 'package:sigad/core/models/client_model.dart';
+import 'package:sigad/core/repositories/clients_repository.dart';
 import 'package:sigad/core/theme/app_theme.dart';
 import 'package:sigad/core/widgets/error_view.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_state.dart';
 
 class UsersTabView extends StatefulWidget {
-  const UsersTabView({super.key});
+  final ClientsRepository? clientsRepository;
+
+  const UsersTabView({super.key, this.clientsRepository});
 
   @override
   State<UsersTabView> createState() => _UsersTabViewState();
 }
 
 class _UsersTabViewState extends State<UsersTabView> {
-  List<Map<String, dynamic>> _usuarios = [];
+  late final ClientsRepository _repository;
+  List<ClientModel> _usuarios = [];
   bool _isLoading = false;
   String? _errorMessage;
 
   @override
   void initState() {
     super.initState();
+    _repository = widget.clientsRepository ?? ClientsRepository();
     _cargarUsuarios();
   }
 
@@ -31,26 +34,25 @@ class _UsersTabViewState extends State<UsersTabView> {
     return state is AuthSuccess ? state.token : null;
   }
 
-  //  CERO PERSISTENCIAS ZOMBIE: Consulta a la API REST, no a Hive
   Future<void> _cargarUsuarios() async {
-    setState(() { _isLoading = true; _errorMessage = null; });
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
     try {
-      final res = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}/api/v1/clientes'),
-        headers: ApiConfig.authHeaders(_getToken()),
-      ).timeout(ApiConfig.defaultTimeout);
+      final list = await _repository.getClients(token: _getToken());
       if (!mounted) return;
-      if (res.statusCode == 200) {
-        final list = jsonDecode(res.body) as List;
-        setState(() {
-          _usuarios = list.map((item) => Map<String, dynamic>.from(item as Map)).toList();
-          _isLoading = false;
-        });
-      } else {
-        setState(() { _isLoading = false; _errorMessage = 'Error ${res.statusCode}: ${res.body}'; });
-      }
+      setState(() {
+        _usuarios = list;
+        _isLoading = false;
+      });
     } catch (e) {
-      if (mounted) setState(() { _isLoading = false; _errorMessage = e.toString(); });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = e.toString();
+        });
+      }
     }
   }
 
@@ -102,26 +104,22 @@ class _UsersTabViewState extends State<UsersTabView> {
                       DataColumn(label: Text('Estado', style: TextStyle(fontWeight: FontWeight.bold))),
                     ],
                     rows: _usuarios.map((u) {
-                      final email = u['email']?.toString() ?? '';
-                      final nombre = u['nombres']?.toString() ?? u['name']?.toString() ?? '';
-                      final identificacion = u['identificacion']?.toString() ?? '';
-                      final isActive = u['activo'] != false;
                       return DataRow(cells: [
-                        DataCell(Text(email, style: const TextStyle(fontWeight: FontWeight.bold))),
-                        DataCell(Text(nombre)),
-                        DataCell(Text(identificacion)),
+                        DataCell(Text(u.email ?? '', style: const TextStyle(fontWeight: FontWeight.bold))),
+                        DataCell(Text(u.nombres)),
+                        DataCell(Text(u.identificacion)),
                         DataCell(Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: isActive ? Colors.green.shade50 : Colors.red.shade50,
+                            color: Colors.green.shade50,
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
-                            isActive ? 'ACTIVO' : 'INACTIVO',
+                            'ACTIVO',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
-                              color: isActive ? Colors.green.shade700 : Colors.red.shade700,
+                              color: Colors.green.shade700,
                             ),
                           ),
                         )),
