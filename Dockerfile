@@ -1,26 +1,31 @@
-# ========================================
-# Stage 1: Python 3.11 Runtime
-# ========================================
 FROM python:3.11-slim AS runtime
 
-# Prevent Python from writing .pyc and enable unbuffered stdout/stderr
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 WORKDIR /backend
 
-# Install system dependencies for asyncpg and argon2-cffi
+# Instalar dependencias del sistema: compiladores, librerías postgres, Tesseract 5 y Poppler
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends gcc libpq-dev && \
+    apt-get install -y --no-install-recommends \
+        gcc \
+        libpq-dev \
+        tesseract-ocr \
+        tesseract-ocr-spa \
+        libtesseract-dev \
+        poppler-utils && \
     rm -rf /var/lib/apt/lists/*
 
-# Copy and install Python dependencies
+# Instalar dependencias Python
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+# Copiar código fuente del backend
 COPY backend/ .
+
+# Directorio de uploads con permisos
+RUN mkdir -p /app/uploads
 
 EXPOSE 8000
 

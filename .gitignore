@@ -87,7 +87,7 @@ AGENTS.md
 # Ignorar archivos markdown locales/temporales excepto el README principal
 *.md
 *.MD
-!README.md
+/!README.md
 
 # Workflows / CI no productivos
 .github/

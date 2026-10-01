@@ -4,22 +4,25 @@ services:
     container_name: sigad-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER:-sigad}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sigad_dev_2024}
+      POSTGRES_DB: ${POSTGRES_DB:-sigad_db}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sigad} -d ${POSTGRES_DB:-sigad_db}"]
       interval: 5s
       timeout: 5s
       retries: 5
+    networks:
+      - sigad_network
     deploy:
       resources:
         limits:
           memory: 800M
+          cpus: "1.0"
 
   api:
     build:
@@ -27,17 +30,101 @@ services:
       dockerfile: Dockerfile
     container_name: sigad-api
     restart: unless-stopped
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
     env_file:
       - .env
-    ports:
-      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-sigad}:${POSTGRES_PASSWORD:-sigad_dev_2024}@postgres:5432/${POSTGRES_DB:-sigad_db}
+      - DATABASE_SYNC_URL=postgresql://${POSTGRES_USER:-sigad}:${POSTGRES_PASSWORD:-sigad_dev_2024}@postgres:5432/${POSTGRES_DB:-sigad_db}
+      - SMTP_HOST=mailpit
+      - SMTP_PORT=1025
+      - SMTP_FROM_EMAIL=noreply@rjseguros.ec
+    volumes:
+      - uploads_data:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
+      mailpit:
+        condition: service_started
+    networks:
+      - sigad_network
     deploy:
       resources:
         limits:
           memory: 400M
+          cpus: "0.75"
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sigad-worker
+    restart: unless-stopped
+    command: ["python", "-m", "app.workers.worker_entrypoint"]
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-sigad}:${POSTGRES_PASSWORD:-sigad_dev_2024}@postgres:5432/${POSTGRES_DB:-sigad_db}
+      - DATABASE_SYNC_URL=postgresql://${POSTGRES_USER:-sigad}:${POSTGRES_PASSWORD:-sigad_dev_2024}@postgres:5432/${POSTGRES_DB:-sigad_db}
+    volumes:
+      - uploads_data:/app/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - sigad_network
+    deploy:
+      resources:
+        limits:
+          memory: 1800M
+          cpus: "1.5"
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: sigad-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8085:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./build/web:/srv/flutter_web:ro
+      - downloads_data:/srv/downloads
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+    networks:
+      - sigad_network
+    deploy:
+      resources:
+        limits:
+          memory: 150M
+          cpus: "0.5"
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: sigad-mailpit
+    restart: unless-stopped
+    ports:
+      - "1025:1025"   # Servidor SMTP entrante
+      - "8025:8025"   # Interfaz Web y API REST de mensajes
+    networks:
+      - sigad_network
+    deploy:
+      resources:
+        limits:
+          memory: 100M
+          cpus: "0.25"
+
+networks:
+  sigad_network:
+    driver: bridge
 
 volumes:
   postgres_data:
+  uploads_data:
+  caddy_data:
+  caddy_config:
+  downloads_data:
