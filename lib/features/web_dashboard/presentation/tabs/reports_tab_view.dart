@@ -1,8 +1,14 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:sigad/core/services/hive_helper.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:http/http.dart' as http;
+import 'package:sigad/core/config/api_config.dart';
+import 'package:sigad/core/models/policy_model.dart';
 import 'package:sigad/core/theme/app_theme.dart';
 import 'package:sigad/core/utils/print/print_helper.dart';
+import 'package:sigad/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:sigad/features/auth/presentation/bloc/auth_state.dart';
 
 class ReportsTabView extends StatefulWidget {
   const ReportsTabView({super.key});
@@ -12,6 +18,58 @@ class ReportsTabView extends StatefulWidget {
 }
 
 class _ReportsTabViewState extends State<ReportsTabView> {
+  List<PolicyModel> _policies = [];
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPolicies();
+  }
+
+  String? _getAuthToken() {
+    final state = context.read<AuthBloc>().state;
+    return state is AuthSuccess ? (state.user['token'] as String? ?? state.user['access_token'] as String?) : null;
+  }
+
+  Future<void> _loadPolicies() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    try {
+      final res = await http.get(
+        Uri.parse('${ApiConfig.baseUrl}/api/v1/polizas'),
+        headers: ApiConfig.authHeaders(_getAuthToken()),
+      ).timeout(ApiConfig.defaultTimeout);
+
+      if (!mounted) return;
+      if (res.statusCode == 200) {
+        final list = (jsonDecode(res.body) as List)
+            .whereType<Map<String, dynamic>>()
+            .map((i) => PolicyModel.fromJson(i))
+            .toList();
+        setState(() {
+          _policies = list;
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Error ${res.statusCode}: ${res.body}';
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = e.toString();
+        });
+      }
+    }
+  }
+
   void _printReport() {
     if (kIsWeb) {
       triggerPrint();
@@ -24,15 +82,20 @@ class _ReportsTabViewState extends State<ReportsTabView> {
 
   @override
   Widget build(BuildContext context) {
-    final rawPolicies = HiveHelper.policiesBox.values
-        .map((p) => Map<String, dynamic>.from(p))
-        .where((p) => p['isDeleted'] != true)
-        .toList();
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
 
-    final totalCount = rawPolicies.length;
-    final activeCount = rawPolicies.where((p) => p['status'] == 'activa').length;
-    final totalInsured = rawPolicies.fold<double>(0.0, (acc, p) => acc + ((p['value'] ?? p['valor_asegurado'] ?? 0) as num).toDouble());
-    final totalPremiums = rawPolicies.fold<double>(0.0, (acc, p) => acc + ((p['prima'] ?? p['prima_mensual'] ?? 0) as num).toDouble());
+    if (_errorMessage != null && _policies.isEmpty) {
+      return Center(child: Text(_errorMessage!, style: const TextStyle(color: AppTheme.errorColor)));
+    }
+
+    final totalCount = _policies.length;
+    final activeCount = _policies.where((p) => p.status.toLowerCase() == 'activa' && !p.isExpired).length;
+    final expiredCount = _policies.where((p) => p.isExpired).length;
+    final canceledCount = _policies.where((p) => p.status.toLowerCase() == 'cancelada').length;
+    final totalInsured = _policies.fold<double>(0.0, (acc, p) => acc + p.insuredValue);
+    final totalPremiums = _policies.fold<double>(0.0, (acc, p) => acc + p.monthlyPremium);
 
     return Card(
       child: Padding(
@@ -44,10 +107,20 @@ class _ReportsTabViewState extends State<ReportsTabView> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text('Métricas Generales de Cartera', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                ElevatedButton.icon(
-                  onPressed: _printReport,
-                  icon: const Icon(Icons.print),
-                  label: const Text('Exportar / Imprimir'),
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.refresh),
+                      tooltip: 'Actualizar métricas',
+                      onPressed: _isLoading ? null : _loadPolicies,
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton.icon(
+                      onPressed: _printReport,
+                      icon: const Icon(Icons.print),
+                      label: const Text('Exportar / Imprimir'),
+                    ),
+                  ],
                 ),
               ],
             ),
@@ -77,8 +150,14 @@ class _ReportsTabViewState extends State<ReportsTabView> {
                   const Divider(color: AppTheme.borderLight),
                   ListTile(
                     leading: const Icon(Icons.warning, color: Colors.orange),
-                    title: const Text('Pólizas Vencidas / Por Renovar'),
-                    trailing: Text('${totalCount - activeCount}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                    title: const Text('Pólizas Vencidas'),
+                    trailing: Text('$expiredCount', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  ),
+                  const Divider(color: AppTheme.borderLight),
+                  ListTile(
+                    leading: const Icon(Icons.cancel_outlined, color: Colors.red),
+                    title: const Text('Pólizas Canceladas'),
+                    trailing: Text('$canceledCount', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   ),
                 ],
               ),
@@ -92,7 +171,11 @@ class _ReportsTabViewState extends State<ReportsTabView> {
   Widget _kpi(String label, String val, IconData icon, Color col) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: col.withOpacity(0.08), borderRadius: BorderRadius.circular(12), border: Border.all(color: col.withOpacity(0.2))),
+      decoration: BoxDecoration(
+        color: col.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: col.withOpacity(0.2)),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

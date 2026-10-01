@@ -28,19 +28,20 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
   void initState() {
     super.initState();
     final p = widget.initialPolicy;
-    _numCtrl = TextEditingController(text: p?.number ?? 'POL-${DateTime.now().year}-${DateTime.now().millisecond}');
-    _brandCtrl = TextEditingController(text: p?.vehicle?.brand ?? 'Chevrolet');
-    _modelCtrl = TextEditingController(text: p?.vehicle?.model ?? 'Sail');
-    _yearCtrl = TextEditingController(text: p?.vehicle?.year.toString() ?? '2022');
-    _plateCtrl = TextEditingController(text: p?.vehicle?.plate ?? 'PBA-1234');
-    _valCtrl = TextEditingController(text: p != null ? p.insuredValue.toStringAsFixed(2) : '15000.00');
-    _primaCtrl = TextEditingController(text: p != null ? p.monthlyPremium.toStringAsFixed(2) : '55.00');
+    _numCtrl = TextEditingController(text: p?.number ?? '');
+    _brandCtrl = TextEditingController(text: p?.vehicle?.brand ?? '');
+    _modelCtrl = TextEditingController(text: p?.vehicle?.model ?? '');
+    _yearCtrl = TextEditingController(text: p?.vehicle?.year.toString() ?? '');
+    _plateCtrl = TextEditingController(text: p?.vehicle?.plate ?? '');
+    _valCtrl = TextEditingController(text: p != null ? p.insuredValue.toStringAsFixed(2) : '');
+    _primaCtrl = TextEditingController(text: p != null ? p.monthlyPremium.toStringAsFixed(2) : '');
     _startCtrl = TextEditingController(text: p != null ? p.startDate.toIso8601String().substring(0, 10) : DateTime.now().toIso8601String().substring(0, 10));
     _endCtrl = TextEditingController(text: p != null ? p.endDate.toIso8601String().substring(0, 10) : DateTime.now().add(const Duration(days: 365)).toIso8601String().substring(0, 10));
 
     _status = p?.status ?? 'activa';
-    _selectedClientDoc = widget.clients.isNotEmpty ? (widget.clients.first['id']?.toString() ?? '') : '';
-    _selectedCoverages.addAll(p != null ? p.coverages : ['Responsabilidad Civil', 'Asistencia Mecánica 24/7']);
+    _selectedClientDoc = p?.clientId ?? (widget.clients.isNotEmpty ? (widget.clients.first['id']?.toString() ?? '') : '');
+    _selectedCoverages.addAll(p != null ? p.coverages : ['Responsabilidad Civil']);
+
   }
 
   @override
