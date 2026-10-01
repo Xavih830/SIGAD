@@ -104,7 +104,7 @@ async def test_subida_documento_tamano_excedido_413(seed_data: dict):
 
     async with make_client(admin_token) as client:
         res = await client.post(
-            "/api/v1/documentos/cargar",
+            "/api/v1/documentos",
             files={"file": ("archivo_enorme.pdf", contenido_gigante, "application/pdf")},
         )
         assert res.status_code == 413, f"Se esperaba 413 pero se obtuvo {res.status_code}: {res.text}"
@@ -117,7 +117,7 @@ async def test_subida_documento_maximo_paginas_400(seed_data: dict):
 
     async with make_client(admin_token) as client:
         res = await client.post(
-            "/api/v1/documentos/cargar",
+            "/api/v1/documentos",
             files={"file": ("muchas_paginas.pdf", pdf_11_paginas, "application/pdf")},
         )
         assert res.status_code == 400
@@ -131,7 +131,7 @@ async def test_subida_y_consulta_documento_valido(seed_data: dict):
 
     async with make_client(admin_token) as client:
         res = await client.post(
-            "/api/v1/documentos/cargar",
+            "/api/v1/documentos",
             files={"file": ("matricula_valida.pdf", pdf_2_paginas, "application/pdf")},
         )
         assert res.status_code == 201, res.text

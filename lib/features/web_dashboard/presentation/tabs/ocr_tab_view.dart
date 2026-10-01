@@ -77,7 +77,7 @@ class _OcrTabViewState extends State<OcrTabView> {
     setState(() => _isUploading = true);
     try {
       final token = _getAuthToken();
-      final req = http.MultipartRequest('POST', Uri.parse('${ApiConfig.baseUrl}/api/v1/documentos/cargar'));
+      final req = http.MultipartRequest('POST', Uri.parse('${ApiConfig.baseUrl}/api/v1/documentos'));
       if (token != null && token.isNotEmpty) req.headers['Authorization'] = 'Bearer $token';
 
       final ext = filename.toLowerCase().split('.').last;

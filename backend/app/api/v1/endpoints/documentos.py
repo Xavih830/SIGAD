@@ -1,7 +1,6 @@
-"""Documentos REST API — upload, status retrieval, and Anti-IDOR authorized downloads."""
+"""Documentos REST API — canonical single ingress, status retrieval, and Anti-IDOR authorized downloads."""
 
 import uuid
-from typing import Any
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
 from fastapi.responses import FileResponse
@@ -12,14 +11,19 @@ from sqlalchemy.orm.attributes import flag_modified
 
 from app.api.deps import get_current_user
 from app.db.session import get_db
-from app.models.cliente import Cliente
 from app.models.documento import Documento, EstadoExtraccionEnum
 from app.models.poliza import Poliza
-from app.models.resultado_extraccion import ResultadoExtraccion
 from app.models.usuario import RolEnum, Usuario
-from app.schemas.documento import DocumentoRevisionRequest
+from app.schemas.documento import (
+    DocumentoListItemResponse,
+    DocumentoResponse,
+    DocumentoRevisionRequest,
+    DocumentoRevisionResponse,
+    ResultadoExtraccionResponse,
+)
 from app.services.storage_service import (
     InvalidMimeTypeException,
+    MAX_FILE_SIZE_BYTES,
     MaxPagesExceededException,
     StorageSecurityException,
     StorageSizeLimitException,
@@ -29,7 +33,7 @@ from app.services.storage_service import (
 router = APIRouter(prefix="/documentos", tags=["Documentos"])
 
 
-def _verificar_acceso_documento(doc: Documento, poliza: Poliza | None, current_user: Usuario) -> None:
+def _verificar_acceso_documento(doc: Documento | None, poliza: Poliza | None, current_user: Usuario) -> None:
     """Enforces Anti-IDOR access control.
     
     Admins have full access.
@@ -45,25 +49,36 @@ def _verificar_acceso_documento(doc: Documento, poliza: Poliza | None, current_u
         )
 
 
-@router.post("/cargar", status_code=status.HTTP_201_CREATED)
-@router.post("", status_code=status.HTTP_201_CREATED)
+@router.post("", response_model=DocumentoResponse, status_code=status.HTTP_201_CREATED)
 async def cargar_documento(
     file: UploadFile = File(...),
     poliza_id: uuid.UUID | None = Form(None),
     current_user: Usuario = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> dict[str, Any]:
-    """Uploads a document (PDF or image) with 15MB limit and <=10 page validation."""
+) -> DocumentoResponse:
+    """Canonical Single Ingress endpoint for document upload with 15MB limit and <=10 page validation."""
+    if not file.filename or not file.filename.strip():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="El nombre de archivo es obligatorio y no puede estar vacío.",
+        )
+
+    if not file.content_type or not file.content_type.strip():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="La cabecera Content-Type es obligatoria.",
+        )
+
     content = await file.read()
 
-    # Pre-check size to return 413 immediately
-    if len(content) > 15 * 1024 * 1024:
+    # Pre-check tamaño máximo
+    if len(content) > MAX_FILE_SIZE_BYTES:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail="El archivo excede el tamaño máximo permitido de 15 MB.",
         )
 
-    # Validate policy if provided
+    # Validar acceso a la póliza si se envía poliza_id
     poliza = None
     if poliza_id:
         p_res = await db.execute(
@@ -74,13 +89,11 @@ async def cargar_documento(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Póliza no encontrada.")
         _verificar_acceso_documento(None, poliza, current_user)
 
-    mime_type = file.content_type or "application/octet-stream"
-
     try:
         ruta_archivo, sha256_hash, tamano, paginas = storage_service.save_file(
             content=content,
-            filename=file.filename or "documento.pdf",
-            mime_type=mime_type,
+            filename=file.filename.strip(),
+            mime_type=file.content_type.strip(),
         )
     except StorageSizeLimitException as e:
         raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail=str(e))
@@ -92,9 +105,9 @@ async def cargar_documento(
     documento = Documento(
         id=uuid.uuid4(),
         poliza_id=poliza_id,
-        nombre_archivo=file.filename or "documento.pdf",
+        nombre_archivo=file.filename.strip(),
         ruta_archivo=ruta_archivo,
-        tipo_mime=mime_type,
+        tipo_mime=file.content_type.strip(),
         tamano_bytes=tamano,
         hash_sha256=sha256_hash,
         estado_extraccion=EstadoExtraccionEnum.PENDIENTE.value,
@@ -104,17 +117,19 @@ async def cargar_documento(
     await db.commit()
     await db.refresh(documento)
 
-    return {
-        "id": str(documento.id),
-        "poliza_id": str(documento.poliza_id) if documento.poliza_id else None,
-        "nombre_archivo": documento.nombre_archivo,
-        "tipo_mime": documento.tipo_mime,
-        "tamano_bytes": documento.tamano_bytes,
-        "hash_sha256": documento.hash_sha256,
-        "estado_extraccion": documento.estado_extraccion,
-        "paginas": paginas,
-        "created_at": documento.created_at.isoformat(),
-    }
+    return DocumentoResponse(
+        id=documento.id,
+        poliza_id=documento.poliza_id,
+        nombre_archivo=documento.nombre_archivo,
+        tipo_mime=documento.tipo_mime,
+        tamano_bytes=documento.tamano_bytes,
+        hash_sha256=documento.hash_sha256,
+        estado_extraccion=documento.estado_extraccion,
+        intentos=documento.intentos,
+        paginas=paginas,
+        created_at=documento.created_at,
+        updated_at=documento.updated_at,
+    )
 
 
 @router.get("/{documento_id}/descargar")
@@ -151,12 +166,12 @@ async def descargar_documento(
     )
 
 
-@router.get("/{documento_id}")
+@router.get("/{documento_id}", response_model=DocumentoResponse)
 async def obtener_documento(
     documento_id: uuid.UUID,
     current_user: Usuario = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> dict[str, Any]:
+) -> DocumentoResponse:
     """Retrieves document processing status and extracted results."""
     stmt = (
         select(Documento)
@@ -174,37 +189,37 @@ async def obtener_documento(
 
     _verificar_acceso_documento(doc, doc.poliza, current_user)
 
-    data: dict[str, Any] = {
-        "id": str(doc.id),
-        "poliza_id": str(doc.poliza_id) if doc.poliza_id else None,
-        "nombre_archivo": doc.nombre_archivo,
-        "tipo_mime": doc.tipo_mime,
-        "tamano_bytes": doc.tamano_bytes,
-        "estado_extraccion": doc.estado_extraccion,
-        "intentos": doc.intentos,
-        "error_motivo": doc.error_motivo,
-        "created_at": doc.created_at.isoformat(),
-        "updated_at": doc.updated_at.isoformat(),
-        "resultado": None,
-    }
-
+    resultado_dto = None
     if doc.resultado:
-        data["resultado"] = {
-            "metodo": doc.resultado.metodo,
-            "confianza": float(doc.resultado.confianza),
-            "texto_completo": doc.resultado.texto_completo,
-            "campos_extraidos": doc.resultado.campos_extraidos,
-        }
+        resultado_dto = ResultadoExtraccionResponse(
+            metodo=doc.resultado.metodo,
+            confianza=float(doc.resultado.confianza),
+            texto_completo=doc.resultado.texto_completo,
+            campos_extraidos=doc.resultado.campos_extraidos,
+        )
 
-    return data
+    return DocumentoResponse(
+        id=doc.id,
+        poliza_id=doc.poliza_id,
+        nombre_archivo=doc.nombre_archivo,
+        tipo_mime=doc.tipo_mime,
+        tamano_bytes=doc.tamano_bytes,
+        hash_sha256=doc.hash_sha256,
+        estado_extraccion=doc.estado_extraccion,
+        intentos=doc.intentos,
+        error_motivo=doc.error_motivo,
+        created_at=doc.created_at,
+        updated_at=doc.updated_at,
+        resultado=resultado_dto,
+    )
 
 
-@router.get("")
+@router.get("", response_model=list[DocumentoListItemResponse])
 async def listar_documentos(
     poliza_id: uuid.UUID | None = None,
     current_user: Usuario = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> list[dict[str, Any]]:
+) -> list[DocumentoListItemResponse]:
     """List documents accessible to current user."""
     stmt = select(Documento).options(
         selectinload(Documento.poliza).selectinload(Poliza.cliente),
@@ -217,33 +232,35 @@ async def listar_documentos(
     res = await db.execute(stmt)
     docs = res.scalars().all()
 
-    items = []
+    items: list[DocumentoListItemResponse] = []
     for doc in docs:
         if current_user.rol != RolEnum.ADMIN:
             if doc.poliza is None or doc.poliza.cliente is None or doc.poliza.cliente.usuario_id != current_user.id:
                 continue
 
-        items.append({
-            "id": str(doc.id),
-            "poliza_id": str(doc.poliza_id) if doc.poliza_id else None,
-            "nombre_archivo": doc.nombre_archivo,
-            "tipo_mime": doc.tipo_mime,
-            "tamano_bytes": doc.tamano_bytes,
-            "estado_extraccion": doc.estado_extraccion,
-            "has_resultado": doc.resultado is not None,
-            "created_at": doc.created_at.isoformat(),
-        })
+        items.append(
+            DocumentoListItemResponse(
+                id=doc.id,
+                poliza_id=doc.poliza_id,
+                nombre_archivo=doc.nombre_archivo,
+                tipo_mime=doc.tipo_mime,
+                tamano_bytes=doc.tamano_bytes,
+                estado_extraccion=doc.estado_extraccion,
+                has_resultado=doc.resultado is not None,
+                created_at=doc.created_at,
+            )
+        )
 
     return items
 
 
-@router.patch("/{documento_id}/revision", status_code=status.HTTP_200_OK)
+@router.patch("/{documento_id}/revision", response_model=DocumentoRevisionResponse, status_code=status.HTTP_200_OK)
 async def revisar_campos_documento(
     documento_id: uuid.UUID,
     payload: DocumentoRevisionRequest,
     current_user: Usuario = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> dict[str, Any]:
+) -> DocumentoRevisionResponse:
     """Allows Agents and Admins to correct and confirm OCR extracted fields (HU-06)."""
     if current_user.rol not in [RolEnum.ADMIN, RolEnum.AGENTE]:
         raise HTTPException(
@@ -288,9 +305,9 @@ async def revisar_campos_documento(
     await db.refresh(doc)
     await db.refresh(doc.resultado)
 
-    return {
-        "id": str(doc.id),
-        "estado_extraccion": doc.estado_extraccion,
-        "campos_extraidos": doc.resultado.campos_extraidos,
-        "updated_at": doc.updated_at.isoformat(),
-    }
+    return DocumentoRevisionResponse(
+        id=doc.id,
+        estado_extraccion=doc.estado_extraccion,
+        campos_extraidos=doc.resultado.campos_extraidos,
+        updated_at=doc.updated_at,
+    )

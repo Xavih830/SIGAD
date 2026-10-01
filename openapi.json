@@ -1073,7 +1073,7 @@
           "Documentos"
         ],
         "summary": "Cargar Documento",
-        "description": "Uploads a document (PDF or image) with 15MB limit and <=10 page validation.",
+        "description": "Canonical Single Ingress endpoint for document upload with 15MB limit and <=10 page validation.",
         "operationId": "cargar_documento_api_v1_documentos_post",
         "security": [
           {
@@ -1096,9 +1096,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Cargar Documento Api V1 Documentos Post"
+                  "$ref": "#/components/schemas/DocumentoResponse"
                 }
               }
             }
@@ -1154,8 +1152,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "type": "object",
-                    "additionalProperties": true
+                    "$ref": "#/components/schemas/DocumentoListItemResponse"
                   },
                   "title": "Response Listar Documentos Api V1 Documentos Get"
                 }
@@ -1173,55 +1170,6 @@
             }
           }
         }
-      }
-    },
-    "/api/v1/documentos/cargar": {
-      "post": {
-        "tags": [
-          "Documentos"
-        ],
-        "summary": "Cargar Documento",
-        "description": "Uploads a document (PDF or image) with 15MB limit and <=10 page validation.",
-        "operationId": "cargar_documento_api_v1_documentos_cargar_post",
-        "requestBody": {
-          "content": {
-            "multipart/form-data": {
-              "schema": {
-                "$ref": "#/components/schemas/Body_cargar_documento_api_v1_documentos_cargar_post"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "additionalProperties": true,
-                  "type": "object",
-                  "title": "Response Cargar Documento Api V1 Documentos Cargar Post"
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Validation Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
       }
     },
     "/api/v1/documentos/{documento_id}/descargar": {
@@ -1302,9 +1250,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Obtener Documento Api V1 Documentos  Documento Id  Get"
+                  "$ref": "#/components/schemas/DocumentoResponse"
                 }
               }
             }
@@ -1363,9 +1309,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": true,
-                  "title": "Response Revisar Campos Documento Api V1 Documentos  Documento Id  Revision Patch"
+                  "$ref": "#/components/schemas/DocumentoRevisionResponse"
                 }
               }
             }
@@ -1496,32 +1440,6 @@
         "title": "AsistenciaResponse",
         "description": "Schema de respuesta para servicio de asistencia."
       },
-      "Body_cargar_documento_api_v1_documentos_cargar_post": {
-        "properties": {
-          "file": {
-            "type": "string",
-            "format": "binary",
-            "title": "File"
-          },
-          "poliza_id": {
-            "anyOf": [
-              {
-                "type": "string",
-                "format": "uuid"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Poliza Id"
-          }
-        },
-        "type": "object",
-        "required": [
-          "file"
-        ],
-        "title": "Body_cargar_documento_api_v1_documentos_cargar_post"
-      },
       "Body_cargar_documento_api_v1_documentos_post": {
         "properties": {
           "file": {
@@ -1586,6 +1504,7 @@
             "title": "Telefono"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "identificacion",
@@ -1674,6 +1593,8 @@
         "properties": {
           "nombre": {
             "type": "string",
+            "maxLength": 100,
+            "minLength": 2,
             "title": "Nombre"
           },
           "monto": {
@@ -1690,6 +1611,7 @@
             "description": "Monto asegurado para la cobertura"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "nombre",
@@ -1769,6 +1691,7 @@
             "description": "Monto mínimo en USD a pagar"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "porcentaje_valor",
@@ -1779,21 +1702,6 @@
       },
       "DeducibleResponse": {
         "properties": {
-          "tipo_siniestro": {
-            "$ref": "#/components/schemas/TipoSiniestroEnum",
-            "description": "Tipo de siniestro cubierto (general, robo, choque, perdida_total)",
-            "default": "general"
-          },
-          "porcentaje_valor": {
-            "type": "string",
-            "title": "Porcentaje Valor",
-            "description": "Porcentaje aplicable sobre el valor asegurado"
-          },
-          "monto_minimo_usd": {
-            "type": "string",
-            "title": "Monto Minimo Usd",
-            "description": "Monto mínimo en USD a pagar"
-          },
           "id": {
             "type": "string",
             "format": "uuid",
@@ -1804,6 +1712,17 @@
             "format": "uuid",
             "title": "Poliza Id"
           },
+          "tipo_siniestro": {
+            "$ref": "#/components/schemas/TipoSiniestroEnum"
+          },
+          "porcentaje_valor": {
+            "type": "string",
+            "title": "Porcentaje Valor"
+          },
+          "monto_minimo_usd": {
+            "type": "string",
+            "title": "Monto Minimo Usd"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -1812,14 +1731,185 @@
         },
         "type": "object",
         "required": [
-          "porcentaje_valor",
-          "monto_minimo_usd",
           "id",
           "poliza_id",
+          "tipo_siniestro",
+          "porcentaje_valor",
+          "monto_minimo_usd",
           "created_at"
         ],
         "title": "DeducibleResponse",
         "description": "Schema de respuesta con identificadores y auditoría."
+      },
+      "DocumentoListItemResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "poliza_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poliza Id"
+          },
+          "nombre_archivo": {
+            "type": "string",
+            "title": "Nombre Archivo"
+          },
+          "tipo_mime": {
+            "type": "string",
+            "title": "Tipo Mime"
+          },
+          "tamano_bytes": {
+            "type": "integer",
+            "title": "Tamano Bytes"
+          },
+          "estado_extraccion": {
+            "type": "string",
+            "title": "Estado Extraccion"
+          },
+          "has_resultado": {
+            "type": "boolean",
+            "title": "Has Resultado"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "nombre_archivo",
+          "tipo_mime",
+          "tamano_bytes",
+          "estado_extraccion",
+          "has_resultado",
+          "created_at"
+        ],
+        "title": "DocumentoListItemResponse"
+      },
+      "DocumentoResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "poliza_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poliza Id"
+          },
+          "nombre_archivo": {
+            "type": "string",
+            "title": "Nombre Archivo"
+          },
+          "tipo_mime": {
+            "type": "string",
+            "title": "Tipo Mime"
+          },
+          "tamano_bytes": {
+            "type": "integer",
+            "title": "Tamano Bytes"
+          },
+          "hash_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hash Sha256"
+          },
+          "estado_extraccion": {
+            "type": "string",
+            "title": "Estado Extraccion"
+          },
+          "intentos": {
+            "type": "integer",
+            "title": "Intentos",
+            "default": 0
+          },
+          "error_motivo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Motivo"
+          },
+          "paginas": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paginas"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "resultado": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResultadoExtraccionResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "nombre_archivo",
+          "tipo_mime",
+          "tamano_bytes",
+          "estado_extraccion",
+          "created_at"
+        ],
+        "title": "DocumentoResponse",
+        "description": "Serialized document representation."
       },
       "DocumentoRevisionRequest": {
         "properties": {
@@ -1832,7 +1922,8 @@
           "estado_extraccion": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "maxLength": 30
               },
               {
                 "type": "null"
@@ -1842,12 +1933,44 @@
             "description": "Nuevo estado de extracción (completado, requiere_revision_manual)."
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "campos_extraidos"
         ],
         "title": "DocumentoRevisionRequest",
         "description": "Payload to review and correct OCR extracted fields."
+      },
+      "DocumentoRevisionResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "estado_extraccion": {
+            "type": "string",
+            "title": "Estado Extraccion"
+          },
+          "campos_extraidos": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Campos Extraidos"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "estado_extraccion",
+          "campos_extraidos",
+          "updated_at"
+        ],
+        "title": "DocumentoRevisionResponse"
       },
       "EstadoPoliza": {
         "type": "string",
@@ -1878,6 +2001,7 @@
         "properties": {
           "identificador": {
             "type": "string",
+            "maxLength": 100,
             "minLength": 1,
             "title": "Identificador",
             "description": "Email or cédula"
@@ -1888,6 +2012,7 @@
             "title": "Password"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "identificador",
@@ -2072,6 +2197,7 @@
             "title": "Coberturas"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "numero_poliza",
@@ -2196,6 +2322,7 @@
             "$ref": "#/components/schemas/EstadoPoliza"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "estado"
@@ -2207,13 +2334,15 @@
         "properties": {
           "metodo_pago": {
             "type": "string",
+            "maxLength": 50,
+            "minLength": 3,
             "title": "Metodo Pago",
             "description": "transferencia, tarjeta, debito_bancario"
           },
           "comprobante_ref": {
             "type": "string",
             "maxLength": 100,
-            "minLength": 4,
+            "minLength": 3,
             "title": "Comprobante Ref"
           },
           "fecha_pago": {
@@ -2229,12 +2358,48 @@
             "title": "Fecha Pago"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "metodo_pago",
           "comprobante_ref"
         ],
         "title": "RegistrarPagoRequest"
+      },
+      "ResultadoExtraccionResponse": {
+        "properties": {
+          "metodo": {
+            "type": "string",
+            "title": "Metodo"
+          },
+          "confianza": {
+            "type": "number",
+            "title": "Confianza"
+          },
+          "texto_completo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Texto Completo"
+          },
+          "campos_extraidos": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Campos Extraidos"
+          }
+        },
+        "type": "object",
+        "required": [
+          "metodo",
+          "confianza",
+          "campos_extraidos"
+        ],
+        "title": "ResultadoExtraccionResponse"
       },
       "TallerCreate": {
         "properties": {
@@ -2402,18 +2567,26 @@
         "properties": {
           "placa": {
             "type": "string",
+            "maxLength": 8,
+            "minLength": 6,
             "title": "Placa"
           },
           "marca": {
             "type": "string",
+            "maxLength": 50,
+            "minLength": 2,
             "title": "Marca"
           },
           "modelo": {
             "type": "string",
+            "maxLength": 50,
+            "minLength": 2,
             "title": "Modelo"
           },
           "anio": {
             "type": "integer",
+            "maximum": 2100.0,
+            "minimum": 1900.0,
             "title": "Anio"
           },
           "cliente_id": {
@@ -2422,6 +2595,7 @@
             "title": "Cliente Id"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "placa",
@@ -2435,6 +2609,11 @@
       },
       "VehiculoResponse": {
         "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
           "placa": {
             "type": "string",
             "title": "Placa"
@@ -2456,11 +2635,6 @@
             "format": "uuid",
             "title": "Cliente Id"
           },
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "title": "Id"
-          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -2469,12 +2643,12 @@
         },
         "type": "object",
         "required": [
+          "id",
           "placa",
           "marca",
           "modelo",
           "anio",
           "cliente_id",
-          "id",
           "created_at"
         ],
         "title": "VehiculoResponse",
@@ -2517,6 +2691,7 @@
             "title": "Email"
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "identificacion",
