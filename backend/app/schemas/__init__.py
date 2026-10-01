@@ -8,6 +8,10 @@ from app.schemas.deducible import (
     DeducibleCreate,
     DeducibleResponse,
 )
+from app.schemas.documento import (
+    DocumentoResponse,
+    DocumentoRevisionRequest,
+)
 from app.schemas.poliza import (
     CoberturaCreate,
     CoberturaResponse,
@@ -34,4 +38,6 @@ __all__ = [
     "PolizaCreate",
     "PolizaResponse",
     "PolizaUpdateEstado",
+    "DocumentoRevisionRequest",
+    "DocumentoResponse",
 ]

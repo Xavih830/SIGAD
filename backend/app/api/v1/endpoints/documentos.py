@@ -8,6 +8,7 @@ from fastapi.responses import FileResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
+from sqlalchemy.orm.attributes import flag_modified
 
 from app.api.deps import get_current_user
 from app.db.session import get_db
@@ -16,6 +17,7 @@ from app.models.documento import Documento, EstadoExtraccionEnum
 from app.models.poliza import Poliza
 from app.models.resultado_extraccion import ResultadoExtraccion
 from app.models.usuario import RolEnum, Usuario
+from app.schemas.documento import DocumentoRevisionRequest
 from app.services.storage_service import (
     InvalidMimeTypeException,
     MaxPagesExceededException,
@@ -233,3 +235,62 @@ async def listar_documentos(
         })
 
     return items
+
+
+@router.patch("/{documento_id}/revision", status_code=status.HTTP_200_OK)
+async def revisar_campos_documento(
+    documento_id: uuid.UUID,
+    payload: DocumentoRevisionRequest,
+    current_user: Usuario = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict[str, Any]:
+    """Allows Agents and Admins to correct and confirm OCR extracted fields (HU-06)."""
+    if current_user.rol not in [RolEnum.ADMIN, RolEnum.AGENTE]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Solo administradores y agentes pueden revisar documentos.",
+        )
+
+    stmt = (
+        select(Documento)
+        .options(selectinload(Documento.resultado))
+        .where(Documento.id == documento_id)
+    )
+    res = await db.execute(stmt)
+    doc = res.scalar_one_or_none()
+
+    if not doc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Documento no encontrado.")
+
+    if not doc.resultado:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El documento no posee resultados de extracción para revisar.",
+        )
+
+    # Actualizar campos JSONB
+    doc.resultado.campos_extraidos = dict(payload.campos_extraidos)
+    flag_modified(doc.resultado, "campos_extraidos")
+
+    # Actualizar estado si fue enviado
+    if payload.estado_extraccion:
+        if payload.estado_extraccion not in [
+            EstadoExtraccionEnum.COMPLETADO.value,
+            EstadoExtraccionEnum.REQUIERE_REVISION_MANUAL.value,
+        ]:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Estado de extracción inválido: {payload.estado_extraccion}",
+            )
+        doc.estado_extraccion = payload.estado_extraccion
+
+    await db.commit()
+    await db.refresh(doc)
+    await db.refresh(doc.resultado)
+
+    return {
+        "id": str(doc.id),
+        "estado_extraccion": doc.estado_extraccion,
+        "campos_extraidos": doc.resultado.campos_extraidos,
+        "updated_at": doc.updated_at.isoformat(),
+    }

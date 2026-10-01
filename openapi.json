@@ -1200,6 +1200,67 @@
         }
       }
     },
+    "/api/v1/documentos/{documento_id}/revision": {
+      "patch": {
+        "tags": [
+          "Documentos"
+        ],
+        "summary": "Revisar Campos Documento",
+        "description": "Allows Agents and Admins to correct and confirm OCR extracted fields (HU-06).",
+        "operationId": "revisar_campos_documento_api_v1_documentos__documento_id__revision_patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "documento_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Documento Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentoRevisionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Revisar Campos Documento Api V1 Documentos  Documento Id  Revision Patch"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "tags": [
@@ -1637,6 +1698,34 @@
         ],
         "title": "DeducibleResponse",
         "description": "Schema de respuesta con identificadores y auditoría."
+      },
+      "DocumentoRevisionRequest": {
+        "properties": {
+          "campos_extraidos": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Campos Extraidos",
+            "description": "Claves y valores extraídos validados por el agente."
+          },
+          "estado_extraccion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estado Extraccion",
+            "description": "Nuevo estado de extracción (completado, requiere_revision_manual)."
+          }
+        },
+        "type": "object",
+        "required": [
+          "campos_extraidos"
+        ],
+        "title": "DocumentoRevisionRequest",
+        "description": "Payload to review and correct OCR extracted fields."
       },
       "EstadoPoliza": {
         "type": "string",
