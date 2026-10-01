@@ -11,6 +11,7 @@ import uuid
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.security import create_access_token, hash_password
@@ -34,112 +35,41 @@ async def db_session():
 
 @pytest_asyncio.fixture(scope="session", loop_scope="session")
 async def seed_data():
-    """Seed corporate admin, and two distinct clients (Cliente A and Cliente B) with vehicles."""
+    """Retrieve existing seeded test clients and admin from the database without ingesting or polluting real data."""
     async with async_session_factory() as db_session:
-        # 1. Admin user
-        admin_id = uuid.uuid4()
-        admin_user = Usuario(
-            id=admin_id,
-            email=f"admin_{admin_id.hex[:6]}@sigad.ec",
-            password_hash=hash_password("Admin#2026"),
-            nombre="Admin Integracion",
-            rol=RolEnum.ADMIN,
-            activo=True,
-        )
-        db_session.add(admin_user)
+        # 1. Admin
+        res_adm = await db_session.execute(select(Usuario).where(Usuario.email == "admin@sigad.ec"))
+        admin_user = res_adm.scalar_one_or_none()
+        if not admin_user:
+            admin_user = Usuario(
+                email="admin@sigad.ec",
+                password_hash=hash_password("123456789"),
+                nombre="Administrador del Sistema",
+                rol=RolEnum.ADMIN,
+                activo=True,
+            )
+            db_session.add(admin_user)
+            await db_session.flush()
 
-        # 2. Cliente A (User + Cliente record)
-        user_a_id = uuid.uuid4()
-        user_a = Usuario(
-            id=user_a_id,
-            email=f"client_a_{user_a_id.hex[:6]}@test.ec",
-            password_hash=hash_password("ClienteA#2026"),
-            nombre="Cliente A Perez",
-            rol=RolEnum.CLIENTE,
-            activo=True,
-        )
-        db_session.add(user_a)
+        # 2. Cliente A (0926687856)
+        res_ca = await db_session.execute(select(Cliente).where(Cliente.identificacion == "0926687856"))
+        cliente_a = res_ca.scalar_one_or_none()
+        res_ua = await db_session.execute(select(Usuario).where(Usuario.id == cliente_a.usuario_id))
+        user_a = res_ua.scalar_one_or_none()
+        res_va = await db_session.execute(select(Vehiculo).where(Vehiculo.cliente_id == cliente_a.id))
+        vehiculo_a = res_va.scalars().first()
+        res_pa = await db_session.execute(select(Poliza).where(Poliza.cliente_id == cliente_a.id))
+        poliza_a = res_pa.scalars().first()
 
-        cliente_a = Cliente(
-            id=uuid.uuid4(),
-            identificacion=f"09{uuid.uuid4().int % 90000000 + 10000000}",
-            nombres="Cliente A Perez",
-            email=user_a.email,
-            telefono="0991112233",
-            usuario_id=user_a.id,
-        )
-        db_session.add(cliente_a)
-
-        # 3. Cliente B (User + Cliente record)
-        user_b_id = uuid.uuid4()
-        user_b = Usuario(
-            id=user_b_id,
-            email=f"client_b_{user_b_id.hex[:6]}@test.ec",
-            password_hash=hash_password("ClienteB#2026"),
-            nombre="Cliente B Gomez",
-            rol=RolEnum.CLIENTE,
-            activo=True,
-        )
-        db_session.add(user_b)
-
-        cliente_b = Cliente(
-            id=uuid.uuid4(),
-            identificacion=f"09{uuid.uuid4().int % 90000000 + 10000000}",
-            nombres="Cliente B Gomez",
-            email=user_b.email,
-            telefono="0994445566",
-            usuario_id=user_b.id,
-        )
-        db_session.add(cliente_b)
-        await db_session.flush()
-
-        # 4. Vehiculos
-        vehiculo_a = Vehiculo(
-            id=uuid.uuid4(),
-            placa=f"P{uuid.uuid4().hex[:2].upper()}-{uuid.uuid4().int % 9000 + 1000}",
-            marca="Toyota",
-            modelo="Yaris",
-            anio=2022,
-            cliente_id=cliente_a.id,
-        )
-        vehiculo_b = Vehiculo(
-            id=uuid.uuid4(),
-            placa=f"P{uuid.uuid4().hex[:2].upper()}-{uuid.uuid4().int % 9000 + 1000}",
-            marca="Chevrolet",
-            modelo="Onix",
-            anio=2023,
-            cliente_id=cliente_b.id,
-        )
-        db_session.add_all([vehiculo_a, vehiculo_b])
-        await db_session.flush()
-
-        # 5. Polizas
-        poliza_a = Poliza(
-            id=uuid.uuid4(),
-            numero_poliza=f"POL-A-{uuid.uuid4().hex[:8].upper()}",
-            cliente_id=cliente_a.id,
-            vehiculo_id=vehiculo_a.id,
-            fecha_inicio=date.today() - timedelta(days=30),
-            fecha_fin=date.today() + timedelta(days=335),
-            estado=EstadoPoliza.ACTIVA,
-            valor_asegurado=Decimal("15000.00"),
-            prima_mensual=Decimal("45.50"),
-            kilometraje_emision=25000,
-        )
-        poliza_b = Poliza(
-            id=uuid.uuid4(),
-            numero_poliza=f"POL-B-{uuid.uuid4().hex[:8].upper()}",
-            cliente_id=cliente_b.id,
-            vehiculo_id=vehiculo_b.id,
-            fecha_inicio=date.today() - timedelta(days=60),
-            fecha_fin=date.today() + timedelta(days=305),
-            estado=EstadoPoliza.ACTIVA,
-            valor_asegurado=Decimal("18000.00"),
-            prima_mensual=Decimal("55.00"),
-            kilometraje_emision=35000,
-        )
-        db_session.add_all([poliza_a, poliza_b])
-        await db_session.commit()
+        # 3. Cliente B (1710034065)
+        res_cb = await db_session.execute(select(Cliente).where(Cliente.identificacion == "1710034065"))
+        cliente_b = res_cb.scalar_one_or_none()
+        res_ub = await db_session.execute(select(Usuario).where(Usuario.id == cliente_b.usuario_id))
+        user_b = res_ub.scalar_one_or_none()
+        res_vb = await db_session.execute(select(Vehiculo).where(Vehiculo.cliente_id == cliente_b.id))
+        vehiculo_b = res_vb.scalars().first()
+        res_pb = await db_session.execute(select(Poliza).where(Poliza.cliente_id == cliente_b.id))
+        poliza_b = res_pb.scalars().first()
 
         tokens = {
             "admin": create_access_token({"sub": str(admin_user.id)}),
@@ -147,18 +77,45 @@ async def seed_data():
             "cliente_b": create_access_token({"sub": str(user_b.id)}),
         }
 
-        return {
-            "admin_user": admin_user,
-            "user_a": user_a,
-            "cliente_a": cliente_a,
-            "user_b": user_b,
-            "cliente_b": cliente_b,
-            "vehiculo_a": vehiculo_a,
-            "vehiculo_b": vehiculo_b,
-            "poliza_a": poliza_a,
-            "poliza_b": poliza_b,
-            "tokens": tokens,
-        }
+        try:
+            yield {
+                "admin_user": admin_user,
+                "user_a": user_a,
+                "cliente_a": cliente_a,
+                "user_b": user_b,
+                "cliente_b": cliente_b,
+                "vehiculo_a": vehiculo_a,
+                "vehiculo_b": vehiculo_b,
+                "poliza_a": poliza_a,
+                "poliza_b": poliza_b,
+                "tokens": tokens,
+            }
+        finally:
+            # Teardown: Eliminar rigurosamente todos los registros temporales creados durante los tests
+            # para no contaminar la base de datos de desarrollo ni dejar artefactos residuales.
+            async with async_session_factory() as cleanup_session:
+                await cleanup_session.execute(
+                    text("DELETE FROM documentos WHERE nombre_archivo LIKE 'cedula_cliente_%' OR nombre_archivo LIKE 'test_%'")
+                )
+                await cleanup_session.execute(
+                    text(
+                        """
+                        DELETE FROM polizas WHERE numero_poliza LIKE 'POL-TEST-%'
+                           OR numero_poliza LIKE 'POL-SNAP-%'
+                           OR numero_poliza LIKE 'POL-FAIL-%'
+                           OR numero_poliza LIKE 'POL-ZERO-%'
+                           OR numero_poliza LIKE 'POL-5YR-%'
+                           OR numero_poliza LIKE 'POL-HACK-%'
+                        """
+                    )
+                )
+                await cleanup_session.execute(
+                    text("DELETE FROM vehiculos WHERE placa LIKE 'PBA-TEST-%' OR modelo = 'Vehiculo Temporal Test'")
+                )
+                await cleanup_session.execute(
+                    text("DELETE FROM clientes WHERE email LIKE 'test_%' OR nombres LIKE 'Cliente Test%'")
+                )
+                await cleanup_session.commit()
 
 
 def make_client(token: str | None = None) -> AsyncClient:
@@ -168,3 +125,4 @@ def make_client(token: str | None = None) -> AsyncClient:
         headers["Authorization"] = f"Bearer {token}"
     transport = ASGITransport(app=app)
     return AsyncClient(transport=transport, base_url="http://test", headers=headers)
+

@@ -37,6 +37,14 @@ async def crear_vehiculo(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="No está autorizado para registrar un vehículo para este cliente.",
             )
+    else:
+        # Validar que el cliente exista en la base de datos
+        cliente_res = await db.execute(select(Cliente).where(Cliente.id == payload.cliente_id))
+        if not cliente_res.scalar_one_or_none():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Cliente con ID {payload.cliente_id} no existe.",
+            )
 
     # Verificar unicidad de placa
     existe = await db.execute(select(Vehiculo).where(Vehiculo.placa == payload.placa))
