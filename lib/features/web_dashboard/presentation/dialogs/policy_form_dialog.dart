@@ -52,7 +52,7 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
 
     _status = p?.status ?? 'activa';
     _selectedClientDoc = p?.clientId ?? (widget.clients.isNotEmpty ? (widget.clients.first['id']?.toString() ?? '') : '');
-    _selectedCoverages.addAll(p != null ? p.coverages : ['Responsabilidad Civil']);
+    _selectedCoverages.addAll(p != null ? p.coverages.map((c) => c.nombre) : ['Responsabilidad Civil']);
   }
 
   @override
@@ -107,10 +107,10 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
     }
 
     Navigator.of(context).pop(PolicyModel(
-      id: widget.initialPolicy?.id ?? 'pol-${DateTime.now().millisecondsSinceEpoch}',
+      id: widget.initialPolicy?.id ?? '',
       number: _numCtrl.text.trim(),
       clientId: _selectedClientDoc,
-      vehicleId: widget.initialPolicy?.vehicleId ?? 'veh-${DateTime.now().millisecondsSinceEpoch}',
+      vehicleId: widget.initialPolicy?.vehicleId ?? '',
       vehicle: VehicleModel(
         plate: _plateCtrl.text.trim().toUpperCase(),
         brand: _brandCtrl.text.trim(),
@@ -122,10 +122,11 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
       status: _status,
       insuredValue: insuredVal,
       monthlyPremium: prima,
-      emissionMileage: 0,
-      coverages: List.from(_selectedCoverages),
+      emissionMileage: widget.initialPolicy?.emissionMileage ?? 0,
+      coverages: const [],
       deductibles: widget.initialPolicy?.deductibles ?? const [],
     ));
+
   }
 
   @override

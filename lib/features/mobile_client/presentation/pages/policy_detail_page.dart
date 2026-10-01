@@ -422,7 +422,7 @@ class _PolicyDetailPageState extends State<PolicyDetailPage> {
     );
   }
 
-  Widget _buildCoveragesSection(List<String> coverages) {
+  Widget _buildCoveragesSection(List<CoverageModel> coverages) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -443,7 +443,7 @@ class _PolicyDetailPageState extends State<PolicyDetailPage> {
                 child: Row(children: [
                   const Icon(Icons.check_circle_outline, color: AppTheme.successColor, size: 18),
                   const SizedBox(width: 10),
-                  Expanded(child: Text(cov, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textDark))),
+                  Expanded(child: Text(cov.nombre, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textDark))),
                 ]),
               )).toList(),
             ),
