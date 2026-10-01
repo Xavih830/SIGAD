@@ -3,6 +3,7 @@ import 'dart:html' as html;
 import 'dart:typed_data';
 
 import 'package:sigad/core/utils/file_picker_stub.dart';
+export 'package:sigad/core/utils/file_picker_stub.dart' show SelectedFileInfo;
 
 class FilePickerPlatform {
   static Future<SelectedFileInfo?> pickDocumentFile() {
