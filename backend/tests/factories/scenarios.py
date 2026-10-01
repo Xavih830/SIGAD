@@ -49,6 +49,8 @@ class ScenarioBundle:
             "vehiculo_b": self.vehiculo_b,
             "poliza_a": self.poliza_a,
             "poliza_b": self.poliza_b,
+            "admin_token": self.admin_token,
+            "agente_token": self.broker_token,
             "tokens": {
                 "admin": self.admin_token,
                 "broker": self.broker_token,

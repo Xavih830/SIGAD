@@ -63,7 +63,7 @@ class PolizaCreate(StrictBaseSchema):
 
 class PolizaUpdateEstado(StrictBaseSchema):
     """Schema para transición de estado de póliza."""
-    estado: EstadoPoliza
+    estado: EstadoPoliza = Field(..., strict=False)
 
 
 class PolizaResponse(BaseModel):

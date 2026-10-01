@@ -128,3 +128,10 @@ def make_client(token: str | None = None) -> AsyncClient:
         headers["Authorization"] = f"Bearer {token}"
     transport = ASGITransport(app=app)
     return AsyncClient(transport=transport, base_url="http://test", headers=headers)
+
+
+@pytest_asyncio.fixture(scope="function")
+async def client() -> AsyncGenerator[AsyncClient, None]:
+    """Function-scoped test client targeting in-memory ASGI app."""
+    async with make_client(None) as c:
+        yield c
