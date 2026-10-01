@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive/hive.dart';
@@ -8,6 +7,7 @@ import 'package:sigad/core/services/hive_helper.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_event.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_state.dart';
+import 'helpers/test_fixtures.dart';
 
 class MockHttpClient extends Mock implements http.Client {}
 
@@ -52,19 +52,13 @@ void main() {
   });
 
   test('CheckSession should emit AuthSuccess when active user is cached in sessionBox', () async {
-    await HiveHelper.sessionBox.put('active_user', {
-      'id': 'usr-1',
-      'email': 'admin@sigad.ec',
-      'name': 'Admin',
-      'role': 'admin_system',
-      'isActive': true,
-    });
+    await HiveHelper.sessionBox.put('active_user', TestFixtures.adminUserJson);
 
     authBloc.add(CheckSession());
     await expectLater(
       authBloc.stream,
       emitsInOrder([
-        isA<AuthSuccess>().having((s) => s.user.email, 'email', 'admin@sigad.ec'),
+        isA<AuthSuccess>().having((s) => s.user.email, 'email', TestFixtures.adminUser.email),
       ]),
     );
   });
@@ -75,27 +69,20 @@ void main() {
           headers: any(named: 'headers'),
           body: any(named: 'body'),
         )).thenAnswer((_) async => http.Response(
-          jsonEncode({
-            'access_token': 'jwt_mock_token',
-            'refresh_token': 'jwt_refresh_mock',
-            'user': {
-              'id': 'usr-1',
-              'email': 'admin@sigad.ec',
-              'nombre': 'Administrador del Sistema',
-              'rol': 'admin',
-              'is_active': true,
-            },
-          }),
+          TestFixtures.authSuccessResponseBody(),
           200,
         ));
 
-    authBloc.add(const LoginSubmitted(identificador: 'admin@sigad.ec', password: 'Admin#SIGAD24'));
+    authBloc.add(const LoginSubmitted(
+      identificador: TestFixtures.adminEmail,
+      password: TestFixtures.adminPassword,
+    ));
 
     await expectLater(
       authBloc.stream,
       emitsInOrder([
         AuthLoading(),
-        isA<AuthSuccess>().having((s) => s.user.email, 'email', 'admin@sigad.ec'),
+        isA<AuthSuccess>().having((s) => s.user.email, 'email', TestFixtures.adminUser.email),
       ]),
     );
   });
@@ -106,17 +93,17 @@ void main() {
           headers: any(named: 'headers'),
           body: any(named: 'body'),
         )).thenAnswer((_) async => http.Response(
-          jsonEncode({'detail': 'Invalid credentials'}),
+          TestFixtures.errorDetailBody(TestFixtures.invalidCredentialsDetail),
           401,
         ));
 
-    authBloc.add(const LoginSubmitted(identificador: 'admin@sigad.ec', password: 'WrongPassword'));
+    authBloc.add(const LoginSubmitted(identificador: TestFixtures.adminEmail, password: TestFixtures.wrongPassword));
 
     await expectLater(
       authBloc.stream,
       emitsInOrder([
         AuthLoading(),
-        const AuthFailure(message: 'Las credenciales ingresadas no son válidas.'),
+        const AuthFailure(message: TestFixtures.invalidCredentialsMessage),
       ]),
     );
   });
@@ -128,13 +115,13 @@ void main() {
           body: any(named: 'body'),
         )).thenThrow(const SocketException('Failed host lookup'));
 
-    authBloc.add(const LoginSubmitted(identificador: 'admin@sigad.ec', password: 'AnyPassword'));
+    authBloc.add(const LoginSubmitted(identificador: TestFixtures.adminEmail, password: TestFixtures.adminPassword));
 
     await expectLater(
       authBloc.stream,
       emitsInOrder([
         AuthLoading(),
-        const AuthFailure(message: 'Error de conexión con el servidor'),
+        const AuthFailure(message: TestFixtures.serverErrorMessage),
       ]),
     );
   });
@@ -145,32 +132,32 @@ void main() {
           headers: any(named: 'headers'),
           body: any(named: 'body'),
         )).thenAnswer((_) async => http.Response(
-          jsonEncode({'detail': 'Invalid credentials'}),
+          TestFixtures.errorDetailBody(TestFixtures.invalidCredentialsDetail),
           401,
         ));
 
     // Attempt 1
-    authBloc.add(const LoginSubmitted(identificador: 'admin@sigad.ec', password: 'WrongPassword1'));
+    authBloc.add(const LoginSubmitted(identificador: TestFixtures.adminEmail, password: TestFixtures.wrongPassword1));
     await expectLater(
       authBloc.stream,
       emitsInOrder([
         AuthLoading(),
-        const AuthFailure(message: 'Las credenciales ingresadas no son válidas.'),
+        const AuthFailure(message: TestFixtures.invalidCredentialsMessage),
       ]),
     );
 
     // Attempt 2
-    authBloc.add(const LoginSubmitted(identificador: 'admin@sigad.ec', password: 'WrongPassword2'));
+    authBloc.add(const LoginSubmitted(identificador: TestFixtures.adminEmail, password: TestFixtures.wrongPassword2));
     await expectLater(
       authBloc.stream,
       emitsInOrder([
         AuthLoading(),
-        const AuthFailure(message: 'Las credenciales ingresadas no son válidas.'),
+        const AuthFailure(message: TestFixtures.invalidCredentialsMessage),
       ]),
     );
 
     // Attempt 3
-    authBloc.add(const LoginSubmitted(identificador: 'admin@sigad.ec', password: 'WrongPassword3'));
+    authBloc.add(const LoginSubmitted(identificador: TestFixtures.adminEmail, password: TestFixtures.wrongPassword3));
     await expectLater(
       authBloc.stream,
       emitsInOrder([
@@ -187,39 +174,29 @@ void main() {
             headers: any(named: 'headers'),
             body: any(named: 'body'),
           )).thenAnswer((_) async => http.Response(
-            jsonEncode({
-              'access_token': 'mock_activation_access_token',
-              'refresh_token': 'mock_activation_refresh_token',
-              'user': {
-                'id': 'client-usr-1',
-                'email': 'cliente@seguro.ec',
-                'nombre': 'Juan Perez',
-                'rol': 'cliente',
-                'is_active': true,
-              },
-            }),
+            TestFixtures.activationSuccessResponseBody(),
             200,
           ));
 
       authBloc.add(const ActivationSubmitted(
-        identificacion: '0926687856',
-        codigoOtp: '458921',
-        password: 'PasswordSeguro2026*',
-        passwordConfirmacion: 'PasswordSeguro2026*',
-        email: 'cliente@seguro.ec',
+        identificacion: TestFixtures.validCedula,
+        codigoOtp: TestFixtures.validOtp,
+        password: TestFixtures.validPassword,
+        passwordConfirmacion: TestFixtures.validPassword,
+        email: TestFixtures.clientEmail,
       ));
 
       await expectLater(
         authBloc.stream,
         emitsInOrder([
           AuthLoading(),
-          isA<AuthSuccess>().having((s) => s.user.email, 'email', 'cliente@seguro.ec'),
+          isA<AuthSuccess>().having((s) => s.user.email, 'email', TestFixtures.clientEmail),
         ]),
       );
 
       final stored = HiveHelper.sessionBox.get('active_user') as Map;
-      expect(stored['role'], equals('client'));
-      expect(stored['access_token'], equals('mock_activation_access_token'));
+      expect(stored['rol'], equals('cliente'));
+      expect(stored['access_token'], equals(TestFixtures.activationToken));
     });
 
     test('should emit AuthFailure when backend rejects vinculacion', () async {
@@ -228,22 +205,22 @@ void main() {
             headers: any(named: 'headers'),
             body: any(named: 'body'),
           )).thenAnswer((_) async => http.Response(
-            jsonEncode({'detail': 'Código de vinculación inválido o expirado.'}),
+            TestFixtures.errorDetailBody(TestFixtures.otpInvalidDetail),
             400,
           ));
 
       authBloc.add(const ActivationSubmitted(
-        identificacion: '0926687856',
-        codigoOtp: '000000',
-        password: 'PasswordSeguro2026*',
-        passwordConfirmacion: 'PasswordSeguro2026*',
+        identificacion: TestFixtures.validCedula,
+        codigoOtp: TestFixtures.invalidOtp,
+        password: TestFixtures.validPassword,
+        passwordConfirmacion: TestFixtures.validPassword,
       ));
 
       await expectLater(
         authBloc.stream,
         emitsInOrder([
           AuthLoading(),
-          const AuthFailure(message: 'Código de vinculación inválido o expirado.'),
+          const AuthFailure(message: TestFixtures.otpInvalidDetail),
         ]),
       );
     });
@@ -256,10 +233,10 @@ void main() {
           )).thenThrow(const SocketException('Connection reset by peer'));
 
       authBloc.add(const ActivationSubmitted(
-        identificacion: '0926687856',
-        codigoOtp: '458921',
-        password: 'PasswordSeguro2026*',
-        passwordConfirmacion: 'PasswordSeguro2026*',
+        identificacion: TestFixtures.validCedula,
+        codigoOtp: TestFixtures.validOtp,
+        password: TestFixtures.validPassword,
+        passwordConfirmacion: TestFixtures.validPassword,
       ));
 
       await expectLater(
@@ -269,6 +246,25 @@ void main() {
           isA<AuthFailure>().having((f) => f.message, 'message', contains('No se pudo conectar con el servidor')),
         ]),
       );
+    });
+  });
+
+  group('Tipado Estricto de AuthState', () {
+    test('AuthSuccess almacena y expone un UserModel fuertemente tipado', () {
+      final user = TestFixtures.adminUser;
+
+      final state = AuthSuccess(token: TestFixtures.validToken, user: user);
+      expect(state.user.id, equals(user.id));
+      expect(state.user.role, equals(user.role));
+      expect(state.user.name, equals(user.name));
+      expect(state.user.isActive, equals(user.isActive));
+      expect(state.token, equals(TestFixtures.validToken));
+    });
+
+    test('AuthSuccess props incluye token y user para Equatable', () {
+      final user = TestFixtures.clientUser;
+      final state = AuthSuccess(token: TestFixtures.validToken, user: user);
+      expect(state.props, equals([TestFixtures.validToken, user]));
     });
   });
 }

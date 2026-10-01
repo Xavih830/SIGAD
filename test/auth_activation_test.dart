@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -11,6 +10,7 @@ import 'package:sigad/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:sigad/features/auth/presentation/pages/account_activation_page.dart';
 import 'package:sigad/features/auth/presentation/pages/login_page.dart';
 import 'package:sigad/features/mobile_client/presentation/pages/mobile_dashboard_page.dart';
+import 'helpers/test_fixtures.dart';
 
 class MockHttpClient extends Mock implements http.Client {}
 
@@ -27,7 +27,7 @@ void main() {
     tempDir = await Directory.systemTemp.createTemp('sigad_activation_test_dir');
     Hive.init(tempDir.path);
     await Hive.openBox(HiveHelper.sessionBoxName);
-    await HiveHelper.sessionBox.put('welcome_sent_cliente@personal.com', true);
+    await HiveHelper.sessionBox.put('welcome_sent_${TestFixtures.clientEmail}', true);
 
     mockClient = MockHttpClient();
     authBloc = AuthBloc(client: mockClient);
@@ -87,14 +87,14 @@ void main() {
       await tester.ensureVisible(find.byKey(const Key('activate_button')));
       await tester.tap(find.byKey(const Key('activate_button')));
       await tester.pumpAndSettle();
-      expect(find.text('Ingresa tu cédula'), findsOneWidget);
+      expect(find.text(TestFixtures.cedulaRequiredMessage), findsOneWidget);
 
       // Cédula inválida bajo Módulo 10
-      await tester.enterText(find.byKey(const Key('cedula_field')), '1234567890');
+      await tester.enterText(find.byKey(const Key('cedula_field')), TestFixtures.invalidCedulaModulo10);
       await tester.ensureVisible(find.byKey(const Key('activate_button')));
       await tester.tap(find.byKey(const Key('activate_button')));
       await tester.pumpAndSettle();
-      expect(find.text('Cédula ecuatoriana inválida (Módulo 10)'), findsOneWidget);
+      expect(find.text(TestFixtures.cedulaInvalidModulo10), findsOneWidget);
     });
 
     testWidgets('Debe rechazar codigo OTP menor a 6 digitos', (tester) async {
@@ -108,13 +108,13 @@ void main() {
       await tester.pumpWidget(createWidgetUnderTest(const AccountActivationPage()));
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byKey(const Key('cedula_field')), '0926687856');
-      await tester.enterText(find.byKey(const Key('otp_field')), '12345');
+      await tester.enterText(find.byKey(const Key('cedula_field')), TestFixtures.validCedula);
+      await tester.enterText(find.byKey(const Key('otp_field')), TestFixtures.shortOtp);
       await tester.ensureVisible(find.byKey(const Key('activate_button')));
       await tester.tap(find.byKey(const Key('activate_button')));
       await tester.pumpAndSettle();
 
-      expect(find.text('Ingresa los 6 dígitos del código'), findsOneWidget);
+      expect(find.text(TestFixtures.otpLengthMessage), findsOneWidget);
     });
 
     testWidgets('Debe validar complejidad estricta de contrasena (>=12 caracteres, mayuscula, minuscula, digito, simbolo)', (tester) async {
@@ -129,39 +129,39 @@ void main() {
       await tester.pumpAndSettle();
 
       // Menor a 12 caracteres
-      await tester.enterText(find.byKey(const Key('password_field')), 'Corto1!');
+      await tester.enterText(find.byKey(const Key('password_field')), TestFixtures.passwordTooShort);
       await tester.ensureVisible(find.byKey(const Key('activate_button')));
       await tester.tap(find.byKey(const Key('activate_button')));
       await tester.pumpAndSettle();
-      expect(find.text('Debe tener al menos 12 caracteres'), findsOneWidget);
+      expect(find.text(TestFixtures.passwordMinLength), findsOneWidget);
 
       // Sin mayúscula
-      await tester.enterText(find.byKey(const Key('password_field')), 'sinmayuscula123!');
+      await tester.enterText(find.byKey(const Key('password_field')), TestFixtures.passwordMissingUpper);
       await tester.ensureVisible(find.byKey(const Key('activate_button')));
       await tester.tap(find.byKey(const Key('activate_button')));
       await tester.pumpAndSettle();
-      expect(find.text('Debe incluir al menos una mayúscula'), findsOneWidget);
+      expect(find.text(TestFixtures.passwordRequiresUpper), findsOneWidget);
 
       // Sin minúscula
-      await tester.enterText(find.byKey(const Key('password_field')), 'SINMINUSCULA123!');
+      await tester.enterText(find.byKey(const Key('password_field')), TestFixtures.passwordMissingLower);
       await tester.ensureVisible(find.byKey(const Key('activate_button')));
       await tester.tap(find.byKey(const Key('activate_button')));
       await tester.pumpAndSettle();
-      expect(find.text('Debe incluir al menos una minúscula'), findsOneWidget);
+      expect(find.text(TestFixtures.passwordRequiresLower), findsOneWidget);
 
       // Sin número
-      await tester.enterText(find.byKey(const Key('password_field')), 'SinNumerosPassword!');
+      await tester.enterText(find.byKey(const Key('password_field')), TestFixtures.passwordMissingDigit);
       await tester.ensureVisible(find.byKey(const Key('activate_button')));
       await tester.tap(find.byKey(const Key('activate_button')));
       await tester.pumpAndSettle();
-      expect(find.text('Debe incluir al menos un número'), findsOneWidget);
+      expect(find.text(TestFixtures.passwordRequiresNumber), findsOneWidget);
 
       // Sin símbolo especial
-      await tester.enterText(find.byKey(const Key('password_field')), 'SinSimbolosEspeciales123');
+      await tester.enterText(find.byKey(const Key('password_field')), TestFixtures.passwordMissingSpecial);
       await tester.ensureVisible(find.byKey(const Key('activate_button')));
       await tester.tap(find.byKey(const Key('activate_button')));
       await tester.pumpAndSettle();
-      expect(find.text('Debe incluir un símbolo especial'), findsOneWidget);
+      expect(find.text(TestFixtures.passwordRequiresSpecial), findsOneWidget);
     });
 
     testWidgets('Debe validar que la confirmacion de contrasena coincida', (tester) async {
@@ -175,15 +175,15 @@ void main() {
       await tester.pumpWidget(createWidgetUnderTest(const AccountActivationPage()));
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byKey(const Key('cedula_field')), '0926687856');
-      await tester.enterText(find.byKey(const Key('otp_field')), '123456');
-      await tester.enterText(find.byKey(const Key('password_field')), 'PasswordSeguro2026*');
-      await tester.enterText(find.byKey(const Key('confirm_password_field')), 'OtraPassword2026*');
+      await tester.enterText(find.byKey(const Key('cedula_field')), TestFixtures.validCedula);
+      await tester.enterText(find.byKey(const Key('otp_field')), TestFixtures.validOtp);
+      await tester.enterText(find.byKey(const Key('password_field')), TestFixtures.validPassword);
+      await tester.enterText(find.byKey(const Key('confirm_password_field')), TestFixtures.mismatchedPassword);
       await tester.ensureVisible(find.byKey(const Key('activate_button')));
       await tester.tap(find.byKey(const Key('activate_button')));
       await tester.pumpAndSettle();
 
-      expect(find.text('Las contraseñas no coinciden'), findsOneWidget);
+      expect(find.text(TestFixtures.passwordMismatchMessage), findsOneWidget);
     });
 
     testWidgets('Debe enviar ActivationSubmitted con datos validos y navegar al dashboard', (tester) async {
@@ -199,28 +199,18 @@ void main() {
             headers: any(named: 'headers'),
             body: any(named: 'body'),
           )).thenAnswer((_) => Future.value(http.Response(
-            jsonEncode({
-              'access_token': 'jwt_mobile_client_token',
-              'refresh_token': 'jwt_mobile_refresh',
-              'user': {
-                'id': 'cli-usr-100',
-                'email': 'cliente@personal.com',
-                'nombre': 'Carlos Mendoza',
-                'rol': 'cliente',
-                'is_active': true,
-              },
-            }),
+            TestFixtures.activationSuccessResponseBody(),
             200,
           )));
 
       await tester.pumpWidget(createWidgetUnderTest(const AccountActivationPage()));
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byKey(const Key('cedula_field')), '0926687856');
-      await tester.enterText(find.byKey(const Key('otp_field')), '458921');
-      await tester.enterText(find.byKey(const Key('password_field')), 'PasswordSeguro2026*');
-      await tester.enterText(find.byKey(const Key('confirm_password_field')), 'PasswordSeguro2026*');
-      await tester.enterText(find.byKey(const Key('email_field')), 'cliente@personal.com');
+      await tester.enterText(find.byKey(const Key('cedula_field')), TestFixtures.validCedula);
+      await tester.enterText(find.byKey(const Key('otp_field')), TestFixtures.validOtp);
+      await tester.enterText(find.byKey(const Key('password_field')), TestFixtures.validPassword);
+      await tester.enterText(find.byKey(const Key('confirm_password_field')), TestFixtures.validPassword);
+      await tester.enterText(find.byKey(const Key('email_field')), TestFixtures.clientEmail);
 
       await tester.ensureVisible(find.byKey(const Key('activate_button')));
       await tester.tap(find.byKey(const Key('activate_button')));
@@ -245,17 +235,17 @@ void main() {
             headers: any(named: 'headers'),
             body: any(named: 'body'),
           )).thenAnswer((_) => Future.value(http.Response(
-            jsonEncode({'detail': 'Código de vinculación inválido o expirado.'}),
+            TestFixtures.errorDetailBody(TestFixtures.otpInvalidDetail),
             400,
           )));
 
       await tester.pumpWidget(createWidgetUnderTest(const AccountActivationPage()));
       await tester.pumpAndSettle();
 
-      await tester.enterText(find.byKey(const Key('cedula_field')), '0926687856');
-      await tester.enterText(find.byKey(const Key('otp_field')), '000000');
-      await tester.enterText(find.byKey(const Key('password_field')), 'PasswordSeguro2026*');
-      await tester.enterText(find.byKey(const Key('confirm_password_field')), 'PasswordSeguro2026*');
+      await tester.enterText(find.byKey(const Key('cedula_field')), TestFixtures.validCedula);
+      await tester.enterText(find.byKey(const Key('otp_field')), TestFixtures.invalidOtp);
+      await tester.enterText(find.byKey(const Key('password_field')), TestFixtures.validPassword);
+      await tester.enterText(find.byKey(const Key('confirm_password_field')), TestFixtures.validPassword);
 
       await tester.ensureVisible(find.byKey(const Key('activate_button')));
       await tester.tap(find.byKey(const Key('activate_button')));
@@ -264,7 +254,7 @@ void main() {
       });
       await tester.pumpAndSettle();
 
-      expect(find.text('Código de vinculación inválido o expirado.'), findsOneWidget);
+      expect(find.text(TestFixtures.otpInvalidDetail), findsOneWidget);
     });
 
     testWidgets('Debe navegar desde LoginPage hacia AccountActivationPage mediante el enlace', (tester) async {

@@ -1,193 +1,268 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sigad/core/models/catalog_model.dart';
+import 'package:sigad/core/models/client_model.dart';
 import 'package:sigad/core/models/deductible_model.dart';
-
+import 'package:sigad/core/models/payment_model.dart';
 import 'package:sigad/core/models/policy_model.dart';
 import 'package:sigad/core/models/user_model.dart';
 import 'package:sigad/core/models/vehicle_model.dart';
+import 'helpers/test_factories.dart';
+import 'helpers/test_fixtures.dart';
 
 void main() {
   group('Catalog Models Tests (Talleres y Asistencias)', () {
-    test('WorkshopModel fromJson and toJson serialization', () {
-      final json = {
-        'id': 'tal-001',
-        'nombre': 'Taller Central Guayaquil',
-        'direccion': 'Av. Juan Tanca Marengo Km 4.5',
-        'telefono': '04-2598700',
-        'ciudad': 'Guayaquil',
-        'activo': true,
-      };
-
-      final workshop = WorkshopModel.fromJson(json);
-      expect(workshop.id, equals('tal-001'));
-      expect(workshop.name, equals('Taller Central Guayaquil'));
-      expect(workshop.address, equals('Av. Juan Tanca Marengo Km 4.5'));
-      expect(workshop.phone, equals('04-2598700'));
-      expect(workshop.city, equals('Guayaquil'));
-      expect(workshop.active, isTrue);
+    test('WorkshopModel fromJson and toJson serialization via TestFixtures', () {
+      final workshop = WorkshopModel.fromJson(TestFixtures.standardWorkshopJson);
+      expect(workshop.id, equals(TestFixtures.standardWorkshop.id));
+      expect(workshop.name, equals(TestFixtures.standardWorkshop.name));
+      expect(workshop.address, equals(TestFixtures.standardWorkshop.address));
+      expect(workshop.phone, equals(TestFixtures.standardWorkshop.phone));
+      expect(workshop.city, equals(TestFixtures.standardWorkshop.city));
+      expect(workshop.active, equals(TestFixtures.standardWorkshop.active));
 
       final out = workshop.toJson();
-      expect(out['nombre'], equals('Taller Central Guayaquil'));
-      expect(out['ciudad'], equals('Guayaquil'));
+      expect(out['nombre'], equals(TestFixtures.standardWorkshop.name));
+      expect(out['ciudad'], equals(TestFixtures.standardWorkshop.city));
     });
 
-    test('AssistanceModel fromJson and toJson serialization', () {
-      final json = {
-        'id': 'ast-001',
-        'titulo': 'Grúa y Remolque',
-        'descripcion': 'Traslado de vehículo averiado.',
-        'telefono_emergencia': '1800-757-348',
-        'icono': 'local_shipping',
-        'activo': true,
-      };
-
-      final assistance = AssistanceModel.fromJson(json);
-      expect(assistance.id, equals('ast-001'));
-      expect(assistance.title, equals('Grúa y Remolque'));
-      expect(assistance.description, equals('Traslado de vehículo averiado.'));
-      expect(assistance.emergencyPhone, equals('1800-757-348'));
-      expect(assistance.icon, equals('local_shipping'));
-      expect(assistance.active, isTrue);
+    test('AssistanceModel fromJson and toJson serialization via TestFixtures', () {
+      final assistance = AssistanceModel.fromJson(TestFixtures.standardAssistanceJson);
+      expect(assistance.id, equals(TestFixtures.standardAssistance.id));
+      expect(assistance.title, equals(TestFixtures.standardAssistance.title));
+      expect(assistance.description, equals(TestFixtures.standardAssistance.description));
+      expect(assistance.emergencyPhone, equals(TestFixtures.standardAssistance.emergencyPhone));
+      expect(assistance.icon, equals(TestFixtures.standardAssistance.icon));
+      expect(assistance.active, equals(TestFixtures.standardAssistance.active));
 
       final out = assistance.toJson();
-      expect(out['titulo'], equals('Grúa y Remolque'));
-      expect(out['telefono_emergencia'], equals('1800-757-348'));
+      expect(out['titulo'], equals(TestFixtures.standardAssistance.title));
+      expect(out['telefono_emergencia'], equals(TestFixtures.standardAssistance.emergencyPhone));
     });
   });
 
-  group('VehicleModel Tests', () {
-
-    test('fromJson and toJson round-trip preserves fields', () {
-      final json = {
-        'id': 'v-123',
-        'placa': 'PBA-1234',
-        'marca': 'Chevrolet',
-        'modelo': 'Sail',
-        'anio': 2021,
-        'color': 'Blanco',
-        'tipo': 'liviano',
-      };
-
-      final model = VehicleModel.fromJson(json);
-      expect(model.id, equals('v-123'));
-      expect(model.plate, equals('PBA-1234'));
-      expect(model.brand, equals('Chevrolet'));
-      expect(model.model, equals('Sail'));
-      expect(model.year, equals(2021));
-      expect(model.color, equals('Blanco'));
-      expect(model.type, equals('liviano'));
+  group('VehicleModel Contract & Invariant Tests', () {
+    test('fromJson and toJson round-trip preserves canonical fields', () {
+      final model = VehicleModel.fromJson(TestFixtures.standardVehicleJson);
+      expect(model.id, equals(TestFixtures.standardVehicle.id));
+      expect(model.plate, equals(TestFixtures.standardVehicle.plate));
+      expect(model.brand, equals(TestFixtures.standardVehicle.brand));
+      expect(model.model, equals(TestFixtures.standardVehicle.model));
+      expect(model.year, equals(TestFixtures.standardVehicle.year));
 
       final outJson = model.toJson();
-      expect(outJson['placa'], equals('PBA-1234'));
-      expect(outJson['marca'], equals('Chevrolet'));
-      expect(outJson['modelo'], equals('Sail'));
-      expect(outJson['anio'], equals(2021));
+      expect(outJson['placa'], equals(TestFixtures.standardVehicle.plate));
+      expect(outJson['marca'], equals(TestFixtures.standardVehicle.brand));
+      expect(outJson['modelo'], equals(TestFixtures.standardVehicle.model));
+      expect(outJson['anio'], equals(TestFixtures.standardVehicle.year));
+    });
+
+    test('VehicleModel arroja TypeError si faltan campos canonicos (placa)', () {
+      final jsonInvalido = {
+        'id': 'veh-123',
+        'plate': 'PBA-1234', // Clave antigua en inglés — falta 'placa'
+        'brand': 'Toyota',
+        'model': 'Yaris',
+        'year': 2024,
+      };
+      expect(() => VehicleModel.fromJson(jsonInvalido), throwsA(isA<TypeError>()));
+    });
+
+    test('VehicleModel arroja TypeError si anio no es int', () {
+      final jsonMalTipado = {
+        'id': 'veh-999',
+        'placa': 'ABC-0001',
+        'marca': 'Honda',
+        'modelo': 'Civic',
+        'anio': '2023', // String en vez de int
+      };
+      expect(() => VehicleModel.fromJson(jsonMalTipado), throwsA(isA<TypeError>()));
     });
   });
 
-  group('DeductibleModel Tests', () {
-    test('fromJson deserializa con claves canonicas del backend', () {
-      final jsonFastApi = {
-        'id': 'ded-1',
-        'tipo_siniestro': 'robo',
-        'porcentaje_valor': 10.5,
-        'monto_minimo_usd': 200.0,
-      };
+  group('UserModel Contract & Invariant Tests', () {
+    test('fromJson and toJson handle tokens and role mapping correctly', () {
+      final user = UserModel.fromJson(TestFixtures.adminUserJson);
+      expect(user.id, equals(TestFixtures.adminUser.id));
+      expect(user.email, equals(TestFixtures.adminUser.email));
+      expect(user.name, equals(TestFixtures.adminUser.name));
+      expect(user.role, equals(TestFixtures.adminUser.role));
+      expect(user.accessToken, equals(TestFixtures.validToken));
+      expect(user.isActive, isTrue);
 
-      final model = DeductibleModel.fromJson(jsonFastApi);
-      expect(model.tipoSiniestro, equals('robo'));
-      expect(model.porcentajeValor, equals(10.5));
-      expect(model.montoMinimoUsd, equals(200.0));
+      final outJson = user.toJson();
+      expect(outJson['email'], equals(TestFixtures.adminUser.email));
+      expect(outJson['access_token'], equals(TestFixtures.validToken));
+    });
+
+    test('UserModel arroja TypeError si falta campo canonico nombre', () {
+      final jsonObsoleto = {
+        'id': 'usr-789',
+        'email': 'agente@sigad.ec',
+        'name': 'Carlos Agente', // Clave antigua inválida
+        'role': 'agente',
+        'is_active': true,
+      };
+      expect(() => UserModel.fromJson(jsonObsoleto), throwsA(isA<TypeError>()));
+    });
+
+    test('UserModel acepta activo como null y aplica default true', () {
+      final jsonSinActivo = {
+        'id': 'usr-100',
+        'email': 'admin@sigad.ec',
+        'nombre': 'Admin Sistema',
+        'rol': 'admin_system',
+      };
+      final user = UserModel.fromJson(jsonSinActivo);
+      expect(user.isActive, isTrue);
+    });
+  });
+
+  group('ClientModel Contract & Invariant Tests', () {
+    test('fromJson and toJson round-trip preserves canonical fields', () {
+      final client = ClientModel.fromJson(TestFixtures.standardClientJson);
+      expect(client.id, equals(TestFixtures.standardClient.id));
+      expect(client.identificacion, equals(TestFixtures.standardClient.identificacion));
+      expect(client.nombres, equals(TestFixtures.standardClient.nombres));
+      expect(client.email, equals(TestFixtures.standardClient.email));
+      expect(client.telefono, equals(TestFixtures.standardClient.telefono));
+
+      final outJson = client.toJson();
+      expect(outJson['identificacion'], equals(TestFixtures.standardClient.identificacion));
+      expect(outJson['nombres'], equals(TestFixtures.standardClient.nombres));
+      expect(outJson['email'], equals(TestFixtures.standardClient.email));
+    });
+  });
+
+  group('DeductibleModel Contract & Invariant Tests', () {
+    test('fromJson deserializa y serializa con claves canonicas del backend', () {
+      final model = DeductibleModel.fromJson(TestFixtures.standardDeductibleJson);
+      expect(model.id, equals(TestFixtures.standardDeductible.id));
+      expect(model.tipoSiniestro, equals(TestFixtures.standardDeductible.tipoSiniestro));
+      expect(model.porcentajeValor, equals(TestFixtures.standardDeductible.porcentajeValor));
+      expect(model.montoMinimoUsd, equals(TestFixtures.standardDeductible.montoMinimoUsd));
 
       final outJson = model.toJson();
-      expect(outJson['tipo_siniestro'], equals('robo'));
-      expect(outJson['porcentaje_valor'], equals(10.5));
-      expect(outJson['monto_minimo_usd'], equals(200.0));
+      expect(outJson['tipo_siniestro'], equals(TestFixtures.standardDeductible.tipoSiniestro));
+      expect(outJson['porcentaje_valor'], equals(TestFixtures.standardDeductible.porcentajeValor));
+      expect(outJson['monto_minimo_usd'], equals(TestFixtures.standardDeductible.montoMinimoUsd));
+    });
+
+    test('DeductibleModel arroja TypeError si faltan claves canonicas', () {
+      final jsonObsoleto = {
+        'id': 'ded-001',
+        'coverageName': 'robo',
+        'percentage': 10,
+        'minAmount': 300,
+      };
+      expect(() => DeductibleModel.fromJson(jsonObsoleto), throwsA(isA<TypeError>()));
     });
   });
 
-  group('PolicyModel Tests', () {
+  group('PolicyModel & CoverageModel Contract Tests', () {
     test('fromJson and getters calculate daysUntilExpiration and isExpired correctly', () {
       final futureDate = DateTime.now().add(const Duration(days: 15));
       final pastDate = DateTime.now().subtract(const Duration(days: 5));
 
-      final activePolicyJson = {
-        'id': 'pol-001',
-        'numero_poliza': 'POL-2026-001',
-        'cliente_id': 'cli-001',
-        'vehiculo_id': 'veh-001',
-        'fecha_inicio': '2026-01-01',
-        'fecha_fin': futureDate.toIso8601String().substring(0, 10),
-        'estado': 'activa',
-        'valor_asegurado': 18500.0,
-        'prima_mensual': 65.50,
-        'kilometraje_emision': 12000,
-        'vehiculo': {
-          'placa': 'PBA-1234',
-          'marca': 'Toyota',
-          'modelo': 'Yaris',
-          'anio': 2022,
-        },
-        'deducibles': [
-          {
-            'id': 'ded-1',
-            'tipo_siniestro': 'general',
-            'porcentaje_valor': 10.0,
-            'monto_minimo_usd': 150.0,
-          }
-        ],
-        'coberturas': [
-          {'id': 'cov-1', 'nombre': 'Todo Riesgo', 'monto': 5000},
-          {'id': 'cov-2', 'nombre': 'Responsabilidad Civil', 'monto': 3000},
-        ],
-      };
+      final activePolicyJson = TestFactories.createPolicyJson(
+        id: TestFixtures.activePolicy.id,
+        number: TestFixtures.activePolicy.number,
+        clientId: TestFixtures.activePolicy.clientId,
+        vehicleId: TestFixtures.activePolicy.vehicleId,
+        startDate: DateTime(2026, 1, 1),
+        endDate: futureDate,
+        status: 'activa',
+        vehicle: TestFixtures.standardVehicle,
+        coverages: TestFixtures.standardCoverages,
+      );
 
       final policy = PolicyModel.fromJson(activePolicyJson);
-      expect(policy.number, equals('POL-2026-001'));
-      expect(policy.vehicle?.plate, equals('PBA-1234'));
-      expect(policy.deductibles.length, equals(1));
-      expect(policy.deductibles.first.porcentajeValor, equals(10.0));
+      expect(policy.number, equals(TestFixtures.activePolicy.number));
+      expect(policy.vehicle?.plate, equals(TestFixtures.standardVehicle.plate));
       expect(policy.coverages.map((c) => c.nombre), contains('Todo Riesgo'));
       expect(policy.isExpired, isFalse);
-      expect(policy.isExpiringSoon, isTrue); // 15 days is <= 30
+      expect(policy.isExpiringSoon, isTrue);
       expect(policy.daysUntilExpiration, inInclusiveRange(14, 16));
 
       // Expired policy check
-      final expiredPolicyJson = {
-        ...activePolicyJson,
-        'id': 'pol-002',
-        'fecha_fin': pastDate.toIso8601String().substring(0, 10),
-        'estado': 'vencida',
-      };
+      final expiredPolicyJson = TestFactories.createPolicyJson(
+        id: 'pol-exp-002',
+        startDate: DateTime(2026, 1, 1),
+        endDate: pastDate,
+        status: 'vencida',
+      );
       final expiredPolicy = PolicyModel.fromJson(expiredPolicyJson);
       expect(expiredPolicy.isExpired, isTrue);
       expect(expiredPolicy.isExpiringSoon, isFalse);
     });
+
+    test('PolicyModel arroja TypeError si falta numero_poliza', () {
+      final jsonIncompleto = {
+        'id': 'pol-abc',
+        'number': 'RJ-2024-001', // Clave antigua inválida
+        'cliente_id': 'cli-xyz',
+        'vehiculo_id': 'veh-xyz',
+        'fecha_inicio': '2024-01-15',
+        'fecha_fin': '2025-01-15',
+        'estado': 'activa',
+      };
+      expect(() => PolicyModel.fromJson(jsonIncompleto), throwsA(isA<TypeError>()));
+    });
+
+    test('CoverageModel deserializa con claves canonicas del backend', () {
+      final cov = CoverageModel.fromJson(TestFixtures.standardCoverageJson);
+      expect(cov.id, equals(TestFixtures.standardCoverage.id));
+      expect(cov.nombre, equals(TestFixtures.standardCoverage.nombre));
+      expect(cov.monto, equals(TestFixtures.standardCoverage.monto));
+    });
   });
 
-  group('UserModel Tests', () {
-    test('fromJson and toJson handle tokens and role mapping correctly', () {
-      final userJson = {
-        'id': 'usr-001',
-        'email': 'admin@sigad.ec',
-        'nombre': 'Admin SIGAD',
-        'rol': 'admin_system',
-        'access_token': 'jwt_mock_token',
-        'refresh_token': 'jwt_refresh_mock',
-        'activo': true,
+  group('PaymentModel Contract & Invariant Tests', () {
+    test('fromJson y toJson deserializan y exportan cuota pagada via TestFixtures', () {
+      final payment = PaymentModel.fromJson(TestFixtures.paidPaymentJson);
+
+      expect(payment.id, equals(TestFixtures.paidPayment.id));
+      expect(payment.policyId, equals(TestFixtures.paidPayment.policyId));
+      expect(payment.installmentNumber, equals(TestFixtures.paidPayment.installmentNumber));
+      expect(payment.amountUsd, equals(TestFixtures.paidPayment.amountUsd));
+      expect(payment.dueDate, equals(TestFixtures.paidPayment.dueDate));
+      expect(payment.paymentDate, equals(TestFixtures.paidPayment.paymentDate));
+      expect(payment.status, equals('pagado'));
+      expect(payment.paymentMethod, equals(TestFixtures.paidPayment.paymentMethod));
+      expect(payment.receiptRef, equals(TestFixtures.paidPayment.receiptRef));
+      expect(payment.isPaid, isTrue);
+      expect(payment.isPending, isFalse);
+      expect(payment.isOverdue, isFalse);
+
+      final exported = payment.toJson();
+      expect(exported['id'], equals(TestFixtures.paidPayment.id));
+      expect(exported['numero_cuota'], equals(TestFixtures.paidPayment.installmentNumber));
+      expect(exported['estado'], equals('pagado'));
+      expect(exported['comprobante_ref'], equals(TestFixtures.paidPayment.receiptRef));
+    });
+
+    test('PaymentModel maneja campos nulos y calcula getters de atraso via TestFixtures', () {
+      final payment = PaymentModel.fromJson(TestFixtures.overduePaymentJson);
+
+      expect(payment.paymentDate, isNull);
+      expect(payment.paymentMethod, isNull);
+      expect(payment.receiptRef, isNull);
+      expect(payment.isPaid, isFalse);
+      expect(payment.isPending, isFalse);
+      expect(payment.isOverdue, isTrue);
+
+      final exported = payment.toJson();
+      expect(exported['numero_cuota'], equals(TestFixtures.overduePayment.installmentNumber));
+      expect(exported['estado'], equals('atrasado'));
+      expect(exported.containsKey('fecha_pago'), isFalse);
+    });
+
+    test('PaymentModel arroja TypeError si faltan campos obligatorios', () {
+      final jsonInvalido = {
+        'id': 'pago-invalido',
+        'policy_id': 'pol-100', // Clave antigua inválida
       };
-
-      final user = UserModel.fromJson(userJson);
-      expect(user.id, equals('usr-001'));
-      expect(user.email, equals('admin@sigad.ec'));
-      expect(user.name, equals('Admin SIGAD'));
-      expect(user.role, equals('admin_system'));
-      expect(user.accessToken, equals('jwt_mock_token'));
-      expect(user.isActive, isTrue);
-
-      final outJson = user.toJson();
-      expect(outJson['email'], equals('admin@sigad.ec'));
-      expect(outJson['access_token'], equals('jwt_mock_token'));
+      expect(() => PaymentModel.fromJson(jsonInvalido), throwsA(isA<TypeError>()));
     });
   });
 }
+

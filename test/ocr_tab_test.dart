@@ -1,29 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:sigad/core/models/policy_model.dart';
+import 'package:sigad/core/constants/app_constants.dart';
 import 'package:sigad/features/web_dashboard/presentation/widgets/ocr_document_detail_card.dart';
+import 'helpers/test_factories.dart';
+import 'helpers/test_fixtures.dart';
 
 void main() {
   group('HU-06: OcrDocumentDetailCard Widget & Revision Tests', () {
-    final sampleDocument = {
-      'id': 'd1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d',
-      'nombre_archivo': 'poliza_contrato_ejemplo.pdf',
-      'tipo_mime': 'application/pdf',
-      'tamano_bytes': 204800,
-      'estado_extraccion': 'requiere_revision_manual',
-      'resultado': {
-        'metodo': 'tesseract_200dpi',
-        'confianza': 78.5,
-        'campos_extraidos': {
-          'placa': 'PBX-1234',
-          'valor_asegurado': '18500.00',
-          'prima_mensual': '45.50',
-          'numero_poliza': 'POL-OCR-9999',
-          'kilometraje': '12500',
-        },
-        'texto_completo': 'CONTRATO DE SEGURO VEHICULAR PLACA PBX-1234',
-      },
-    };
+    final sampleDocument = TestFixtures.ocrDocumentSample;
 
     testWidgets('Muestra campos extraidos editables con valores precargados', (tester) async {
       tester.view.physicalSize = const Size(1280, 1024);
@@ -41,22 +25,23 @@ void main() {
               isLoading: false,
               onRefresh: () {},
               onLinkPolicy: (_) {},
-              authToken: 'test_token',
+              authToken: TestFixtures.validToken,
             ),
           ),
         ),
       );
 
       // Verificar que se renderiza el nombre del archivo y badges
-      expect(find.text('poliza_contrato_ejemplo.pdf'), findsOneWidget);
+      expect(find.text(TestFixtures.ocrSampleFilename), findsOneWidget);
       expect(find.text('REQUIERE_REVISION_MANUAL'), findsOneWidget);
       expect(find.textContaining('CONFIANZA MEDIA (78.5%)'), findsOneWidget);
 
       // Verificar que los campos aparecen como inputs editables
-      expect(find.text('PBX-1234'), findsOneWidget);
-      expect(find.text('18500.00'), findsOneWidget);
-      expect(find.text('45.50'), findsOneWidget);
-      expect(find.text('POL-OCR-9999'), findsOneWidget);
+      final campos = sampleDocument['resultado']['campos_extraidos'] as Map<String, dynamic>;
+      expect(find.text(campos['placa'] as String), findsOneWidget);
+      expect(find.text(campos['valor_asegurado'] as String), findsOneWidget);
+      expect(find.text(campos['prima_mensual'] as String), findsOneWidget);
+      expect(find.text(campos['numero_poliza'] as String), findsOneWidget);
 
       // Verificar botones de acción
       expect(find.text('Confirmar Correcciones'), findsOneWidget);
@@ -83,14 +68,15 @@ void main() {
               onLinkPolicy: (fields) {
                 capturedFields = fields;
               },
-              authToken: 'test_token',
+              authToken: TestFixtures.validToken,
             ),
           ),
         ),
       );
 
+      final campos = sampleDocument['resultado']['campos_extraidos'] as Map<String, dynamic>;
       // Localizar el campo de texto de la placa y modificarlo
-      final placaField = find.widgetWithText(TextFormField, 'PBX-1234');
+      final placaField = find.widgetWithText(TextFormField, campos['placa'] as String);
       expect(placaField, findsOneWidget);
 
       await tester.enterText(placaField, 'GYE-9999');
@@ -104,8 +90,8 @@ void main() {
       // Validar que el callback recibió el valor corregido
       expect(capturedFields, isNotNull);
       expect(capturedFields!['placa'], equals('GYE-9999'));
-      expect(capturedFields!['valor_asegurado'], equals('18500.00'));
-      expect(capturedFields!['numero_poliza'], equals('POL-OCR-9999'));
+      expect(capturedFields!['valor_asegurado'], equals(campos['valor_asegurado']));
+      expect(capturedFields!['numero_poliza'], equals(campos['numero_poliza']));
     });
 
     test('Lógica de parseo robusto para vinculación a PolicyModel', () {
@@ -119,21 +105,21 @@ void main() {
       final double valorAsegurado = double.tryParse(
             rawCampos['valor_asegurado']?.toString().replaceAll(RegExp(r'[^0-9.]'), '') ?? '',
           ) ??
-          15000.0;
+          AppConstants.ocrDefaultInsuredValue;
 
       final double primaMensual = double.tryParse(
             rawCampos['prima_mensual']?.toString().replaceAll(RegExp(r'[^0-9.]'), '') ?? '',
           ) ??
-          35.0;
+          AppConstants.ocrDefaultMonthlyPremium;
 
       final int kilometraje = int.tryParse(
             rawCampos['kilometraje']?.toString().replaceAll(RegExp(r'[^0-9]'), '') ?? '',
           ) ??
-          5000;
+          AppConstants.ocrDefaultEmissionMileage;
 
       final String numeroPoliza = rawCampos['numero_poliza']!.toString();
 
-      final model = PolicyModel(
+      final model = TestFactories.createPolicy(
         id: 'pol-1',
         number: numeroPoliza,
         clientId: 'cli-1',
