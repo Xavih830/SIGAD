@@ -1,6 +1,8 @@
 import os
 from fastapi import FastAPI
 
+from fastapi.middleware.cors import CORSMiddleware
+
 from app.api.v1.api import api_router
 from app.core.handlers import register_handlers
 
@@ -18,11 +20,21 @@ def create_app() -> FastAPI:
         openapi_url=None if is_production else "/openapi.json",
     )
 
+    # CORS Middleware for Web clients
+    application.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
     # Register global exception handlers (SQLAlchemyError → no PII in logs)
     register_handlers(application)
 
     # Mount API v1 routes
     application.include_router(api_router)
+
 
     @application.get("/health", tags=["Infra"])
     async def health() -> dict:
