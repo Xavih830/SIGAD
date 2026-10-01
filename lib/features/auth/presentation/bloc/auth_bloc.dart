@@ -16,6 +16,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         super(AuthInitial()) {
     on<CheckSession>(_onCheckSession);
     on<LoginSubmitted>(_onLoginSubmitted);
+    on<ActivationSubmitted>(_onActivationSubmitted);
     on<LogoutRequested>(_onLogoutRequested);
     on<ResetLockout>(_onResetLockout);
   }
@@ -109,6 +110,55 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     _failedAttempts = 0;
     _lockoutUntil = null;
     emit(AuthInitial());
+  }
+
+  Future<void> _onActivationSubmitted(
+    ActivationSubmitted event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    try {
+      final response = await _client.post(
+        Uri.parse('${ApiConfig.baseUrl}/api/v1/auth/vinculacion'),
+        headers: ApiConfig.authHeaders(null),
+        body: jsonEncode({
+          'identificacion': event.identificacion.trim(),
+          'codigo_otp': event.codigoOtp.trim(),
+          'password': event.password,
+          'password_confirmacion': event.passwordConfirmacion,
+          if (event.email != null && event.email!.trim().isNotEmpty)
+            'email': event.email!.trim(),
+        }),
+      ).timeout(ApiConfig.defaultTimeout);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final user = data['user'] as Map<String, dynamic>;
+
+        final sessionData = {
+          ...user,
+          'access_token': data['access_token'],
+          'refresh_token': data['refresh_token'],
+          'role': _mapRol(user['rol'] ?? ''),
+          'name': user['nombre'] ?? '',
+          'email': user['email'] ?? '',
+          'isActive': true,
+        };
+
+        _failedAttempts = 0;
+        _lockoutUntil = null;
+        await HiveHelper.sessionBox.put('active_user', sessionData);
+        emit(AuthSuccess(user: sessionData));
+      } else {
+        final body = jsonDecode(response.body);
+        final msg = (body is Map && body.containsKey('detail'))
+            ? body['detail']
+            : 'Error en la activación de la cuenta.';
+        emit(AuthFailure(message: msg.toString()));
+      }
+    } catch (e) {
+      emit(AuthFailure(message: 'No se pudo conectar con el servidor: $e'));
+    }
   }
 
   @override

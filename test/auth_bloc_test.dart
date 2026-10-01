@@ -179,4 +179,97 @@ void main() {
       ]),
     );
   });
+
+  group('ActivationSubmitted', () {
+    test('should emit AuthSuccess and store session when activation succeeds', () async {
+      when(() => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          )).thenAnswer((_) async => http.Response(
+            jsonEncode({
+              'access_token': 'mock_activation_access_token',
+              'refresh_token': 'mock_activation_refresh_token',
+              'user': {
+                'id': 'client-usr-1',
+                'email': 'cliente@seguro.ec',
+                'nombre': 'Juan Perez',
+                'rol': 'cliente',
+                'is_active': true,
+              },
+            }),
+            200,
+          ));
+
+      authBloc.add(const ActivationSubmitted(
+        identificacion: '0926687856',
+        codigoOtp: '458921',
+        password: 'PasswordSeguro2026*',
+        passwordConfirmacion: 'PasswordSeguro2026*',
+        email: 'cliente@seguro.ec',
+      ));
+
+      await expectLater(
+        authBloc.stream,
+        emitsInOrder([
+          AuthLoading(),
+          isA<AuthSuccess>().having((s) => s.user['email'], 'email', 'cliente@seguro.ec'),
+        ]),
+      );
+
+      final stored = HiveHelper.sessionBox.get('active_user') as Map;
+      expect(stored['role'], equals('client'));
+      expect(stored['access_token'], equals('mock_activation_access_token'));
+    });
+
+    test('should emit AuthFailure when backend rejects vinculacion', () async {
+      when(() => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          )).thenAnswer((_) async => http.Response(
+            jsonEncode({'detail': 'Código de vinculación inválido o expirado.'}),
+            400,
+          ));
+
+      authBloc.add(const ActivationSubmitted(
+        identificacion: '0926687856',
+        codigoOtp: '000000',
+        password: 'PasswordSeguro2026*',
+        passwordConfirmacion: 'PasswordSeguro2026*',
+      ));
+
+      await expectLater(
+        authBloc.stream,
+        emitsInOrder([
+          AuthLoading(),
+          const AuthFailure(message: 'Código de vinculación inválido o expirado.'),
+        ]),
+      );
+    });
+
+    test('should emit AuthFailure on network error during activation', () async {
+      when(() => mockClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          )).thenThrow(const SocketException('Connection reset by peer'));
+
+      authBloc.add(const ActivationSubmitted(
+        identificacion: '0926687856',
+        codigoOtp: '458921',
+        password: 'PasswordSeguro2026*',
+        passwordConfirmacion: 'PasswordSeguro2026*',
+      ));
+
+      await expectLater(
+        authBloc.stream,
+        emitsInOrder([
+          AuthLoading(),
+          isA<AuthFailure>().having((f) => f.message, 'message', contains('No se pudo conectar con el servidor')),
+        ]),
+      );
+    });
+  });
 }
+
