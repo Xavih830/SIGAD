@@ -14,6 +14,7 @@ from tests.factories.models import (
 from tests.factories.payloads import (
     cliente_payload,
     login_payload,
+    pago_payload,
     poliza_payload,
     vehiculo_payload,
 )
@@ -31,6 +32,7 @@ __all__ = [
     "create_vehiculo",
     "create_poliza",
     "poliza_payload",
+    "pago_payload",
     "vehiculo_payload",
     "cliente_payload",
     "login_payload",

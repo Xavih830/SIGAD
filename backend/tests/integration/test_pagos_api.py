@@ -15,6 +15,7 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from tests.factories.models import create_pago
+from tests.factories.payloads import pago_payload
 from tests.factories.scenarios import ScenarioBundle
 from tests.integration.conftest import make_client
 
@@ -133,11 +134,11 @@ async def test_agente_puede_registrar_pago_cuota(base_scenario: ScenarioBundle, 
         estado="pendiente",
     )
 
-    payload = {
-        "metodo_pago": "transferencia",
-        "comprobante_ref": "DEP-PICHINCHA-5544",
-        "fecha_pago": date.today().isoformat(),
-    }
+    payload = pago_payload(
+        metodo_pago="transferencia",
+        comprobante_ref="DEP-PICHINCHA-5544",
+        fecha_pago=date.today(),
+    )
 
     async with make_client(admin_token) as client:
         res = await client.post(f"/api/v1/polizas/{poliza_a.id}/pagos/{pago.id}/registrar", json=payload)
@@ -164,10 +165,10 @@ async def test_cliente_no_puede_registrar_pago_403(base_scenario: ScenarioBundle
         estado="pendiente",
     )
 
-    payload = {
-        "metodo_pago": "tarjeta",
-        "comprobante_ref": "AUTH-7788",
-    }
+    payload = pago_payload(
+        metodo_pago="tarjeta",
+        comprobante_ref="AUTH-7788",
+    )
 
     async with make_client(token_a) as client:
         res = await client.post(f"/api/v1/polizas/{poliza_a.id}/pagos/{pago.id}/registrar", json=payload)
@@ -180,10 +181,10 @@ async def test_registrar_pago_cuota_inexistente_404(base_scenario: ScenarioBundl
     admin_token = base_scenario.admin_token
     fake_pago_id = uuid.uuid4()
 
-    payload = {
-        "metodo_pago": "debito_bancario",
-        "comprobante_ref": "REF-UNKNOWN",
-    }
+    payload = pago_payload(
+        metodo_pago="debito_bancario",
+        comprobante_ref="REF-UNKNOWN",
+    )
 
     async with make_client(admin_token) as client:
         res = await client.post(f"/api/v1/polizas/{poliza_a.id}/pagos/{fake_pago_id}/registrar", json=payload)

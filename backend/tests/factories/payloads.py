@@ -71,3 +71,21 @@ def login_payload(identificador: str, password: str = "TestPass1234!*") -> dict:
         "identificador": identificador,
         "password": password,
     }
+
+
+def pago_payload(
+    metodo_pago: str = "transferencia",
+    comprobante_ref: str = "DEP-PICHINCHA-5544",
+    fecha_pago: date | str | None = None,
+    **overrides,
+) -> dict:
+    """Generate a valid RegistrarPagoRequest dictionary."""
+    default = {
+        "metodo_pago": metodo_pago,
+        "comprobante_ref": comprobante_ref,
+    }
+    if fecha_pago is not None:
+        default["fecha_pago"] = fecha_pago.isoformat() if isinstance(fecha_pago, date) else str(fecha_pago)
+    default.update(overrides)
+    return default
+
