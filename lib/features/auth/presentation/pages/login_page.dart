@@ -7,6 +7,7 @@ import 'package:sigad/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_event.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_state.dart';
 import 'package:sigad/features/auth/presentation/widgets/lockout_view.dart';
+import 'package:sigad/features/auth/presentation/pages/account_activation_page.dart';
 import 'package:sigad/features/mobile_client/presentation/pages/mobile_dashboard_page.dart';
 import 'package:sigad/features/web_dashboard/presentation/pages/web_dashboard_page.dart';
 
@@ -129,6 +130,20 @@ class _LoginPageState extends State<LoginPage> {
                         onPressed: isLoading ? null : _submit,
                         style: ElevatedButton.styleFrom(minimumSize: const Size(double.infinity, 50), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12))),
                         child: isLoading ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text('Ingresar', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      ),
+                      const SizedBox(height: 16),
+                      TextButton(
+                        key: const Key('goto_activation_button'),
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const AccountActivationPage()),
+                          );
+                        },
+                        child: const Text(
+                          '¿Recibiste un código de vinculación por WhatsApp o correo?\nActiva tu cuenta aquí',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: AppTheme.primaryColor, fontWeight: FontWeight.w600, fontSize: 13),
+                        ),
                       ),
                     ],
                   ),
