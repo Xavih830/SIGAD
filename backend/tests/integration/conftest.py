@@ -1,128 +1,130 @@
-"""Shared fixtures for integration tests against the database.
+"""Shared fixtures for integration tests with complete Savepoint isolation and Factory support.
 
-Uses modern pytest-asyncio (v0.24+) loop_scope="session" to share the
-session event loop with the real SQLAlchemy production connection pool.
+Architectural Guarantees:
+1. Dedicated Test Database: Always targets `sigad_test_db` to protect development & production data.
+2. NullPool: Connections are strictly isolated per test, preventing connection pool poisoning across async event loops.
+3. Savepoint Rollback Isolation: Every test runs inside an outer transaction (`join_transaction_mode="create_savepoint"`).
+   Any internal `commit()` from route handlers creates a SAVEPOINT instead of persisting to disk.
+   At the end of each test, `rollback()` instantly restores the database to its pristine state.
+4. FastAPI Dependency Override: `app.dependency_overrides[get_db]` injects the transactional test session,
+   ensuring that API HTTP requests and test asserts execute in the exact same transactional scope.
+5. Zero Test Data Scattering: Test entities and payloads are provisioned cleanly via factories.
 """
 
-from datetime import date, timedelta
-from decimal import Decimal
-import uuid
+import os
+from typing import AsyncGenerator, Callable
 
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
-from sqlalchemy import select, text
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.pool import NullPool
 
-from app.core.security import create_access_token, hash_password
-from app.db.session import async_session_factory
-from app.domain.poliza_evaluator import EstadoPoliza
+from app.api.deps import get_db
+from app.core.rate_limit import rate_limiter
+from app.core.security import create_access_token
 from app.main import app
-from app.models.cliente import Cliente
-from app.models.poliza import Poliza
-from app.models.usuario import RolEnum, Usuario
-from app.models.vehiculo import Vehiculo
+from tests.factories.models import (
+    create_cliente,
+    create_poliza,
+    create_user,
+    create_vehiculo,
+)
+from tests.factories.scenarios import ScenarioBundle, create_base_scenario
+
+TEST_DATABASE_URL = os.getenv(
+    "TEST_DATABASE_URL",
+    "postgresql+asyncpg://sigad:sigad_dev_2024@localhost:5432/sigad_test_db",
+)
+
+# Engine configured with NullPool to prevent connection reuse and event-loop leakage
+test_engine = create_async_engine(
+    TEST_DATABASE_URL,
+    poolclass=NullPool,
+    echo=False,
+)
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")
 
 
-@pytest_asyncio.fixture(loop_scope="session")
-async def db_session():
-    """Provide an async database session using the real application session factory."""
-    async with async_session_factory() as session:
-        yield session
+@pytest_asyncio.fixture(scope="function")
+async def db_session() -> AsyncGenerator[AsyncSession, None]:
+    """Function-scoped transactional session with Savepoint rollback.
 
+    Every operation during the test runs inside an uncommitted transaction.
+    Teardown rolls back everything, leaving the database completely clean.
+    """
+    rate_limiter.reset()
+    async with test_engine.connect() as connection:
+        transaction = await connection.begin()
+        session = AsyncSession(
+            bind=connection,
+            join_transaction_mode="create_savepoint",
+            expire_on_commit=False,
+        )
 
-@pytest_asyncio.fixture(scope="session", loop_scope="session")
-async def seed_data():
-    """Retrieve existing seeded test clients and admin from the database without ingesting or polluting real data."""
-    async with async_session_factory() as db_session:
-        # 1. Admin
-        res_adm = await db_session.execute(select(Usuario).where(Usuario.email == "admin@sigad.ec"))
-        admin_user = res_adm.scalar_one_or_none()
-        if not admin_user:
-            admin_user = Usuario(
-                email="admin@sigad.ec",
-                password_hash=hash_password("123456789"),
-                nombre="Administrador del Sistema",
-                rol=RolEnum.ADMIN,
-                activo=True,
-            )
-            db_session.add(admin_user)
-            await db_session.flush()
-
-        # 2. Cliente A (0926687856)
-        res_ca = await db_session.execute(select(Cliente).where(Cliente.identificacion == "0926687856"))
-        cliente_a = res_ca.scalar_one_or_none()
-        res_ua = await db_session.execute(select(Usuario).where(Usuario.id == cliente_a.usuario_id))
-        user_a = res_ua.scalar_one_or_none()
-        res_va = await db_session.execute(select(Vehiculo).where(Vehiculo.cliente_id == cliente_a.id))
-        vehiculo_a = res_va.scalars().first()
-        res_pa = await db_session.execute(select(Poliza).where(Poliza.cliente_id == cliente_a.id))
-        poliza_a = res_pa.scalars().first()
-
-        # 3. Cliente B (1710034065)
-        res_cb = await db_session.execute(select(Cliente).where(Cliente.identificacion == "1710034065"))
-        cliente_b = res_cb.scalar_one_or_none()
-        res_ub = await db_session.execute(select(Usuario).where(Usuario.id == cliente_b.usuario_id))
-        user_b = res_ub.scalar_one_or_none()
-        res_vb = await db_session.execute(select(Vehiculo).where(Vehiculo.cliente_id == cliente_b.id))
-        vehiculo_b = res_vb.scalars().first()
-        res_pb = await db_session.execute(select(Poliza).where(Poliza.cliente_id == cliente_b.id))
-        poliza_b = res_pb.scalars().first()
-
-        tokens = {
-            "admin": create_access_token({"sub": str(admin_user.id)}),
-            "cliente_a": create_access_token({"sub": str(user_a.id)}),
-            "cliente_b": create_access_token({"sub": str(user_b.id)}),
-        }
+        app.dependency_overrides[get_db] = lambda: session
 
         try:
-            yield {
-                "admin_user": admin_user,
-                "user_a": user_a,
-                "cliente_a": cliente_a,
-                "user_b": user_b,
-                "cliente_b": cliente_b,
-                "vehiculo_a": vehiculo_a,
-                "vehiculo_b": vehiculo_b,
-                "poliza_a": poliza_a,
-                "poliza_b": poliza_b,
-                "tokens": tokens,
-            }
+            yield session
         finally:
-            # Teardown: Eliminar rigurosamente todos los registros temporales creados durante los tests
-            # para no contaminar la base de datos de desarrollo ni dejar artefactos residuales.
-            async with async_session_factory() as cleanup_session:
-                await cleanup_session.execute(
-                    text("DELETE FROM documentos WHERE nombre_archivo LIKE 'cedula_cliente_%' OR nombre_archivo LIKE 'test_%'")
-                )
-                await cleanup_session.execute(
-                    text(
-                        """
-                        DELETE FROM polizas WHERE numero_poliza LIKE 'POL-TEST-%'
-                           OR numero_poliza LIKE 'POL-SNAP-%'
-                           OR numero_poliza LIKE 'POL-FAIL-%'
-                           OR numero_poliza LIKE 'POL-ZERO-%'
-                           OR numero_poliza LIKE 'POL-5YR-%'
-                           OR numero_poliza LIKE 'POL-HACK-%'
-                        """
-                    )
-                )
-                await cleanup_session.execute(
-                    text("DELETE FROM vehiculos WHERE placa LIKE 'PBA-TEST-%' OR modelo = 'Vehiculo Temporal Test'")
-                )
-                await cleanup_session.execute(
-                    text("DELETE FROM clientes WHERE email LIKE 'test_%' OR nombres LIKE 'Cliente Test%'")
-                )
-                await cleanup_session.commit()
+            app.dependency_overrides.pop(get_db, None)
+            await transaction.rollback()
+            await session.close()
+
+
+@pytest_asyncio.fixture(scope="function")
+async def base_scenario(db_session: AsyncSession) -> ScenarioBundle:
+    """Generate a clean, fully populated test scenario within the active savepoint transaction."""
+    return await create_base_scenario(db_session)
+
+
+@pytest_asyncio.fixture(scope="function")
+async def seed_data(base_scenario: ScenarioBundle) -> dict:
+    """Backward-compatible fixture providing dictionary format for legacy test suites."""
+    return base_scenario.to_dict()
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Factory-as-Fixture Helpers (Eliminates test data scattering)
+# ─────────────────────────────────────────────────────────────────────────────
+
+@pytest.fixture
+def user_factory(db_session: AsyncSession) -> Callable:
+    """Factory fixture to create users with custom overrides."""
+    async def _maker(**kwargs):
+        return await create_user(db_session, **kwargs)
+    return _maker
+
+
+@pytest.fixture
+def cliente_factory(db_session: AsyncSession) -> Callable:
+    """Factory fixture to create clients with valid Módulo 10 cédula."""
+    async def _maker(**kwargs):
+        return await create_cliente(db_session, **kwargs)
+    return _maker
+
+
+@pytest.fixture
+def vehiculo_factory(db_session: AsyncSession) -> Callable:
+    """Factory fixture to create vehicles with valid ANT plates."""
+    async def _maker(**kwargs):
+        return await create_vehiculo(db_session, **kwargs)
+    return _maker
+
+
+@pytest.fixture
+def poliza_factory(db_session: AsyncSession) -> Callable:
+    """Factory fixture to create policies with valid dates and deductibles."""
+    async def _maker(**kwargs):
+        return await create_poliza(db_session, **kwargs)
+    return _maker
 
 
 def make_client(token: str | None = None) -> AsyncClient:
-    """Create test AsyncClient with optional Bearer token."""
+    """Create test AsyncClient targeting the in-memory ASGI app with optional Bearer token."""
     headers = {}
     if token:
         headers["Authorization"] = f"Bearer {token}"
     transport = ASGITransport(app=app)
     return AsyncClient(transport=transport, base_url="http://test", headers=headers)
-
