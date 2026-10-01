@@ -14,9 +14,9 @@ class CatalogItemModel {
   factory CatalogItemModel.fromJson(Map<String, dynamic> json) {
     return CatalogItemModel(
       id: json['id']?.toString() ?? '',
-      code: json['codigo'] ?? json['code'] ?? '',
-      name: json['nombre'] ?? json['name'] ?? '',
-      description: json['descripcion'] ?? json['description'],
+      code: json['codigo'] as String,
+      name: json['nombre'] as String,
+      description: json['descripcion'] as String?,
     );
   }
 
@@ -48,11 +48,11 @@ class WorkshopModel {
   factory WorkshopModel.fromJson(Map<String, dynamic> json) {
     return WorkshopModel(
       id: json['id']?.toString() ?? '',
-      name: json['nombre'] ?? json['name'] ?? '',
-      address: json['direccion'] ?? json['address'] ?? '',
-      phone: json['telefono'] ?? json['phone'] ?? '',
-      city: json['ciudad'] ?? json['city'] ?? '',
-      active: json['activo'] ?? json['active'] ?? true,
+      name: json['nombre'] as String,
+      address: json['direccion'] as String,
+      phone: json['telefono'] as String,
+      city: json['ciudad'] as String,
+      active: json['activo'] as bool? ?? true,
     );
   }
 
@@ -86,11 +86,11 @@ class AssistanceModel {
   factory AssistanceModel.fromJson(Map<String, dynamic> json) {
     return AssistanceModel(
       id: json['id']?.toString() ?? '',
-      title: json['titulo'] ?? json['type'] ?? json['title'] ?? 'Asistencia',
-      description: json['descripcion'] ?? json['description'] ?? '',
-      emergencyPhone: json['telefono_emergencia'] ?? json['phone'] ?? json['emergencyPhone'] ?? '',
-      icon: json['icono'] ?? json['icon'] ?? 'phone',
-      active: json['activo'] ?? json['active'] ?? true,
+      title: json['titulo'] as String,
+      description: json['descripcion'] as String,
+      emergencyPhone: json['telefono_emergencia'] as String,
+      icon: json['icono'] as String,
+      active: json['activo'] as bool? ?? true,
     );
   }
 
