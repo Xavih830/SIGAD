@@ -263,6 +263,53 @@ void main() {
       };
       expect(() => PaymentModel.fromJson(jsonInvalido), throwsA(isA<TypeError>()));
     });
+
+    test('Modelos soportan cadenas Decimal de FastAPI/OpenAPI sin fallar', () {
+      final policyJson = {
+        'id': 'pol-str-001',
+        'numero_poliza': 'POL-STR-001',
+        'cliente_id': 'cli-001',
+        'vehiculo_id': 'veh-001',
+        'fecha_inicio': '2026-01-01',
+        'fecha_fin': '2027-01-01',
+        'estado': 'activa',
+        'valor_asegurado': '13800.50',
+        'prima_mensual': '42.75',
+        'kilometraje_emision': 15000,
+        'deducibles': [
+          {
+            'tipo_siniestro': 'general',
+            'porcentaje_valor': '10.00',
+            'monto_minimo_usd': '150.00',
+          }
+        ],
+        'coberturas': [
+          {
+            'id': 'cov-001',
+            'nombre': 'Daños Propios',
+            'monto': '13800.50',
+          }
+        ],
+      };
+
+      final policy = PolicyModel.fromJson(policyJson);
+      expect(policy.insuredValue, equals(13800.50));
+      expect(policy.monthlyPremium, equals(42.75));
+      expect(policy.deductibles.first.porcentajeValor, equals(10.0));
+      expect(policy.deductibles.first.montoMinimoUsd, equals(150.0));
+      expect(policy.coverages.first.monto, equals(13800.50));
+
+      final paymentJson = {
+        'id': 'pay-str-001',
+        'poliza_id': 'pol-str-001',
+        'numero_cuota': 1,
+        'monto_usd': '42.75',
+        'fecha_vencimiento': '2026-02-01',
+        'estado': 'pendiente',
+      };
+      final payment = PaymentModel.fromJson(paymentJson);
+      expect(payment.amountUsd, equals(42.75));
+    });
   });
 }
 

@@ -52,7 +52,7 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
     );
 
     _status = p?.status ?? 'activa';
-    _selectedClientDoc = p?.clientId ?? (widget.clients.isNotEmpty ? widget.clients.first.identificacion : '');
+    _selectedClientDoc = p?.clientId ?? (widget.clients.isNotEmpty ? widget.clients.first.id : '');
     _selectedCoverages.addAll(p != null ? p.coverages.map((c) => c.nombre) : ['Responsabilidad Civil']);
   }
 
@@ -149,7 +149,7 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: DropdownButtonFormField<String>(
-                        initialValue: _status,
+                        value: _status,
                         decoration: const InputDecoration(labelText: 'Estado'),
                         items: const [DropdownMenuItem(value: 'activa', child: Text('Activa')), DropdownMenuItem(value: 'vencida', child: Text('Vencida')), DropdownMenuItem(value: 'cancelada', child: Text('Cancelada'))],
                         onChanged: (v) => setState(() => _status = v ?? 'activa'),
@@ -160,9 +160,9 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
                 const SizedBox(height: 12),
                 if (widget.clients.isNotEmpty)
                   DropdownButtonFormField<String>(
-                    initialValue: _selectedClientDoc.isNotEmpty ? _selectedClientDoc : null,
+                    value: _selectedClientDoc.isNotEmpty ? _selectedClientDoc : null,
                     decoration: const InputDecoration(labelText: 'Cliente Titular'),
-                    items: widget.clients.map((c) => DropdownMenuItem(value: c.identificacion, child: Text('${c.nombres} (${c.identificacion})'))).toList(),
+                    items: widget.clients.map((c) => DropdownMenuItem(value: c.id, child: Text('${c.nombres} (${c.identificacion})'))).toList(),
                     onChanged: (v) => setState(() => _selectedClientDoc = v ?? ''),
                   ),
                 const SizedBox(height: 12),

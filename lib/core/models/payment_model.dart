@@ -1,3 +1,5 @@
+import 'package:sigad/core/utils/numeric_parser.dart';
+
 class PaymentModel {
   final String id;
   final String policyId;
@@ -30,7 +32,7 @@ class PaymentModel {
       id: json['id'] as String,
       policyId: json['poliza_id'] as String,
       installmentNumber: json['numero_cuota'] as int,
-      amountUsd: (json['monto_usd'] as num).toDouble(),
+      amountUsd: parseRequiredDouble(json['monto_usd']),
       dueDate: DateTime.parse(json['fecha_vencimiento'] as String),
       paymentDate: json['fecha_pago'] != null
           ? DateTime.parse(json['fecha_pago'] as String)

@@ -49,7 +49,8 @@ class _LoginPageState extends State<LoginPage> {
         listener: (context, state) {
           if (state is AuthSuccess) {
             final role = state.user.role;
-            final dashboard = (role == 'admin_system' || role == 'admin_rjseguros')
+            final isStaff = role == 'admin' || role == 'agente' || role == 'admin_system' || role == 'admin_rjseguros';
+            final dashboard = isStaff
                 ? WebDashboardPage(user: state.user)
                 : MobileDashboardPage(user: state.user);
             Navigator.of(context).pushReplacement(

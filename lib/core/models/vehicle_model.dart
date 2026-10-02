@@ -1,3 +1,5 @@
+import 'package:sigad/core/utils/numeric_parser.dart';
+
 /// Modelo de datos canónico para Vehículos en SIGAD.
 ///
 /// Contrato estricto OpenAPI — sin shims de compatibilidad en inglés.
@@ -34,7 +36,7 @@ class VehicleModel {
       year: json['anio'] as int,
       color: json['color'] as String?,
       type: json['tipo'] as String?,
-      tonnage: (json['tonelaje'] as num?)?.toDouble(),
+      tonnage: parseOptionalDouble(json['tonelaje']),
       clientId: json['cliente_id'] as String?,
     );
   }

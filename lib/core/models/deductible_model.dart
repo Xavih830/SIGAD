@@ -1,3 +1,5 @@
+import 'package:sigad/core/utils/numeric_parser.dart';
+
 /// Modelo canónico para Deducibles en SIGAD.
 ///
 /// Contrato estricto OpenAPI — sin shims ni fallbacks silenciosos.
@@ -19,8 +21,8 @@ class DeductibleModel {
     return DeductibleModel(
       id: json['id'] as String?,
       tipoSiniestro: json['tipo_siniestro'] as String,
-      porcentajeValor: (json['porcentaje_valor'] as num).toDouble(),
-      montoMinimoUsd: (json['monto_minimo_usd'] as num).toDouble(),
+      porcentajeValor: parseRequiredDouble(json['porcentaje_valor']),
+      montoMinimoUsd: parseRequiredDouble(json['monto_minimo_usd']),
     );
   }
 

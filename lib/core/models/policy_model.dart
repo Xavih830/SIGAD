@@ -1,5 +1,6 @@
 import 'package:sigad/core/models/deductible_model.dart';
 import 'package:sigad/core/models/vehicle_model.dart';
+import 'package:sigad/core/utils/numeric_parser.dart';
 
 /// Modelo canónico para Coberturas en SIGAD.
 ///
@@ -19,7 +20,7 @@ class CoverageModel {
     return CoverageModel(
       id: json['id'] as String,
       nombre: json['nombre'] as String,
-      monto: (json['monto'] as num).toDouble(),
+      monto: parseRequiredDouble(json['monto']),
     );
   }
 
@@ -105,8 +106,8 @@ class PolicyModel {
       startDate: DateTime.parse(json['fecha_inicio'] as String),
       endDate: DateTime.parse(json['fecha_fin'] as String),
       status: json['estado'] as String,
-      insuredValue: (json['valor_asegurado'] as num).toDouble(),
-      monthlyPremium: (json['prima_mensual'] as num).toDouble(),
+      insuredValue: parseRequiredDouble(json['valor_asegurado']),
+      monthlyPremium: parseRequiredDouble(json['prima_mensual']),
       emissionMileage: json['kilometraje_emision'] as int,
       deductibles: deds,
       coverages: covs,

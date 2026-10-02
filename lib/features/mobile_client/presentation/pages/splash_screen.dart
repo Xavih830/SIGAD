@@ -82,7 +82,8 @@ class _SplashScreenState extends State<SplashScreen> {
   void _navigateToDashboard(UserModel user) {
     final route = PageRouteBuilder(
       pageBuilder: (c, a1, a2) {
-        if (user.role == 'admin_system' || user.role == 'admin_rjseguros') {
+        final isStaff = user.role == 'admin' || user.role == 'agente' || user.role == 'admin_system' || user.role == 'admin_rjseguros';
+        if (isStaff) {
           return WebDashboardPage(user: user);
         } else {
           return MobileDashboardPage(user: user);

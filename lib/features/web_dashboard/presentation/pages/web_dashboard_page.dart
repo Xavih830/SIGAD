@@ -41,7 +41,7 @@ class _WebDashboardPageState extends State<WebDashboardPage> {
   @override
   Widget build(BuildContext context) {
     final role = widget.user.role; // Acceso directo por propiedad tipada
-    final isSysAdmin = role == 'admin_system';
+    final isSysAdmin = role == 'admin_system' || role == 'admin';
     if (_activeTab == 'users' && !isSysAdmin) _activeTab = 'policies';
 
     return BlocListener<AuthBloc, AuthState>(

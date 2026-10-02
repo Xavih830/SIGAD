@@ -47,7 +47,7 @@ class _MobilePoliciesTabState extends State<MobilePoliciesTab> {
       setState(() { _policies = parsed; _isLoading = false; });
     } catch (e) {
       if (!mounted) return;
-      setState(() { _errorMessage = 'No se pudo conectar con el servidor. Verifica tu conexión.'; _isLoading = false; });
+      setState(() { _errorMessage = e.toString(); _isLoading = false; });
     }
   }
 
