@@ -10,13 +10,14 @@ And in development mode, documentation is accessible for developer productivity.
 from httpx import ASGITransport, AsyncClient
 import pytest
 
+from app.core.config import settings
 from app.main import create_app
 
 
 @pytest.mark.asyncio
 async def test_openapi_and_swagger_blocked_in_production(monkeypatch):
     """When ENVIRONMENT is set to 'production', docs endpoints must return 404 Not Found."""
-    monkeypatch.setenv("ENVIRONMENT", "production")
+    monkeypatch.setattr(settings, "ENVIRONMENT", "production")
     prod_app = create_app()
     transport = ASGITransport(app=prod_app)
 
@@ -37,7 +38,7 @@ async def test_openapi_and_swagger_blocked_in_production(monkeypatch):
 @pytest.mark.asyncio
 async def test_openapi_and_swagger_exposed_in_development(monkeypatch):
     """When ENVIRONMENT is 'development' or default, docs endpoints must return 200 OK."""
-    monkeypatch.setenv("ENVIRONMENT", "development")
+    monkeypatch.setattr(settings, "ENVIRONMENT", "development")
     dev_app = create_app()
     transport = ASGITransport(app=dev_app)
 

@@ -34,6 +34,10 @@ CLIENTE_PASSWORD = "PasswordSeguro2026*"
 
 DEFAULT_OTP = "123456"
 
+# ── Infraestructura de Pruebas ────────────────────────────────────────────────
+TEST_MAILPIT_HOST = "localhost"
+TEST_MAILPIT_HTTP_PORT = 8025
+
 DEFAULT_CAMPOS_EXTRAIDOS = {
     "numero_poliza": "POL-2026-999",
     "placa": "ABC-1234",

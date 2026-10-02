@@ -14,12 +14,7 @@ from pathlib import Path
 import socket
 import sys
 
-# 1. Inyectar variables de entorno seguras para exportación estática
-os.environ["ENVIRONMENT"] = "development"
-os.environ["DATABASE_URL"] = "postgresql+asyncpg://mock:mock@localhost:5432/mock_db"
-os.environ["JWT_SECRET_KEY"] = "export-mock-secret-key-32-chars-long!"
-
-# 2. Bloqueo Defensivo de Sockets a nivel de intérprete
+# 1. Bloqueo Defensivo de Sockets a nivel de intérprete
 _original_socket_class = socket.socket
 _original_create_connection = getattr(socket, "create_connection", None)
 

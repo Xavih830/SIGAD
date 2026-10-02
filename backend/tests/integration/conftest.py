@@ -24,6 +24,8 @@ from app.api.deps import get_db
 from app.core.rate_limit import rate_limiter
 from app.core.security import create_access_token
 from app.main import app
+from app.services.smtp_service import smtp_service
+from tests.factories.fixtures import TEST_MAILPIT_HOST
 from tests.factories.models import (
     create_cliente,
     create_poliza,
@@ -32,10 +34,14 @@ from tests.factories.models import (
 )
 from tests.factories.scenarios import ScenarioBundle, create_base_scenario
 
-TEST_DATABASE_URL = os.getenv(
-    "TEST_DATABASE_URL",
-    "postgresql+asyncpg://sigad:sigad_dev_2024@localhost:5432/sigad_test_db",
-)
+from dotenv import load_dotenv
+
+load_dotenv(".env")
+
+TEST_DATABASE_URL = os.environ["TEST_DATABASE_URL"]
+
+# Conectar smtp_service de pruebas al host local de Mailpit
+smtp_service.smtp_host = TEST_MAILPIT_HOST
 
 # Engine configured with NullPool to prevent connection reuse and event-loop leakage
 test_engine = create_async_engine(

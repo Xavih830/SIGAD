@@ -1,15 +1,14 @@
-import os
 from fastapi import FastAPI
-
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1.api import api_router
+from app.core.config import settings
 from app.core.handlers import register_handlers
 
 
 def create_app() -> FastAPI:
     """FastAPI application factory supporting production docs blocking."""
-    is_production = os.getenv("ENVIRONMENT") == "production"
+    is_production = settings.ENVIRONMENT == "production"
 
     application = FastAPI(
         title="SIGAD API",

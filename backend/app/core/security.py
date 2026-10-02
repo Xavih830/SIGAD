@@ -12,15 +12,21 @@ from datetime import datetime, timedelta, timezone
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
 from jose import jwt
+from pydantic import SecretStr
 
 from app.core.config import settings
+from app.core.constants import (
+    ARGON2_MEMORY_COST,
+    ARGON2_PARALLELISM,
+    ARGON2_TIME_COST,
+)
 
-# ── Argon2id Hasher ──────────────────────────────────────────────────
+# ── Argon2id Hasher (RFC 9106) ───────────────────────────────────────
 
 ph = PasswordHasher(
-    memory_cost=settings.ARGON2_MEMORY_COST,
-    time_cost=settings.ARGON2_TIME_COST,
-    parallelism=settings.ARGON2_PARALLELISM,
+    memory_cost=ARGON2_MEMORY_COST,
+    time_cost=ARGON2_TIME_COST,
+    parallelism=ARGON2_PARALLELISM,
 )
 
 # Pre-computed dummy hash for constant-time anti-enumeration defense.
@@ -52,25 +58,32 @@ async def verify_dummy(plain: str) -> bool:
     return await asyncio.to_thread(_verify_sync, plain, DUMMY_HASH)
 
 
-# ── JWT Token Helpers ────────────────────────────────────────────────
+def _get_jwt_secret() -> str:
+    key = settings.JWT_SECRET_KEY
+    return key.get_secret_value() if isinstance(key, SecretStr) else str(key)
+
+
+def _resolve_secret_string(sec: str | SecretStr) -> str:
+    return sec.get_secret_value() if isinstance(sec, SecretStr) else str(sec)
+
 
 def create_access_token(data: dict) -> str:
     """Create a signed JWT access token."""
     expire = datetime.now(timezone.utc) + timedelta(minutes=settings.JWT_ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode = {**data, "exp": expire, "type": "access"}
-    return jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+    return jwt.encode(to_encode, _get_jwt_secret(), algorithm=settings.JWT_ALGORITHM)
 
 
 def create_refresh_token(data: dict) -> str:
     """Create a signed JWT refresh token."""
     expire = datetime.now(timezone.utc) + timedelta(days=settings.JWT_REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode = {**data, "exp": expire, "type": "refresh"}
-    return jwt.encode(to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
+    return jwt.encode(to_encode, _get_jwt_secret(), algorithm=settings.JWT_ALGORITHM)
 
 
 def decode_token(token: str) -> dict:
     """Decode and validate a JWT token."""
-    return jwt.decode(token, settings.JWT_SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
+    return jwt.decode(token, _get_jwt_secret(), algorithms=[settings.JWT_ALGORITHM])
 
 
 # ── OTP HMAC Helpers with Quarterly Secret Rotation ──────────────────
@@ -86,9 +99,10 @@ def generate_otp_code(length: int = 6) -> str:
     return "".join(secrets.choice(digits) for _ in range(length))
 
 
-def compute_otp_hmac(code: str, secret_key: str | None = None) -> str:
+def compute_otp_hmac(code: str, secret_key: str | SecretStr | None = None) -> str:
     """Compute HMAC-SHA256 digest for an OTP code using the specified or active secret key."""
-    key = (secret_key or settings.OTP_SECRET_KEY_ACTUAL).encode("utf-8")
+    raw_key = _resolve_secret_string(secret_key if secret_key is not None else settings.OTP_SECRET_KEY_ACTUAL)
+    key = raw_key.encode("utf-8")
     return hmac.new(key, code.encode("utf-8"), hashlib.sha256).hexdigest()
 
 

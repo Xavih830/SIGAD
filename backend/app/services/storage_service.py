@@ -2,12 +2,13 @@
 
 import hashlib
 import io
-import os
 from pathlib import Path
 import re
 import uuid
 
 import pypdfium2 as pdfium
+
+from app.core.config import settings
 
 from app.core.constants import (
     MAX_DOCUMENT_SIZE_BYTES,
@@ -52,16 +53,9 @@ class StorageService:
         if upload_dir:
             self.base_dir = Path(upload_dir).resolve()
         else:
-            env_dir = os.getenv("SIGAD_UPLOAD_DIR")
-            if env_dir:
-                self.base_dir = Path(env_dir).resolve()
-            elif os.path.exists("/app") and os.access("/app", os.W_OK):
-                self.base_dir = Path("/app/uploads").resolve()
-            else:
-                # Local fallback inside project directory
-                project_root = Path(__file__).resolve().parent.parent.parent
-                self.base_dir = (project_root / "uploads").resolve()
+            self.base_dir = Path(settings.UPLOAD_DIR).resolve()
 
+    def _ensure_dir(self) -> None:
         self.base_dir.mkdir(parents=True, exist_ok=True)
 
     def _sanitize_filename(self, filename: str) -> str:
@@ -79,6 +73,7 @@ class StorageService:
         Returns:
             tuple[file_path_str, sha256_hex, file_size_bytes, page_count]
         """
+        self._ensure_dir()
         size = len(content)
         if size > MAX_FILE_SIZE_BYTES:
             raise StorageSizeLimitException("El archivo excede el tamaño máximo permitido de 15 MB.")

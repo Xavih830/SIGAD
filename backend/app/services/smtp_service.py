@@ -7,6 +7,8 @@ import os
 import smtplib
 from typing import Optional
 
+from app.core.config import settings
+
 logger = logging.getLogger("sigad.smtp")
 
 
@@ -22,14 +24,21 @@ class SMTPService:
         smtp_password: Optional[str] = None,
         use_tls: Optional[bool] = None,
     ) -> None:
-        self.smtp_host = smtp_host or os.getenv("SMTP_HOST", "localhost")
-        self.smtp_port = int(smtp_port or os.getenv("SMTP_PORT", "1025"))
-        self.from_email = from_email or os.getenv("SMTP_FROM_EMAIL", "noreply@rjseguros.ec")
-        self.smtp_user = smtp_user or os.getenv("SMTP_USER", "")
-        self.smtp_password = smtp_password or os.getenv("SMTP_PASSWORD", "")
-        self.use_tls = use_tls if use_tls is not None else (os.getenv("SMTP_USE_TLS", "false").lower() == "true")
+        self.smtp_host = smtp_host if smtp_host is not None else settings.SMTP_HOST
+        self.smtp_port = smtp_port if smtp_port is not None else settings.SMTP_PORT
+        self.from_email = from_email if from_email is not None else settings.SMTP_FROM_EMAIL
+        self.smtp_user = smtp_user if smtp_user is not None else settings.SMTP_USER
+        self.smtp_password = smtp_password if smtp_password is not None else settings.SMTP_PASSWORD
+        self.use_tls = use_tls if use_tls is not None else settings.SMTP_USE_TLS
 
-    def _send_sync(self, to_email: str, subject: str, content: str) -> None:
+    def _send_sync(
+        self,
+        to_email: str,
+        subject: str,
+        content: str,
+        host: Optional[str] = None,
+        port: Optional[int] = None,
+    ) -> None:
         """Synchronous SMTP connection executed in a worker thread to prevent event loop blocking."""
         msg = EmailMessage()
         msg["Subject"] = subject
@@ -37,7 +46,10 @@ class SMTPService:
         msg["To"] = to_email
         msg.set_content(content)
 
-        with smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=10.0) as server:
+        target_host = host if host is not None else self.smtp_host
+        target_port = port if port is not None else self.smtp_port
+
+        with smtplib.SMTP(target_host, target_port, timeout=10.0) as server:
             if self.use_tls:
                 server.starttls()
             if self.smtp_user and self.smtp_password:
@@ -49,6 +61,8 @@ class SMTPService:
         destinatario: str,
         codigo_otp: str,
         nombres: str,
+        smtp_host: Optional[str] = None,
+        smtp_port: Optional[int] = None,
     ) -> bool:
         """Asynchronously dispatch OTP code email as secondary backup channel.
         
@@ -69,8 +83,8 @@ class SMTPService:
         )
 
         try:
-            await asyncio.to_thread(self._send_sync, destinatario, subject, body)
-            logger.info("smtp_backup_dispatched recipient=%s host=%s:%d", destinatario, self.smtp_host, self.smtp_port)
+            await asyncio.to_thread(self._send_sync, destinatario, subject, body, smtp_host, smtp_port)
+            logger.info("smtp_backup_dispatched recipient=%s host=%s:%d", destinatario, smtp_host or self.smtp_host, smtp_port or self.smtp_port)
             return True
         except Exception as exc:
             logger.error("smtp_backup_failed recipient=%s error=%s", destinatario, str(exc))

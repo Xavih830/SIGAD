@@ -1,7 +1,8 @@
 FROM python:3.11-slim AS runtime
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/backend
 
 WORKDIR /backend
 
@@ -25,7 +26,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
 COPY backend/ .
 
 # Directorio de uploads con permisos
-RUN mkdir -p /app/uploads
+RUN mkdir -p /backend/uploads
 
 EXPOSE 8000
 

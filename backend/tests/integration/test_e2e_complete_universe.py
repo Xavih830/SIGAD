@@ -29,6 +29,8 @@ from tests.factories.fixtures import (
     DEFAULT_CAMPOS_EXTRAIDOS,
     DEFAULT_OTP,
     TALLER_NOMBRE,
+    TEST_MAILPIT_HOST,
+    TEST_MAILPIT_HTTP_PORT,
 )
 from tests.factories.models import (
     create_documento,
@@ -56,9 +58,7 @@ async def test_complete_universe_end_to_end(
     base_scenario: ScenarioBundle,
 ):
     """Executes the entire 0-to-100% operational lifecycle with live components and zero mocks."""
-    mailpit_host = os.getenv("MAILPIT_HOST", "localhost")
-    mailpit_http_port = os.getenv("MAILPIT_HTTP_PORT", "8025")
-    mailpit_api = f"http://{mailpit_host}:{mailpit_http_port}/api/v1"
+    mailpit_api = f"http://{TEST_MAILPIT_HOST}:{TEST_MAILPIT_HTTP_PORT}/api/v1"
 
     # =========================================================================
     # FASE 1: Administrador configura catálogos globales

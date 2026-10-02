@@ -5,16 +5,19 @@ import uuid
 import httpx
 import pytest
 from app.services.smtp_service import smtp_service
-from tests.factories import CLIENTE_NAME, DEFAULT_OTP
+from tests.factories import (
+    CLIENTE_NAME,
+    DEFAULT_OTP,
+    TEST_MAILPIT_HOST,
+    TEST_MAILPIT_HTTP_PORT,
+)
 
 pytestmark = pytest.mark.asyncio
 
 
 async def test_smtp_mailpit_delivery_and_otp_matching():
     """Verify that an email sent via SMTP arrives in Mailpit and contains the exact OTP."""
-    mailpit_http_port = os.getenv("MAILPIT_HTTP_PORT", "8025")
-    mailpit_host = os.getenv("MAILPIT_HOST", "localhost")
-    mailpit_api_url = f"http://{mailpit_host}:{mailpit_http_port}/api/v1/messages"
+    mailpit_api_url = f"http://{TEST_MAILPIT_HOST}:{TEST_MAILPIT_HTTP_PORT}/api/v1/messages"
 
     test_otp = DEFAULT_OTP
     test_client_name = CLIENTE_NAME
@@ -25,6 +28,7 @@ async def test_smtp_mailpit_delivery_and_otp_matching():
         destinatario=test_email,
         codigo_otp=test_otp,
         nombres=test_client_name,
+        smtp_host=TEST_MAILPIT_HOST,
     )
     assert delivered is True, "El envío SMTP debe ser exitoso hacia Mailpit."
 

@@ -11,6 +11,7 @@ from datetime import date, timedelta
 import uuid
 
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from tests.factories.payloads import (
     cliente_payload,
@@ -318,7 +319,7 @@ async def test_rechazo_token_jwt_texto_plano_malformado():
         assert res.status_code == 401
 
 
-async def test_rechazo_login_sql_injection_en_identificador():
+async def test_rechazo_login_sql_injection_en_identificador(db_session: AsyncSession):
     """Falla esperada: inyeccion SQL en identificador de login es neutralizada y rechazada con 401."""
     payloads_sqli = [
         "' OR '1'='1",
@@ -345,7 +346,7 @@ async def test_rechazo_login_sql_injection_en_identificador():
 # 5. CATÁLOGO: Non-existent Resource Failure Tests
 # ═════════════════════════════════════════════════════════════════════════════
 
-async def test_rechazo_taller_inexistente():
+async def test_rechazo_taller_inexistente(db_session: AsyncSession):
     """Falla esperada: consultar taller con UUID inexistente responde 404."""
     fake_id = uuid.uuid4()
     async with make_client() as client:
@@ -354,7 +355,7 @@ async def test_rechazo_taller_inexistente():
         assert "no encontrado" in res.json()["detail"].lower()
 
 
-async def test_rechazo_asistencia_inexistente():
+async def test_rechazo_asistencia_inexistente(db_session: AsyncSession):
     """Falla esperada: consultar servicio de asistencia con UUID inexistente responde 404."""
     fake_id = uuid.uuid4()
     async with make_client() as client:

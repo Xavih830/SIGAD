@@ -18,6 +18,7 @@ import uuid
 
 from jose import jwt
 import pytest
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
 from app.core.rate_limit import rate_limiter
@@ -292,7 +293,7 @@ async def test_horrible_path_montos_financieros_negativos_o_cero(base_scenario: 
         assert (await client.post("/api/v1/polizas", json=p_km_neg)).status_code == 422
 
 
-async def test_horrible_path_inyeccion_sql_en_login_y_consultas():
+async def test_horrible_path_inyeccion_sql_en_login_y_consultas(db_session: AsyncSession):
     """Horrible Path: SQL injection payloads in auth must be handled safely via parameterized ORM."""
     async with make_client() as client:
         sql_injections = [
@@ -378,9 +379,10 @@ async def test_shitty_path_falsificacion_de_tokens_jwt(base_scenario: ScenarioBu
 
         # Attack 3: Expired token
         past_exp = datetime.now(timezone.utc) - timedelta(hours=2)
+        jwt_key = settings.JWT_SECRET_KEY.get_secret_value() if hasattr(settings.JWT_SECRET_KEY, "get_secret_value") else str(settings.JWT_SECRET_KEY)
         expired_token = jwt.encode(
             {"sub": admin_id, "exp": past_exp},
-            key=settings.JWT_SECRET_KEY,
+            key=jwt_key,
             algorithm=settings.JWT_ALGORITHM,
         )
         async with make_client(expired_token) as expired_client:

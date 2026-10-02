@@ -32,6 +32,10 @@ WATCHDOG_INTERVAL_SECONDS: int = 60
 OUTBOX_POLL_INTERVAL_SECONDS: float = 1.0
 
 # ── Seguridad, Autenticación y Rate Limiting ──────────────────────────────────
+ARGON2_MEMORY_COST: int = 19456  # 19 MiB según especificación técnica
+ARGON2_TIME_COST: int = 2
+ARGON2_PARALLELISM: int = 1
+
 OTP_LENGTH: int = 6
 MAX_FAILED_OTP_ATTEMPTS: int = 3
 OTP_EXPIRATION_MINUTES: int = 15
