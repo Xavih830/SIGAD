@@ -3,7 +3,7 @@
         Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
         X-Content-Type-Options "nosniff"
         X-Frame-Options "DENY"
-        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' http://localhost:8000 http://127.0.0.1:8000 http://api:8000;"
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self';"
         Referrer-Policy "strict-origin-when-cross-origin"
         Permissions-Policy "camera=(), microphone=(), geolocation=()"
     }
@@ -11,6 +11,14 @@
     # Enrutamiento de la API REST hacia el contenedor backend
     handle /api/* {
         reverse_proxy api:8000 {
+            header_up Host {host}
+            header_up X-Real-IP {remote_host}
+        }
+    }
+
+    # Interfaz Web de Auditoría de Correos y OTPs (Mailpit)
+    handle_path /mailpit* {
+        reverse_proxy mailpit:8025 {
             header_up Host {host}
             header_up X-Real-IP {remote_host}
         }

@@ -7,8 +7,6 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-sigad}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-sigad_dev_2024}
       POSTGRES_DB: ${POSTGRES_DB:-sigad_db}
-    ports:
-      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -107,9 +105,6 @@ services:
     image: axllent/mailpit:latest
     container_name: sigad-mailpit
     restart: unless-stopped
-    ports:
-      - "1025:1025"   # Servidor SMTP entrante
-      - "8025:8025"   # Interfaz Web y API REST de mensajes
     networks:
       - sigad_network
     deploy:
