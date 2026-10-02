@@ -1,6 +1,6 @@
 """Polizas REST endpoints with SQL-level Anti-BOLA guards and SC-2026-001 support."""
 
-from datetime import date
+from datetime import date, timedelta
 from decimal import Decimal
 from typing import Sequence
 import uuid
@@ -11,6 +11,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import check_role, get_current_user
+from app.core.constants import (
+    DIAS_PERIODO_CUOTA_MENSUAL,
+    MAX_CUOTAS_POLIZA_ANUAL,
+    MIN_CUOTAS_POLIZA,
+)
 from app.db.session import get_db
 from app.domain.poliza_evaluator import (
     validar_limite_vigencia_maxima,
@@ -19,6 +24,7 @@ from app.domain.poliza_evaluator import (
 from app.models.cliente import Cliente
 from app.models.cobertura import Cobertura
 from app.models.deducible import Deducible, TipoSiniestroEnum
+from app.models.pago import Pago
 from app.models.poliza import Poliza
 from app.models.usuario import RolEnum, Usuario
 from app.models.vehiculo import Vehiculo
@@ -121,6 +127,23 @@ async def crear_poliza(
                 monto=c.monto,
             )
             db.add(cobertura)
+
+    # 8. Cronograma de pagos (HU-20): Generación de cuotas mensuales
+    dias_totales = (payload.fecha_fin - payload.fecha_inicio).days
+    num_cuotas = max(
+        MIN_CUOTAS_POLIZA,
+        min(MAX_CUOTAS_POLIZA_ANUAL, round(dias_totales / DIAS_PERIODO_CUOTA_MENSUAL)),
+    )
+    for i in range(MIN_CUOTAS_POLIZA, num_cuotas + 1):
+        vencimiento = payload.fecha_inicio + timedelta(days=DIAS_PERIODO_CUOTA_MENSUAL * (i - 1))
+        cuota = Pago(
+            poliza_id=poliza.id,
+            numero_cuota=i,
+            monto_usd=payload.prima_mensual,
+            fecha_vencimiento=vencimiento,
+            estado="pendiente",
+        )
+        db.add(cuota)
 
     await db.commit()
 
