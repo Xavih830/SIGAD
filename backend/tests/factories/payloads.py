@@ -5,10 +5,18 @@ from decimal import Decimal
 import uuid
 
 from tests.factories.fixtures import (
+    ASISTENCIA_DESCRIPCION,
+    ASISTENCIA_ICONO,
+    ASISTENCIA_TELEFONO,
+    ASISTENCIA_TITULO,
     CLIENTE_CEDULA,
     CLIENTE_PASSWORD,
     DEFAULT_CAMPOS_EXTRAIDOS,
     DEFAULT_OTP,
+    TALLER_CIUDAD,
+    TALLER_DIRECCION,
+    TALLER_NOMBRE,
+    TALLER_TELEFONO,
 )
 from tests.factories.helpers import generar_cedula_valida, generar_placa_valida
 
@@ -84,8 +92,8 @@ def cliente_payload(**overrides) -> dict:
     return _apply_overrides(default, overrides)
 
 
-def login_payload(identificador: str, password: str = "TestPass1234!*") -> dict:
-    """Generate a LoginRequest dictionary."""
+def login_payload(identificador: str, password: str = CLIENTE_PASSWORD) -> dict:
+    """Generate a LoginRequest dictionary using canonical password by default."""
     return {
         "identificador": identificador,
         "password": password,
@@ -135,4 +143,29 @@ def revision_documento_payload(
         "estado_extraccion": estado_extraccion,
     }
     return _apply_overrides(default, overrides)
+
+
+def taller_payload(**overrides) -> dict:
+    """Generate a valid TallerCreate request dictionary with canonical defaults."""
+    default = {
+        "nombre": TALLER_NOMBRE,
+        "direccion": TALLER_DIRECCION,
+        "telefono": TALLER_TELEFONO,
+        "ciudad": TALLER_CIUDAD,
+        "activo": True,
+    }
+    return _apply_overrides(default, overrides)
+
+
+def asistencia_payload(**overrides) -> dict:
+    """Generate a valid AsistenciaCreate request dictionary with canonical defaults."""
+    default = {
+        "titulo": ASISTENCIA_TITULO,
+        "descripcion": ASISTENCIA_DESCRIPCION,
+        "telefono_emergencia": ASISTENCIA_TELEFONO,
+        "icono": ASISTENCIA_ICONO,
+        "activo": True,
+    }
+    return _apply_overrides(default, overrides)
+
 

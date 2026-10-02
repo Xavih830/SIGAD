@@ -7,6 +7,11 @@ boilerplate and manual attribute assignment in unit tests.
 from unittest.mock import MagicMock
 import uuid
 
+from app.core.constants import (
+    OCR_DEFAULT_KILOMETRAJE,
+    OCR_DEFAULT_PRIMA_MENSUAL,
+    OCR_DEFAULT_VALOR_ASEGURADO,
+)
 from app.core.security import hash_password
 from app.domain.poliza_evaluator import EstadoPoliza
 from app.models.cliente import Cliente
@@ -30,11 +35,26 @@ CLIENTE_PASSWORD = "PasswordSeguro2026*"
 DEFAULT_OTP = "123456"
 
 DEFAULT_CAMPOS_EXTRAIDOS = {
-    "placa": "ABC-1234",
-    "valor_asegurado": 18500.0,
-    "prima_mensual": 45.0,
     "numero_poliza": "POL-2026-999",
+    "placa": "ABC-1234",
+    "marca": "Toyota",
+    "modelo": "Corolla Cross",
+    "valor_asegurado": float(OCR_DEFAULT_VALOR_ASEGURADO),
+    "prima_mensual": float(OCR_DEFAULT_PRIMA_MENSUAL),
+    "kilometraje": OCR_DEFAULT_KILOMETRAJE,
 }
+
+# ── Catálogos Globales ────────────────────────────────────────────────────────
+TALLER_NOMBRE = "Taller Central Guayaquil"
+TALLER_CIUDAD = "Guayaquil"
+TALLER_DIRECCION = "Av. Juan Tanca Marengo Km 4.5"
+TALLER_TELEFONO = "042987654"
+
+ASISTENCIA_TITULO = "Grúa 24/7 Nacional"
+ASISTENCIA_DESCRIPCION = "Remolque y asistencia mecánica ligera en todo el país"
+ASISTENCIA_TELEFONO = "1800-ASISTE"
+ASISTENCIA_ICONO = "tow-truck"
+
 
 # ── Validation Messages & Error Strings ───────────────────────────────────────
 MSG_PASSWORD_MIN_LENGTH = "al menos 12 caracteres"
