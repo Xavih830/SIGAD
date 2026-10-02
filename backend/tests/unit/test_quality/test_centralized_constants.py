@@ -39,3 +39,11 @@ def test_constantes_rate_limit_y_polizas():
     assert constants.RATE_LIMIT_TARPIT_BURST_THRESHOLD == 2
     assert constants.MAX_VIGENCIA_ANIOS == 5
     assert constants.DIAS_ALERTA_POR_VENCER == 30
+
+
+def test_constantes_pagos_y_cuotas():
+    """Verifica constantes canónicas para generación de cuotas (HU-20)."""
+    assert constants.MIN_CUOTAS_POLIZA == 1
+    assert constants.MAX_CUOTAS_POLIZA_ANUAL == 12
+    assert constants.DIAS_PERIODO_CUOTA_MENSUAL == 30
+

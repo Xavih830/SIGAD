@@ -20,6 +20,10 @@ OCR_PROCESS_TIMEOUT_SECONDS: int = 120
 TESSERACT_STANDARD_DPI: int = 200
 GATE1_TEXT_LENGTH_THRESHOLD: int = 50
 OCR_HIGH_CONFIDENCE_THRESHOLD: Decimal = Decimal("80.0")
+OCR_DEFAULT_VALOR_ASEGURADO: Decimal = Decimal("15000.00")
+OCR_DEFAULT_PRIMA_MENSUAL: Decimal = Decimal("35.00")
+OCR_DEFAULT_KILOMETRAJE: int = 5000
+
 
 # ── Confiabilidad, Watchdog y Outbox ─────────────────────────────────────────
 MAX_OCR_FAILED_ATTEMPTS: int = 3
@@ -52,3 +56,9 @@ DIAS_ALERTA_POR_VENCER: int = 30
 MAX_VIGENCIA_ANIOS: int = 5
 DEFAULT_DEDUCIBLE_PORCENTAJE: Decimal = Decimal("10.0")
 DEFAULT_DEDUCIBLE_MINIMO_USD: Decimal = Decimal("200.00")
+
+# ── Cronograma de Pagos y Cuotas (HU-20) ──────────────────────────────────────
+MIN_CUOTAS_POLIZA: int = 1
+MAX_CUOTAS_POLIZA_ANUAL: int = 12
+DIAS_PERIODO_CUOTA_MENSUAL: int = 30
+
