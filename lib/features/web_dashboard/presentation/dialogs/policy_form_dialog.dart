@@ -35,9 +35,9 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
     _modelCtrl = TextEditingController(text: p?.vehicle?.model ?? '');
     _yearCtrl = TextEditingController(text: p?.vehicle?.year.toString() ?? '');
     _plateCtrl = TextEditingController(text: p?.vehicle?.plate ?? '');
-    _valCtrl = TextEditingController(text: p != null ? p.insuredValue.toStringAsFixed(2) : '');
-    _primaCtrl = TextEditingController(text: p != null ? p.monthlyPremium.toStringAsFixed(2) : '');
-    _kmCtrl = TextEditingController(text: p != null ? p.emissionMileage.toString() : '0');
+    _valCtrl = TextEditingController(text: p != null && p.insuredValue > 0 ? p.insuredValue.toStringAsFixed(2) : '');
+    _primaCtrl = TextEditingController(text: p != null && p.monthlyPremium > 0 ? p.monthlyPremium.toStringAsFixed(2) : '');
+    _kmCtrl = TextEditingController(text: p != null && p.emissionMileage > 0 ? p.emissionMileage.toString() : '');
     _startCtrl = TextEditingController(
       text: p != null
           ? p.startDate.toIso8601String().substring(0, 10)

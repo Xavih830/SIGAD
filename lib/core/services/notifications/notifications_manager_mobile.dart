@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_10y.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
-import '../hive_helper.dart';
+import 'package:sigad/core/services/hive_helper.dart';
 
 class NotificationsManagerImpl {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
@@ -71,20 +71,16 @@ class NotificationsManagerImpl {
   }
 
   static Future<void> schedulePolicyNotifications(Map<String, dynamic> policy) async {
-    final number = policy['number'] as String;
-    final plate = policy['plate'] as String;
-    final endDateStr = policy['endDate'] as String;
+    final number = policy['numero_poliza'] as String;
+    final plate = policy['placa'] as String;
+    final endDateStr = policy['fecha_fin'] as String;
+    final status = policy['estado'] as String;
 
-    DateTime endDate;
-    try {
-      endDate = DateTime.parse(endDateStr);
-    } catch (_) {
-      return;
-    }
+    final endDate = DateTime.parse(endDateStr);
 
     await cancelPolicyNotifications(number);
 
-    if (policy['status'] != 'activa' || policy['isDeleted'] == true) {
+    if (status != 'activa' && status != 'por_vencer') {
       return;
     }
 

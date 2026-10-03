@@ -1,11 +1,11 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:sigad/core/constants/app_constants.dart';
 import 'package:sigad/core/models/client_model.dart';
 import 'package:sigad/core/models/policy_model.dart';
 import 'package:sigad/core/repositories/clients_repository.dart';
 import 'package:sigad/core/repositories/documents_repository.dart';
+import 'package:sigad/core/repositories/policies_repository.dart';
 import 'package:sigad/core/theme/app_theme.dart';
 import 'package:sigad/core/utils/file_picker_helper.dart';
 import 'package:sigad/core/widgets/error_view.dart';
@@ -18,11 +18,13 @@ import 'package:sigad/features/web_dashboard/presentation/widgets/ocr_document_l
 class OcrTabView extends StatefulWidget {
   final DocumentsRepository? documentsRepository;
   final ClientsRepository? clientsRepository;
+  final PoliciesRepository? policiesRepository;
 
   const OcrTabView({
     super.key,
     this.documentsRepository,
     this.clientsRepository,
+    this.policiesRepository,
   });
 
   @override
@@ -32,6 +34,7 @@ class OcrTabView extends StatefulWidget {
 class _OcrTabViewState extends State<OcrTabView> {
   late final DocumentsRepository _docsRepo;
   late final ClientsRepository _clientsRepo;
+  late final PoliciesRepository _policiesRepo;
   bool _isLoadingList = false, _isUploading = false, _isLoadingDetail = false;
   String? _errorMessage;
   List<Map<String, dynamic>> _documentos = [];
@@ -42,6 +45,7 @@ class _OcrTabViewState extends State<OcrTabView> {
     super.initState();
     _docsRepo = widget.documentsRepository ?? DocumentsRepository();
     _clientsRepo = widget.clientsRepository ?? ClientsRepository();
+    _policiesRepo = widget.policiesRepository ?? PoliciesRepository();
     _cargarDocumentos();
   }
 
@@ -114,20 +118,23 @@ class _OcrTabViewState extends State<OcrTabView> {
     } catch (_) {}
     if (!mounted) return;
 
-    // Parsear datos extraídos con tipado seguro — valores por defecto en AppConstants
-    final double valorAsegurado = double.tryParse(campos['valor_asegurado']?.toString().replaceAll(RegExp(r'[^0-9.]'), '') ?? '') ?? AppConstants.ocrDefaultInsuredValue;
-    final double primaMensual = double.tryParse(campos['prima_mensual']?.toString().replaceAll(RegExp(r'[^0-9.]'), '') ?? '') ?? AppConstants.ocrDefaultMonthlyPremium;
-    final int kilometraje = int.tryParse(campos['kilometraje']?.toString().replaceAll(RegExp(r'[^0-9]'), '') ?? '') ?? AppConstants.ocrDefaultEmissionMileage;
-    final String numeroPoliza = campos['numero_poliza']?.toString().isNotEmpty == true
-        ? campos['numero_poliza']!.toString()
-        : 'POL-OCR-${DateTime.now().millisecondsSinceEpoch.toString().substring(7)}';
+    // Extraer campos reales detectados por OCR (sin inventar datos sintéticos)
+    final String numeroPoliza = campos['numero_poliza']?.toString().trim() ?? '';
+    final String rawValor = (campos['valor_asegurado']?.toString() ?? '').replaceAll(RegExp(r'[^0-9.]'), '');
+    final double valorAsegurado = rawValor.isNotEmpty ? (double.tryParse(rawValor) ?? 0.0) : 0.0;
+
+    final String rawPrima = (campos['prima_mensual']?.toString() ?? '').replaceAll(RegExp(r'[^0-9.]'), '');
+    final double primaMensual = rawPrima.isNotEmpty ? (double.tryParse(rawPrima) ?? 0.0) : 0.0;
+
+    final String rawKm = (campos['kilometraje']?.toString() ?? '').replaceAll(RegExp(r'[^0-9]'), '');
+    final int kilometraje = rawKm.isNotEmpty ? (int.tryParse(rawKm) ?? 0) : 0;
 
     if (clients.isEmpty) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No hay clientes registrados. Cree un cliente antes de vincular una póliza OCR.'), backgroundColor: Colors.red));
       return;
     }
-    final String clientId = clients.first.identificacion;
-
+    // Usar UUID canónico del cliente
+    final String clientId = clients.first.id;
 
     final policy = PolicyModel(
       id: '',
@@ -148,9 +155,18 @@ class _OcrTabViewState extends State<OcrTabView> {
     );
 
     if (created != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Póliza ${created.number} emitida con datos de OCR.'), backgroundColor: AppTheme.successColor),
-      );
+      try {
+        await _policiesRepo.createPolicy(created, token: _getAuthToken());
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Póliza ${created.number} emitida y persistida con éxito.'), backgroundColor: AppTheme.successColor),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error al emitir póliza OCR: $e'), backgroundColor: AppTheme.errorColor),
+        );
+      }
     }
   }
 
