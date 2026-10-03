@@ -20,6 +20,11 @@ async def get_current_user(
     """Extract and validate the current user from the JWT bearer token."""
     try:
         payload = decode_token(credentials.credentials)
+        if payload.get("type") != "access":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token no válido para autenticación (tipo no autorizado)",
+            )
         user_id = payload.get("sub")
         if user_id is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token inválido")

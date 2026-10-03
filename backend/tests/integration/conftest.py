@@ -34,9 +34,10 @@ from tests.factories.models import (
 )
 from tests.factories.scenarios import ScenarioBundle, create_base_scenario
 
+from app.core.config import _CANONICAL_ROOT_ENV
 from dotenv import load_dotenv
 
-load_dotenv(".env")
+load_dotenv(_CANONICAL_ROOT_ENV)
 
 TEST_DATABASE_URL = os.environ["TEST_DATABASE_URL"]
 

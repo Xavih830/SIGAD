@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
-from sqlalchemy import desc, select
+from sqlalchemy import desc, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import check_role, get_current_user
@@ -161,6 +161,22 @@ async def regenerar_otp_cliente(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Cliente no encontrado.",
         )
+
+    if cliente.usuario_id is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El cliente ya tiene una cuenta de usuario vinculada.",
+        )
+
+    # Invalidar códigos OTP previos activos para prevenir acumulación/concurrencia (CWE-613)
+    await db.execute(
+        update(CodigoVinculacion)
+        .where(
+            CodigoVinculacion.cliente_id == cliente.id,
+            CodigoVinculacion.consumido.is_(False),
+        )
+        .values(consumido=True)
+    )
 
     codigo_plano = generate_otp_code(6)
     codigo_hmac = compute_otp_hmac(codigo_plano, settings.OTP_SECRET_KEY_ACTUAL)

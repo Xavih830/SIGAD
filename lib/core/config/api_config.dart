@@ -1,12 +1,26 @@
 import 'package:flutter/foundation.dart';
 
 class ApiConfig {
-  static const String _hostWeb = 'http://localhost:8000';
-  static const String _hostAndroid = 'http://10.0.2.2:8000';
+  static const String _envBaseUrl = String.fromEnvironment('API_BASE_URL');
+  static String? _testOverrideBaseUrl;
+
+  @visibleForTesting
+  static void setBaseUrlForTesting(String url) {
+    _testOverrideBaseUrl = url;
+  }
 
   static String get baseUrl {
-    if (kIsWeb) return _hostWeb;
-    return _hostAndroid;
+    if (_testOverrideBaseUrl != null && _testOverrideBaseUrl!.isNotEmpty) {
+      return _testOverrideBaseUrl!;
+    }
+    if (_envBaseUrl.isEmpty) {
+      throw StateError(
+        'FAIL-FAST: Variable API_BASE_URL es requerida y no está configurada. '
+        'Defínela en .env.client y ejecuta con --dart-define-from-file=.env.client '
+        'o con --dart-define=API_BASE_URL=http://...',
+      );
+    }
+    return _envBaseUrl;
   }
 
   static const Duration defaultTimeout = Duration(seconds: 10);

@@ -45,19 +45,21 @@ async def get_worker_health() -> dict[str, Any]:
         _worker_health_cache = {"status": "active", "timestamp": now}
         return {"status": "ok", "worker": "running", "pool": "active"}
     except Exception as e:
+        import logging
+        logging.getLogger("sigad.worker.health").error("worker_health_probe_failed: %s", str(e))
         _worker_health_cache = {"status": "unhealthy", "timestamp": 0.0}
         return JSONResponse(
             status_code=503,
-            content={"status": "degraded", "worker": "running", "pool": "unhealthy", "error": str(e)},
+            content={"status": "degraded", "worker": "running", "pool": "unhealthy"},
         )
 
 
-def run_health_server(host: str = "0.0.0.0", port: int = 8001) -> None:
+def run_health_server(host: str = "127.0.0.1", port: int = 8001) -> None:
     """Run worker health server synchronously."""
     uvicorn.run(worker_app, host=host, port=port, log_level="warning")
 
 
-async def start_health_server_async(host: str = "0.0.0.0", port: int = 8001) -> uvicorn.Server:
+async def start_health_server_async(host: str = "127.0.0.1", port: int = 8001) -> uvicorn.Server:
     """Start uvicorn worker health server in asyncio background task."""
     config = uvicorn.Config(app=worker_app, host=host, port=port, log_level="warning")
     server = uvicorn.Server(config)

@@ -22,11 +22,18 @@ COPY backend/requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
+# Crear usuario y grupo de ejecución sin privilegios (CIS Docker Benchmark / CWE-250)
+RUN groupadd -g 10001 sigad && \
+    useradd -u 10001 -g sigad -s /bin/sh -d /backend -M sigad
+
 # Copiar código fuente del backend
 COPY backend/ .
 
-# Directorio de uploads con permisos
-RUN mkdir -p /backend/uploads
+# Directorio de uploads con permisos para usuario no privilegiado
+RUN mkdir -p /backend/uploads && \
+    chown -R sigad:sigad /backend
+
+USER sigad
 
 EXPOSE 8000
 

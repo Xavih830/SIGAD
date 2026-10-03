@@ -4,7 +4,7 @@ services:
     container_name: sigad-postgres
     restart: always
     env_file:
-      - backend/.env
+      - .env
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -33,9 +33,9 @@ services:
              python -m scripts.seed_dev_data &&
              uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2"
     env_file:
-      - backend/.env
+      - .env
     volumes:
-      - uploads_data:/backend/${UPLOAD_DIR:?Variable UPLOAD_DIR es requerida en backend/.env}
+      - uploads_data:/backend/${UPLOAD_DIR:?Variable UPLOAD_DIR es requerida en .env}
     ports:
       - "127.0.0.1:8000:8000"
     healthcheck:
@@ -65,9 +65,9 @@ services:
     restart: always
     command: ["python", "-m", "app.workers.worker_entrypoint"]
     env_file:
-      - backend/.env
+      - .env
     volumes:
-      - uploads_data:/backend/${UPLOAD_DIR:?Variable UPLOAD_DIR es requerida en backend/.env}
+      - uploads_data:/backend/${UPLOAD_DIR:?Variable UPLOAD_DIR es requerida en .env}
     healthcheck:
       test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8001/health').read()\""]
       interval: 10s

@@ -23,12 +23,12 @@ def create_app() -> FastAPI:
         openapi_url=None if is_production else "/openapi.json",
     )
 
-    # CORS Middleware for Web clients
+    # CORS Middleware with strict origin whitelist (CWE-942 remediation)
     application.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=settings.CORS_ORIGINS,
         allow_credentials=True,
-        allow_methods=["*"],
+        allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["*"],
     )
 
@@ -63,11 +63,13 @@ def create_app() -> FastAPI:
             _health_cache["timestamp"] = now
             return {"status": "ok", "database": "connected"}
         except Exception as e:
+            import logging
+            logging.getLogger("sigad.health").error("health_probe_db_disconnected: %s", str(e))
             _health_cache["status"] = "disconnected"
             _health_cache["timestamp"] = 0.0
             return JSONResponse(
                 status_code=503,
-                content={"status": "degraded", "database": "disconnected", "error": str(e)},
+                content={"status": "degraded", "database": "disconnected"},
             )
 
     return application

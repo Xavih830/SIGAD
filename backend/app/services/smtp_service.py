@@ -28,7 +28,8 @@ class SMTPService:
         self.smtp_port = smtp_port if smtp_port is not None else settings.SMTP_PORT
         self.from_email = from_email if from_email is not None else settings.SMTP_FROM_EMAIL
         self.smtp_user = smtp_user if smtp_user is not None else settings.SMTP_USER
-        self.smtp_password = smtp_password if smtp_password is not None else settings.SMTP_PASSWORD
+        raw_password = smtp_password if smtp_password is not None else settings.SMTP_PASSWORD
+        self.smtp_password = raw_password.get_secret_value() if hasattr(raw_password, "get_secret_value") else str(raw_password)
         self.use_tls = use_tls if use_tls is not None else settings.SMTP_USE_TLS
 
     def _send_sync(

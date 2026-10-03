@@ -81,6 +81,13 @@ async def cargar_documento(
             detail="El archivo excede el tamaño máximo permitido de 15 MB.",
         )
 
+    # Clientes únicamente pueden cargar documentos asociados a una póliza propia
+    if current_user.rol == RolEnum.CLIENTE and not poliza_id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="El campo poliza_id es obligatorio para clientes.",
+        )
+
     # Validar acceso a la póliza si se envía poliza_id
     poliza = None
     if poliza_id:

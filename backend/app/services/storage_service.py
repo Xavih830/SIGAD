@@ -20,6 +20,13 @@ ALLOWED_MIME_TYPES = set(PERMITTED_MIME_TYPES)
 MAX_FILE_SIZE_BYTES = MAX_DOCUMENT_SIZE_BYTES
 MAX_PDF_PAGES = MAX_PDF_PAGES_PERMITTED
 
+ALLOWED_EXTENSIONS_BY_MIME: dict[str, set[str]] = {
+    "application/pdf": {".pdf"},
+    "image/jpeg": {".jpg", ".jpeg"},
+    "image/png": {".png"},
+    "image/tiff": {".tif", ".tiff"},
+}
+
 
 class StorageException(Exception):
     """Base storage exception."""
@@ -62,6 +69,20 @@ class StorageService:
         clean = re.sub(r"[^\w\.\-]", "_", filename.strip())
         return clean or "documento.pdf"
 
+    def _validate_magic_bytes(self, content: bytes, mime_type: str) -> bool:
+        """Validate genuine binary signatures (magic bytes) to defeat MIME spoofing (CWE-434)."""
+        if len(content) < 4:
+            return False
+        if mime_type == "application/pdf":
+            return b"%PDF-" in content[:1024]
+        elif mime_type == "image/jpeg":
+            return content.startswith(b"\xff\xd8\xff")
+        elif mime_type == "image/png":
+            return content.startswith(b"\x89PNG\r\n\x1a\n")
+        elif mime_type == "image/tiff":
+            return content.startswith(b"II*\x00") or content.startswith(b"MM\x00*")
+        return False
+
     def save_file(
         self,
         content: bytes,
@@ -78,13 +99,27 @@ class StorageService:
         if size > MAX_FILE_SIZE_BYTES:
             raise StorageSizeLimitException("El archivo excede el tamaño máximo permitido de 15 MB.")
 
-        if mime_type.lower() not in ALLOWED_MIME_TYPES:
+        mime = mime_type.lower()
+        if mime not in ALLOWED_MIME_TYPES:
             raise InvalidMimeTypeException(
                 f"Tipo MIME '{mime_type}' no admitido. Permitidos: {', '.join(sorted(ALLOWED_MIME_TYPES))}"
             )
 
+        if not self._validate_magic_bytes(content, mime):
+            raise InvalidMimeTypeException(
+                f"La firma binaria del archivo (magic bytes) no coincide con el tipo MIME declarado '{mime_type}'."
+            )
+
+        ext = Path(filename).suffix.lower()
+        allowed_exts = ALLOWED_EXTENSIONS_BY_MIME.get(mime, set())
+        if ext not in allowed_exts:
+            raise InvalidMimeTypeException(
+                f"Extensión de archivo '{ext}' incompatible o no permitida para el tipo MIME '{mime_type}'. "
+                f"Permitidas: {', '.join(sorted(allowed_exts))}"
+            )
+
         page_count = 1
-        if mime_type.lower() == "application/pdf":
+        if mime == "application/pdf":
             try:
                 pdf = pdfium.PdfDocument(io.BytesIO(content))
                 page_count = len(pdf)

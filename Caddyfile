@@ -39,13 +39,6 @@
         }
     }
 
-    # Interfaz Web de Auditoría de Correos y OTPs (Mailpit)
-    handle_path /mailpit* {
-        reverse_proxy mailpit:8025 {
-            header_up Host {host}
-            header_up X-Real-IP {remote_host}
-        }
-    }
 
     # Descarga directa del APK de la app móvil
     handle /descargas/* {

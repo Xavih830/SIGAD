@@ -34,6 +34,7 @@ if str(backend_dir) not in sys.path:
 from sqlalchemy import delete, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.config import settings
 from app.core.security import hash_password
 from app.db.session import async_session_factory
 from app.domain.poliza_evaluator import EstadoPoliza
@@ -83,6 +84,12 @@ async def clean_database(session: AsyncSession) -> None:
 
 async def seed_data(session: AsyncSession, clean: bool = False) -> None:
     """Seed production-grade realistic data for local development and testing."""
+    if settings.ENVIRONMENT == "production":
+        logger.critical(
+            "SEED_DATA_ABORTED: PROHIBIDO poblar credenciales y datos de desarrollo en producción."
+        )
+        raise RuntimeError("No se puede ejecutar el seeder de desarrollo en un entorno de producción.")
+
     if clean:
         await clean_database(session)
 
@@ -617,6 +624,12 @@ async def seed_data(session: AsyncSession, clean: bool = False) -> None:
 
 
 async def main():
+    if settings.ENVIRONMENT == "production":
+        logger.critical(
+            "SEED_DATA_ABORTED: PROHIBIDO poblar credenciales y datos de desarrollo en producción."
+        )
+        sys.exit(1)
+
     parser = argparse.ArgumentParser(description="SIGAD PostgreSQL Dev/Test Data Seeder")
     parser.add_argument(
         "--clean",

@@ -42,6 +42,17 @@ _LOGIN_ERROR = "Las credenciales ingresadas no son válidas."
 _VINCULACION_ERROR = "Código de vinculación inválido o expirado."
 
 
+def _get_client_ip(request: Request) -> str:
+    """Extract real client IP behind reverse proxy (Caddy X-Real-IP / X-Forwarded-For)."""
+    real_ip = request.headers.get("x-real-ip")
+    if real_ip:
+        return real_ip.strip()
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "127.0.0.1"
+
+
 @router.post("/login", response_model=TokenResponse)
 async def login(
     body: LoginRequest,
@@ -49,7 +60,7 @@ async def login(
     db: AsyncSession = Depends(get_db),
 ) -> TokenResponse:
     """Polymorphic login: email → direct lookup, cédula → join through clientes."""
-    ip = request.client.host if request.client else "127.0.0.1"
+    ip = _get_client_ip(request)
     identificador = body.identificador.strip()
 
     # Rate limiting (Layers 1, 2, 3, 4)
@@ -116,7 +127,7 @@ async def vincular_cliente(
     db: AsyncSession = Depends(get_db),
 ) -> TokenResponse:
     """Flujo de vinculación móvil para clientes asegurados."""
-    ip = request.client.host if request.client else "127.0.0.1"
+    ip = _get_client_ip(request)
     cedula = body.cedula.strip()
 
     # 1. Rate limiting en 4 capas
@@ -135,6 +146,16 @@ async def vincular_cliente(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=_VINCULACION_ERROR,
+        )
+
+    # Defensa contra Account Takeover: impedir re-vinculación de cuentas ya activas
+    if cliente.usuario_id is not None:
+        await verify_dummy(body.password)
+        verify_dummy_otp(body.codigo_otp)
+        rate_limiter.record_failure(identity=cedula, ip=ip)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El cliente ya se encuentra vinculado a una cuenta de usuario.",
         )
 
     # 3. Determinación y verificación estricta de colisión de email
