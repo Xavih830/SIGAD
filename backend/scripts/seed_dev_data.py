@@ -43,6 +43,7 @@ from app.models.codigo_vinculacion import CodigoVinculacion
 from app.models.cobertura import Cobertura
 from app.models.deducible import Deducible, TipoSiniestroEnum
 from app.models.inspeccion import Inspeccion
+from app.models.pago import Pago
 from app.models.poliza import Poliza
 from app.models.sesion_auth import SesionAuth
 from app.models.taller import Taller
@@ -64,6 +65,7 @@ async def clean_database(session: AsyncSession) -> None:
         "codigos_vinculacion",
         "coberturas",
         "deducibles",
+        "pagos",
         "polizas",
         "inspecciones",
         "vehiculos",
@@ -471,6 +473,39 @@ async def seed_data(session: AsyncSession, clean: bool = False) -> None:
                         monto_minimo_usd=min_usd,
                     )
                     session.add(ded)
+
+                # Cronograma de cuotas y pagos asociados a la póliza
+                for cuota_idx in range(1, 13):
+                    venc_cuota = poliza.fecha_inicio + timedelta(days=30 * (cuota_idx - 1))
+                    if venc_cuota <= poliza.fecha_fin:
+                        if venc_cuota < today:
+                            if poliza.estado == EstadoPoliza.CANCELADA or (poliza.estado == EstadoPoliza.VENCIDA and cuota_idx > 6):
+                                est_cuota = "atrasado"
+                                f_pago = None
+                                met_pago = None
+                                comp_ref = None
+                            else:
+                                est_cuota = "pagado"
+                                f_pago = venc_cuota
+                                met_pago = "transferencia"
+                                comp_ref = f"TRF-{uuid.uuid4().hex[:8].upper()}"
+                        else:
+                            est_cuota = "pendiente"
+                            f_pago = None
+                            met_pago = None
+                            comp_ref = None
+
+                        pago = Pago(
+                            poliza_id=poliza.id,
+                            numero_cuota=cuota_idx,
+                            monto_usd=poliza.prima_mensual,
+                            fecha_vencimiento=venc_cuota,
+                            fecha_pago=f_pago,
+                            estado=est_cuota,
+                            metodo_pago=met_pago,
+                            comprobante_ref=comp_ref,
+                        )
+                        session.add(pago)
 
     await session.flush()
 
