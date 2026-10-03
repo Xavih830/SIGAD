@@ -134,7 +134,7 @@ UAT_MATRIX = [
         "description": "Visualización de vehículos propios con protección IDOR",
         "preconditions": "Cliente autenticado",
         "expected_result": "Solo vehículos asociados a su identificación",
-        "test_module": "tests/integration/test_documentos_api.py",
+        "test_module": "tests/integration/test_idor_documentos.py",
     },
     {
         "id": "UAT-17",
