@@ -2,7 +2,7 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: sigad-postgres
-    restart: unless-stopped
+    restart: always
     env_file:
       - backend/.env
     volumes:
@@ -27,7 +27,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: sigad-api
-    restart: unless-stopped
+    restart: always
     command: >
       sh -c "alembic upgrade head &&
              python -m scripts.seed_dev_data &&
@@ -38,6 +38,12 @@ services:
       - uploads_data:/backend/${UPLOAD_DIR:?Variable UPLOAD_DIR es requerida en backend/.env}
     ports:
       - "127.0.0.1:8000:8000"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()\""]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
     depends_on:
       postgres:
         condition: service_healthy
@@ -56,12 +62,18 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: sigad-worker
-    restart: unless-stopped
+    restart: always
     command: ["python", "-m", "app.workers.worker_entrypoint"]
     env_file:
       - backend/.env
     volumes:
       - uploads_data:/backend/${UPLOAD_DIR:?Variable UPLOAD_DIR es requerida en backend/.env}
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8001/health').read()\""]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
     depends_on:
       postgres:
         condition: service_healthy
@@ -76,11 +88,16 @@ services:
   caddy:
     image: caddy:2-alpine
     container_name: sigad-caddy
-    restart: unless-stopped
+    restart: always
     ports:
       - "80:80"
       - "443:443"
       - "8085:80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:2019/config/ || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./build/web:/srv/flutter_web:ro
@@ -100,7 +117,7 @@ services:
   mailpit:
     image: axllent/mailpit:latest
     container_name: sigad-mailpit
-    restart: unless-stopped
+    restart: always
     ports:
       - "127.0.0.1:1025:1025"
       - "127.0.0.1:8025:8025"

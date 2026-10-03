@@ -1357,13 +1357,63 @@
         }
       }
     },
+    "/health/live": {
+      "get": {
+        "tags": [
+          "Infra"
+        ],
+        "summary": "Liveness",
+        "description": "Liveness probe: verifies process event-loop responsiveness without hitting DB.",
+        "operationId": "liveness_health_live_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Liveness Health Live Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "tags": [
+          "Infra"
+        ],
+        "summary": "Health",
+        "description": "Deep readiness probe: validates PostgreSQL with bounded timeout and rate-cache (poryecto.md §2.5).",
+        "operationId": "health_health_ready_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Health Health Ready Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health": {
       "get": {
         "tags": [
           "Infra"
         ],
         "summary": "Health",
-        "description": "Simple health check for Docker / load-balancer probes.",
+        "description": "Deep readiness probe: validates PostgreSQL with bounded timeout and rate-cache (poryecto.md §2.5).",
         "operationId": "health_health_get",
         "responses": {
           "200": {

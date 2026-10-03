@@ -3,7 +3,10 @@
 import asyncio
 from typing import Any
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
 import uvicorn
+
+from app.services.resilient_pool import resilient_pool
 
 worker_app = FastAPI(
     title="SIGAD Worker Health",
@@ -12,10 +15,41 @@ worker_app = FastAPI(
 )
 
 
-@worker_app.get("/health")
-async def get_worker_health() -> dict[str, str]:
-    """Returns worker status ok for Docker / orchestrator health probes."""
+_worker_health_cache = {"status": "unknown", "timestamp": 0.0}
+_CACHE_TTL = 3.0  # segundos
+
+
+@worker_app.get("/health/live")
+async def get_worker_liveness() -> dict[str, str]:
+    """Liveness probe: returns worker process status immediately."""
     return {"status": "ok", "worker": "running"}
+
+
+@worker_app.get("/health")
+@worker_app.get("/health/ready")
+async def get_worker_health() -> dict[str, Any]:
+    """Returns worker status ok and validates that ProcessPool is active (poryecto.md §2.5)."""
+    import time
+    global _worker_health_cache
+
+    now = time.monotonic()
+    if now - _worker_health_cache["timestamp"] < _CACHE_TTL and _worker_health_cache["status"] == "active":
+        return {"status": "ok", "worker": "running", "pool": "active"}
+
+    try:
+        loop = asyncio.get_running_loop()
+        await asyncio.wait_for(
+            loop.run_in_executor(resilient_pool.pool, abs, 1),
+            timeout=2.0,
+        )
+        _worker_health_cache = {"status": "active", "timestamp": now}
+        return {"status": "ok", "worker": "running", "pool": "active"}
+    except Exception as e:
+        _worker_health_cache = {"status": "unhealthy", "timestamp": 0.0}
+        return JSONResponse(
+            status_code=503,
+            content={"status": "degraded", "worker": "running", "pool": "unhealthy", "error": str(e)},
+        )
 
 
 def run_health_server(host: str = "0.0.0.0", port: int = 8001) -> None:
