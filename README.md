@@ -42,9 +42,92 @@ Todos los commits deben seguir la estructura:
 
 ## 2. Pila Tecnológica
 
-* **Frontend:** Flutter Web y Android (Clean Architecture pragmática, State Management BLoC, modelos inmutables).
-* **Backend:** FastAPI (Python 3.11), SQLAlchemy 2.0 Async, Pydantic v2.
+* **Frontend:** Flutter Web y Android (Clean Architecture, BLoC, modelos inmutables).
+* **Backend:** FastAPI (Python 3.11+), SQLAlchemy 2.0 Async, Pydantic v2.
 * **Base de Datos:** PostgreSQL 16 con migraciones Alembic y triggers en PL/pgSQL.
-* **Workers & OCR:** Subproceso aislado `ProcessPoolExecutor` (contexto `spawn`), pdfplumber y Tesseract 5 a 200 DPI con terminación forzosa (`SIGKILL`) ante timeouts.
-* **Cola y Schedulers:** Patrón Outbox transaccional sobre PostgreSQL con Fencing Token y APScheduler.
-* **Seguridad:** Criptografía Argon2id fuera del event loop, OTP con HMAC-SHA256, Rate Limiting con LRU acotado en memoria, y aislamiento anti-PII en logs.
+* **Workers & OCR:** Subproceso aislado `ProcessPoolExecutor`, pdfplumber y Tesseract 5 a 200 DPI.
+* **Proxy Inverso:** Caddy 2.
+
+---
+
+## 3. Configuración del Entorno de Desarrollo
+
+### 3.1 Variables de Entorno
+
+El proyecto separa estrictamente la configuración del servidor de la del cliente:
+
+1. **Backend y Servicios (Raíz del proyecto):**
+   Copiar la plantilla de configuración canónica:
+   ```bash
+   cp .env.example .env
+   ```
+   Configurar los valores requeridos (`POSTGRES_*`, `DATABASE_URL`, `JWT_SECRET_KEY`, `OTP_SECRET_KEY_*`, `UPLOAD_DIR`, etc.).
+
+2. **Frontend Flutter:**
+   Copiar la plantilla para el cliente:
+   ```bash
+   cp .env.client.example .env.client
+   ```
+   Ajustar `API_BASE_URL` (por defecto `http://localhost:8000` o la URL del gateway).
+
+---
+
+## 4. Ejecución del Proyecto
+
+### Opción A: Contenedores (Docker Compose)
+Levanta la infraestructura completa (PostgreSQL, FastAPI API, OCR Worker, Mailpit y Caddy):
+```bash
+docker compose up --build
+```
+* **API REST:** `http://localhost:8000` (o `http://localhost:8085/api/v1` vía Caddy)
+* **Documentación interactiva (Swagger):** `http://localhost:8000/docs`
+* **Mailpit (Buzón de correos de prueba):** `http://127.0.0.1:8025`
+
+### Opción B: Ejecución Local
+
+**Backend:**
+```bash
+cd backend
+python -m venv .venv
+source .venv/bin/activate  # En Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+alembic upgrade head
+python -m scripts.seed_dev_data  # Datos de prueba para desarrollo
+uvicorn app.main:app --reload --port 8000
+```
+
+**Frontend (Flutter):**
+```bash
+# Inyectando variables desde .env.client
+flutter run -d chrome --dart-define-from-file=.env.client
+
+# O pasando directamente la URL base
+flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:8000
+```
+
+---
+
+## 5. Ejecución de Pruebas y Compuertas de Calidad
+
+Antes de realizar commits o pull requests, deben ejecutarse y pasar las siguientes suites:
+
+### 5.1 Pruebas del Backend (Pytest)
+Desde la raíz del proyecto o dentro del directorio `backend/`:
+```bash
+cd backend
+PYTHONPATH=. .venv/bin/pytest tests/
+```
+* Para ejecutar únicamente pruebas unitarias o de calidad de arquitectura:
+  ```bash
+  PYTHONPATH=. .venv/bin/pytest tests/unit/test_quality/test_architecture_config.py
+  ```
+
+### 5.2 Análisis y Pruebas del Frontend (Flutter)
+Desde la raíz del proyecto:
+```bash
+# Análisis estático de código
+flutter analyze
+
+# Suite de pruebas unitarias y de widgets
+flutter test
+```
