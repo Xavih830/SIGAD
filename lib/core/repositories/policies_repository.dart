@@ -16,9 +16,45 @@ class PoliciesRepository {
   }
 
   Future<PolicyModel> createPolicy(PolicyModel policy, {String? token}) async {
+    String vehicleId = policy.vehicleId;
+
+    if (vehicleId.isEmpty && policy.vehicle != null) {
+      final plate = policy.vehicle!.plate.toUpperCase();
+      try {
+        final vehicles = await _client.getList('/api/v1/vehiculos', token: token);
+        final match = vehicles.firstWhere(
+          (v) => (v['placa'] as String).toUpperCase() == plate,
+          orElse: () => {},
+        );
+        if (match.isNotEmpty && match['id'] != null) {
+          vehicleId = match['id'] as String;
+        } else {
+          final createdVeh = await _client.post(
+            '/api/v1/vehiculos',
+            body: {
+              'placa': plate,
+              'marca': policy.vehicle!.brand,
+              'modelo': policy.vehicle!.model,
+              'anio': policy.vehicle!.year,
+              'cliente_id': policy.clientId,
+            },
+            token: token,
+          );
+          vehicleId = createdVeh['id'] as String;
+        }
+      } catch (_) {
+        // En caso de error de búsqueda, se intenta con el ID original
+      }
+    }
+
+    final payload = policy.toCreatePayloadJson();
+    if (vehicleId.isNotEmpty) {
+      payload['vehiculo_id'] = vehicleId;
+    }
+
     final data = await _client.post(
       '/api/v1/polizas',
-      body: policy.toCreatePayloadJson(),
+      body: payload,
       token: token,
     );
     return PolicyModel.fromJson(data);

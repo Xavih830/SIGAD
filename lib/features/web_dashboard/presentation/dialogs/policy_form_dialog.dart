@@ -133,7 +133,9 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
       insuredValue: insuredVal,
       monthlyPremium: prima,
       emissionMileage: km,
-      coverages: const [],
+      coverages: _selectedCoverages
+          .map((name) => CoverageModel(id: '', nombre: name, monto: insuredVal))
+          .toList(),
       deductibles: widget.initialPolicy?.deductibles ?? const [],
     ));
 

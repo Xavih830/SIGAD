@@ -32,4 +32,11 @@ class DeductibleModel {
         'porcentaje_valor': porcentajeValor,
         'monto_minimo_usd': montoMinimoUsd,
       };
+
+  /// Serializa únicamente campos requeridos por DeducibleCreate (descarta id para evitar error 422).
+  Map<String, dynamic> toCreatePayloadJson() => {
+        'tipo_siniestro': tipoSiniestro,
+        'porcentaje_valor': porcentajeValor,
+        'monto_minimo_usd': montoMinimoUsd,
+      };
 }

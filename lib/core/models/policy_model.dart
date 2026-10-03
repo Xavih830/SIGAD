@@ -29,6 +29,12 @@ class CoverageModel {
         'nombre': nombre,
         'monto': monto,
       };
+
+  /// Serializa únicamente campos requeridos por CoberturaCreate (sin id).
+  Map<String, dynamic> toCreatePayloadJson() => {
+        'nombre': nombre,
+        'monto': monto,
+      };
 }
 
 /// Modelo canónico para Pólizas de Seguro en SIGAD.
@@ -129,9 +135,9 @@ class PolicyModel {
         'prima_mensual': monthlyPremium,
         'kilometraje_emision': emissionMileage,
         if (deductibles.isNotEmpty)
-          'deducibles': deductibles.map((d) => d.toJson()).toList(),
+          'deducibles': deductibles.map((d) => d.toCreatePayloadJson()).toList(),
         if (coverages.isNotEmpty)
-          'coberturas': coverages.map((c) => c.toJson()).toList(),
+          'coberturas': coverages.map((c) => c.toCreatePayloadJson()).toList(),
       };
 
   Map<String, dynamic> toJson() => {

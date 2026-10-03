@@ -40,13 +40,11 @@ class DocumentModel {
       id: json['id'] as String,
       polizaId: json['poliza_id'] as String?,
       nombreArchivo: json['nombre_archivo'] as String,
-      tipoMime: (json['tipo_mime'] ?? 'application/pdf') as String,
-      tamanoBytes: (json['tamano_bytes'] as num?)?.toInt() ?? 0,
+      tipoMime: json['tipo_mime'] as String,
+      tamanoBytes: (json['tamano_bytes'] as num).toInt(),
       estadoExtraccion: json['estado_extraccion'] as String,
       hasResultado: json['has_resultado'] == true || json['resultado'] != null,
-      createdAt: json['created_at'] != null
-          ? DateTime.parse(json['created_at'].toString())
-          : DateTime.now(),
+      createdAt: DateTime.parse(json['created_at'] as String),
       camposExtraidos: campos,
     );
   }

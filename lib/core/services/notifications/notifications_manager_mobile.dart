@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_10y.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
+import 'package:sigad/core/models/policy_model.dart';
 import 'package:sigad/core/services/hive_helper.dart';
 
 class NotificationsManagerImpl {
@@ -68,6 +69,19 @@ class NotificationsManagerImpl {
     );
 
     await box.put(welcomedKey, true);
+  }
+
+  static Future<void> schedulePolicy(PolicyModel policy) async {
+    final vehicle = policy.vehicle;
+    if (vehicle == null) {
+      throw StateError('Póliza ${policy.number} sin vehículo asociado para agendar alertas.');
+    }
+    await schedulePolicyNotifications({
+      'numero_poliza': policy.number,
+      'placa': vehicle.plate,
+      'fecha_fin': policy.endDate.toIso8601String().substring(0, 10),
+      'estado': policy.status,
+    });
   }
 
   static Future<void> schedulePolicyNotifications(Map<String, dynamic> policy) async {

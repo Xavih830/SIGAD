@@ -201,6 +201,20 @@ void main() {
       expect(payload.containsKey('estado'), isFalse);
       expect(payload.containsKey('vehiculo'), isFalse);
       expect(payload.containsKey('cliente_nombre'), isFalse);
+
+      // Verificar que coberturas y deducibles no arrastren 'id'
+      final deds = payload['deducibles'] as List<dynamic>?;
+      if (deds != null && deds.isNotEmpty) {
+        for (final d in deds) {
+          expect((d as Map).containsKey('id'), isFalse);
+        }
+      }
+      final covs = payload['coberturas'] as List<dynamic>?;
+      if (covs != null && covs.isNotEmpty) {
+        for (final c in covs) {
+          expect((c as Map).containsKey('id'), isFalse);
+        }
+      }
     });
   });
 
