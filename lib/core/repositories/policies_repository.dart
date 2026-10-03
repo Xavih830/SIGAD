@@ -18,7 +18,7 @@ class PoliciesRepository {
   Future<PolicyModel> createPolicy(PolicyModel policy, {String? token}) async {
     final data = await _client.post(
       '/api/v1/polizas',
-      body: policy.toJson(),
+      body: policy.toCreatePayloadJson(),
       token: token,
     );
     return PolicyModel.fromJson(data);

@@ -117,6 +117,23 @@ class PolicyModel {
     );
   }
 
+  /// Serializa únicamente el payload permitido por el esquema canónico PolizaCreate de FastAPI.
+  /// Previene error 422 extra_forbidden descartando campos internos (id, estado, vehiculo, etc.).
+  Map<String, dynamic> toCreatePayloadJson() => {
+        'numero_poliza': number,
+        'cliente_id': clientId,
+        'vehiculo_id': vehicleId,
+        'fecha_inicio': startDate.toIso8601String().substring(0, 10),
+        'fecha_fin': endDate.toIso8601String().substring(0, 10),
+        'valor_asegurado': insuredValue,
+        'prima_mensual': monthlyPremium,
+        'kilometraje_emision': emissionMileage,
+        if (deductibles.isNotEmpty)
+          'deducibles': deductibles.map((d) => d.toJson()).toList(),
+        if (coverages.isNotEmpty)
+          'coberturas': coverages.map((c) => c.toJson()).toList(),
+      };
+
   Map<String, dynamic> toJson() => {
         'id': id,
         'numero_poliza': number,

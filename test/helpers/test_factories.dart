@@ -190,8 +190,9 @@ class TestFactories {
     String? clientName,
     String? paymentStatus,
     String? lastPaymentDate,
+    bool asDecimalStrings = false,
   }) {
-    return createPolicy(
+    final map = createPolicy(
       id: id,
       number: number,
       clientId: clientId,
@@ -209,6 +210,33 @@ class TestFactories {
       paymentStatus: paymentStatus,
       lastPaymentDate: lastPaymentDate,
     ).toJson();
+
+    if (asDecimalStrings) {
+      map['valor_asegurado'] = (map['valor_asegurado'] as num).toStringAsFixed(2);
+      map['prima_mensual'] = (map['prima_mensual'] as num).toStringAsFixed(2);
+      if (map['deducibles'] is List) {
+        map['deducibles'] = (map['deducibles'] as List).map((d) {
+          final dMap = Map<String, dynamic>.from(d as Map);
+          if (dMap['porcentaje_valor'] is num) {
+            dMap['porcentaje_valor'] = (dMap['porcentaje_valor'] as num).toStringAsFixed(2);
+          }
+          if (dMap['monto_minimo_usd'] is num) {
+            dMap['monto_minimo_usd'] = (dMap['monto_minimo_usd'] as num).toStringAsFixed(2);
+          }
+          return dMap;
+        }).toList();
+      }
+      if (map['coberturas'] is List) {
+        map['coberturas'] = (map['coberturas'] as List).map((c) {
+          final cMap = Map<String, dynamic>.from(c as Map);
+          if (cMap['monto'] is num) {
+            cMap['monto'] = (cMap['monto'] as num).toStringAsFixed(2);
+          }
+          return cMap;
+        }).toList();
+      }
+    }
+    return map;
   }
 
   // --- PAYMENT FACTORIES ---
@@ -248,6 +276,7 @@ class TestFactories {
     String? status,
     String? paymentMethod,
     String? receiptRef,
+    bool asDecimalStrings = false,
   }) {
     final d = dueDate ?? DateTime(2026, 1, 15);
     final dueStr = '${d.year.toString().padLeft(4, '0')}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
@@ -257,11 +286,12 @@ class TestFactories {
     }
 
     final seq = nextSequence;
+    final val = amountUsd ?? 85.00;
     return {
       'id': id ?? 'pago-$seq',
       'poliza_id': policyId ?? 'pol-100',
       'numero_cuota': installmentNumber ?? 1,
-      'monto_usd': amountUsd ?? 85.00,
+      'monto_usd': asDecimalStrings ? val.toStringAsFixed(2) : val,
       'fecha_vencimiento': dueStr,
       if (payStr != null) 'fecha_pago': payStr,
       'estado': status ?? 'pendiente',

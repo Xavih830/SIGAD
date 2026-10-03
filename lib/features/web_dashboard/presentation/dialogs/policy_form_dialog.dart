@@ -17,7 +17,7 @@ class PolicyFormDialog extends StatefulWidget {
 
 class _PolicyFormDialogState extends State<PolicyFormDialog> {
   final _formKey = GlobalKey<FormState>();
-  late final TextEditingController _numCtrl, _brandCtrl, _modelCtrl, _yearCtrl, _plateCtrl, _valCtrl, _primaCtrl, _startCtrl, _endCtrl;
+  late final TextEditingController _numCtrl, _brandCtrl, _modelCtrl, _yearCtrl, _plateCtrl, _valCtrl, _primaCtrl, _startCtrl, _endCtrl, _kmCtrl;
   late String _selectedClientDoc, _status;
   final List<String> _selectedCoverages = [];
 
@@ -37,6 +37,7 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
     _plateCtrl = TextEditingController(text: p?.vehicle?.plate ?? '');
     _valCtrl = TextEditingController(text: p != null ? p.insuredValue.toStringAsFixed(2) : '');
     _primaCtrl = TextEditingController(text: p != null ? p.monthlyPremium.toStringAsFixed(2) : '');
+    _kmCtrl = TextEditingController(text: p != null ? p.emissionMileage.toString() : '0');
     _startCtrl = TextEditingController(
       text: p != null
           ? p.startDate.toIso8601String().substring(0, 10)
@@ -58,7 +59,7 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
 
   @override
   void dispose() {
-    for (final c in [_numCtrl, _brandCtrl, _modelCtrl, _yearCtrl, _plateCtrl, _valCtrl, _primaCtrl, _startCtrl, _endCtrl]) {
+    for (final c in [_numCtrl, _brandCtrl, _modelCtrl, _yearCtrl, _plateCtrl, _valCtrl, _primaCtrl, _startCtrl, _endCtrl, _kmCtrl]) {
       c.dispose();
     }
     super.dispose();
@@ -107,6 +108,14 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
       return;
     }
 
+    final km = int.tryParse(_kmCtrl.text.trim());
+    if (km == null || km < 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('El kilometraje de emisión debe ser un entero >= 0')),
+      );
+      return;
+    }
+
     Navigator.of(context).pop(PolicyModel(
       id: widget.initialPolicy?.id ?? '',
       number: _numCtrl.text.trim(),
@@ -123,7 +132,7 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
       status: _status,
       insuredValue: insuredVal,
       monthlyPremium: prima,
-      emissionMileage: widget.initialPolicy?.emissionMileage ?? 0,
+      emissionMileage: km,
       coverages: const [],
       deductibles: widget.initialPolicy?.deductibles ?? const [],
     ));
@@ -224,6 +233,18 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
                       ),
                     ),
                   ],
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: _kmCtrl,
+                  decoration: const InputDecoration(labelText: 'Kilometraje de Emisión (Snapshot inmutable)'),
+                  keyboardType: TextInputType.number,
+                  validator: (v) {
+                    if (v == null || v.trim().isEmpty) return 'Requerido';
+                    final k = int.tryParse(v.trim());
+                    if (k == null || k < 0) return 'Kilometraje inválido (debe ser >= 0)';
+                    return null;
+                  },
                 ),
                 const SizedBox(height: 12),
                 Row(

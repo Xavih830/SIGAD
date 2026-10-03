@@ -100,13 +100,25 @@ class _PoliciesTabViewState extends State<PoliciesTabView> {
       builder: (_) => PolicyFormDialog(initialPolicy: existing, clients: clients),
     );
     if (result != null && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Póliza ${result.number} registrada.'),
-          backgroundColor: AppTheme.successColor,
-        ),
-      );
-      await _loadPolicies();
+      try {
+        await _policiesRepo.createPolicy(result, token: _getAuthToken());
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Póliza ${result.number} registrada con éxito.'),
+            backgroundColor: AppTheme.successColor,
+          ),
+        );
+        await _loadPolicies();
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al registrar póliza: $e'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
     }
   }
 

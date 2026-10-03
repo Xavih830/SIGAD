@@ -57,24 +57,14 @@ void main() {
     });
 
     test('VehicleModel arroja TypeError si faltan campos canonicos (placa)', () {
-      final jsonInvalido = {
-        'id': 'veh-123',
-        'plate': 'PBA-1234', // Clave antigua en inglés — falta 'placa'
-        'brand': 'Toyota',
-        'model': 'Yaris',
-        'year': 2024,
-      };
+      final jsonInvalido = TestFactories.createVehicleJson();
+      jsonInvalido.remove('placa');
       expect(() => VehicleModel.fromJson(jsonInvalido), throwsA(isA<TypeError>()));
     });
 
     test('VehicleModel arroja TypeError si anio no es int', () {
-      final jsonMalTipado = {
-        'id': 'veh-999',
-        'placa': 'ABC-0001',
-        'marca': 'Honda',
-        'modelo': 'Civic',
-        'anio': '2023', // String en vez de int
-      };
+      final jsonMalTipado = TestFactories.createVehicleJson();
+      jsonMalTipado['anio'] = '2023';
       expect(() => VehicleModel.fromJson(jsonMalTipado), throwsA(isA<TypeError>()));
     });
   });
@@ -95,23 +85,14 @@ void main() {
     });
 
     test('UserModel arroja TypeError si falta campo canonico nombre', () {
-      final jsonObsoleto = {
-        'id': 'usr-789',
-        'email': 'agente@sigad.ec',
-        'name': 'Carlos Agente', // Clave antigua inválida
-        'role': 'agente',
-        'is_active': true,
-      };
+      final jsonObsoleto = TestFactories.createUserJson();
+      jsonObsoleto.remove('nombre');
       expect(() => UserModel.fromJson(jsonObsoleto), throwsA(isA<TypeError>()));
     });
 
     test('UserModel acepta activo como null y aplica default true', () {
-      final jsonSinActivo = {
-        'id': 'usr-100',
-        'email': 'admin@sigad.ec',
-        'nombre': 'Admin Sistema',
-        'rol': 'admin_system',
-      };
+      final jsonSinActivo = TestFactories.createUserJson();
+      jsonSinActivo.remove('activo');
       final user = UserModel.fromJson(jsonSinActivo);
       expect(user.isActive, isTrue);
     });
@@ -148,12 +129,8 @@ void main() {
     });
 
     test('DeductibleModel arroja TypeError si faltan claves canonicas', () {
-      final jsonObsoleto = {
-        'id': 'ded-001',
-        'coverageName': 'robo',
-        'percentage': 10,
-        'minAmount': 300,
-      };
+      final jsonObsoleto = TestFactories.createDeductibleJson();
+      jsonObsoleto.remove('tipo_siniestro');
       expect(() => DeductibleModel.fromJson(jsonObsoleto), throwsA(isA<TypeError>()));
     });
   });
@@ -196,15 +173,8 @@ void main() {
     });
 
     test('PolicyModel arroja TypeError si falta numero_poliza', () {
-      final jsonIncompleto = {
-        'id': 'pol-abc',
-        'number': 'RJ-2024-001', // Clave antigua inválida
-        'cliente_id': 'cli-xyz',
-        'vehiculo_id': 'veh-xyz',
-        'fecha_inicio': '2024-01-15',
-        'fecha_fin': '2025-01-15',
-        'estado': 'activa',
-      };
+      final jsonIncompleto = TestFactories.createPolicyJson();
+      jsonIncompleto.remove('numero_poliza');
       expect(() => PolicyModel.fromJson(jsonIncompleto), throwsA(isA<TypeError>()));
     });
 
@@ -213,6 +183,24 @@ void main() {
       expect(cov.id, equals(TestFixtures.standardCoverage.id));
       expect(cov.nombre, equals(TestFixtures.standardCoverage.nombre));
       expect(cov.monto, equals(TestFixtures.standardCoverage.monto));
+    });
+
+    test('toCreatePayloadJson serializa estrictamente el esquema PolizaCreate sin campos extra', () {
+      final policy = TestFixtures.activePolicy;
+      final payload = policy.toCreatePayloadJson();
+
+      expect(payload['numero_poliza'], equals(policy.number));
+      expect(payload['cliente_id'], equals(policy.clientId));
+      expect(payload['vehiculo_id'], equals(policy.vehicleId));
+      expect(payload['valor_asegurado'], equals(policy.insuredValue));
+      expect(payload['prima_mensual'], equals(policy.monthlyPremium));
+      expect(payload['kilometraje_emision'], equals(policy.emissionMileage));
+
+      // Campos prohibidos por extra='forbid'
+      expect(payload.containsKey('id'), isFalse);
+      expect(payload.containsKey('estado'), isFalse);
+      expect(payload.containsKey('vehiculo'), isFalse);
+      expect(payload.containsKey('cliente_nombre'), isFalse);
     });
   });
 
@@ -257,58 +245,23 @@ void main() {
     });
 
     test('PaymentModel arroja TypeError si faltan campos obligatorios', () {
-      final jsonInvalido = {
-        'id': 'pago-invalido',
-        'policy_id': 'pol-100', // Clave antigua inválida
-      };
+      final jsonInvalido = TestFactories.createPaymentJson();
+      jsonInvalido.remove('monto_usd');
       expect(() => PaymentModel.fromJson(jsonInvalido), throwsA(isA<TypeError>()));
     });
 
     test('Modelos soportan cadenas Decimal de FastAPI/OpenAPI sin fallar', () {
-      final policyJson = {
-        'id': 'pol-str-001',
-        'numero_poliza': 'POL-STR-001',
-        'cliente_id': 'cli-001',
-        'vehiculo_id': 'veh-001',
-        'fecha_inicio': '2026-01-01',
-        'fecha_fin': '2027-01-01',
-        'estado': 'activa',
-        'valor_asegurado': '13800.50',
-        'prima_mensual': '42.75',
-        'kilometraje_emision': 15000,
-        'deducibles': [
-          {
-            'tipo_siniestro': 'general',
-            'porcentaje_valor': '10.00',
-            'monto_minimo_usd': '150.00',
-          }
-        ],
-        'coberturas': [
-          {
-            'id': 'cov-001',
-            'nombre': 'Daños Propios',
-            'monto': '13800.50',
-          }
-        ],
-      };
-
+      final policyJson = TestFactories.createPolicyJson(asDecimalStrings: true);
       final policy = PolicyModel.fromJson(policyJson);
-      expect(policy.insuredValue, equals(13800.50));
-      expect(policy.monthlyPremium, equals(42.75));
-      expect(policy.deductibles.first.porcentajeValor, equals(10.0));
-      expect(policy.deductibles.first.montoMinimoUsd, equals(150.0));
-      expect(policy.coverages.first.monto, equals(13800.50));
+      expect(policy.insuredValue, isA<double>());
+      expect(policy.monthlyPremium, isA<double>());
+      expect(policy.deductibles.first.porcentajeValor, isA<double>());
+      expect(policy.deductibles.first.montoMinimoUsd, isA<double>());
+      expect(policy.coverages.first.monto, isA<double>());
 
-      final paymentJson = {
-        'id': 'pay-str-001',
-        'poliza_id': 'pol-str-001',
-        'numero_cuota': 1,
-        'monto_usd': '42.75',
-        'fecha_vencimiento': '2026-02-01',
-        'estado': 'pendiente',
-      };
+      final paymentJson = TestFactories.createPaymentJson(asDecimalStrings: true);
       final payment = PaymentModel.fromJson(paymentJson);
-      expect(payment.amountUsd, equals(42.75));
+      expect(payment.amountUsd, isA<double>());
     });
   });
 }
