@@ -33,19 +33,22 @@ from app.services.storage_service import (
 router = APIRouter(prefix="/documentos", tags=["Documentos"])
 
 
+from app.models.cliente import Cliente
+
+
 def _verificar_acceso_documento(doc: Documento | None, poliza: Poliza | None, current_user: Usuario) -> None:
     """Enforces Anti-IDOR access control.
     
-    Admins have full access.
+    Admins and Agents have full access to manage client documents.
     Clients can only access documents associated with their own policies.
     """
-    if current_user.rol == RolEnum.ADMIN:
+    if current_user.rol in (RolEnum.ADMIN, RolEnum.AGENTE):
         return
 
     if poliza is None or poliza.cliente is None or poliza.cliente.usuario_id != current_user.id:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Acceso denegado: no tiene permisos para este documento.",
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Documento no encontrado.",
         )
 
 
@@ -229,29 +232,25 @@ async def listar_documentos(
     if poliza_id:
         stmt = stmt.where(Documento.poliza_id == poliza_id)
 
+    if current_user.rol == RolEnum.CLIENTE:
+        stmt = stmt.join(Documento.poliza).join(Poliza.cliente).where(Cliente.usuario_id == current_user.id)
+
     res = await db.execute(stmt)
     docs = res.scalars().all()
 
-    items: list[DocumentoListItemResponse] = []
-    for doc in docs:
-        if current_user.rol != RolEnum.ADMIN:
-            if doc.poliza is None or doc.poliza.cliente is None or doc.poliza.cliente.usuario_id != current_user.id:
-                continue
-
-        items.append(
-            DocumentoListItemResponse(
-                id=doc.id,
-                poliza_id=doc.poliza_id,
-                nombre_archivo=doc.nombre_archivo,
-                tipo_mime=doc.tipo_mime,
-                tamano_bytes=doc.tamano_bytes,
-                estado_extraccion=doc.estado_extraccion,
-                has_resultado=doc.resultado is not None,
-                created_at=doc.created_at,
-            )
+    return [
+        DocumentoListItemResponse(
+            id=doc.id,
+            poliza_id=doc.poliza_id,
+            nombre_archivo=doc.nombre_archivo,
+            tipo_mime=doc.tipo_mime,
+            tamano_bytes=doc.tamano_bytes,
+            estado_extraccion=doc.estado_extraccion,
+            has_resultado=doc.resultado is not None,
+            created_at=doc.created_at,
         )
-
-    return items
+        for doc in docs
+    ]
 
 
 @router.patch("/{documento_id}/revision", response_model=DocumentoRevisionResponse, status_code=status.HTTP_200_OK)

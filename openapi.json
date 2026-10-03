@@ -98,6 +98,11 @@
         "summary": "Registrar Cliente",
         "description": "Registra un nuevo cliente asegurado y genera su código OTP de vinculación inicial.",
         "operationId": "registrar_cliente_api_v1_clientes_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -138,6 +143,11 @@
         "summary": "Listar Clientes",
         "description": "Lista todos los clientes registrados.",
         "operationId": "listar_clientes_api_v1_clientes_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "q",
@@ -217,6 +227,11 @@
         "summary": "Obtener Cliente",
         "description": "Obtiene el detalle de un cliente asegurado.",
         "operationId": "obtener_cliente_api_v1_clientes__cliente_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "cliente_id",
@@ -261,6 +276,11 @@
         "summary": "Regenerar Otp Cliente",
         "description": "Regenera un nuevo código OTP de vinculación para un cliente existente.",
         "operationId": "regenerar_otp_cliente_api_v1_clientes__cliente_id__otp_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "parameters": [
           {
             "name": "cliente_id",
@@ -855,6 +875,11 @@
         "summary": "Crear Taller",
         "description": "Registra un nuevo taller autorizado.",
         "operationId": "crear_taller_api_v1_talleres_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
@@ -989,6 +1014,11 @@
         "summary": "Crear Asistencia",
         "description": "Registra un nuevo servicio de asistencia.",
         "operationId": "crear_asistencia_api_v1_asistencias_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {

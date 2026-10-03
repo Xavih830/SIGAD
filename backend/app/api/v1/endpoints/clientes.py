@@ -9,11 +9,13 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, s
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.deps import check_role, get_current_user
 from app.core.config import settings
 from app.core.security import compute_otp_hmac, generate_otp_code
 from app.db.session import get_db
 from app.models.cliente import Cliente
 from app.models.codigo_vinculacion import CodigoVinculacion
+from app.models.usuario import RolEnum, Usuario
 from app.schemas.cliente import ClienteCreate, ClienteResponse
 from app.services.smtp_service import smtp_service
 
@@ -26,6 +28,7 @@ router = APIRouter(prefix="/clientes", tags=["Clientes"])
 async def registrar_cliente(
     body: ClienteCreate,
     background_tasks: BackgroundTasks,
+    current_user: Usuario = Depends(check_role(RolEnum.ADMIN, RolEnum.AGENTE)),
     db: AsyncSession = Depends(get_db),
 ) -> ClienteResponse:
     """Registra un nuevo cliente asegurado y genera su código OTP de vinculación inicial."""
@@ -97,6 +100,7 @@ async def listar_clientes(
     q: Optional[str] = Query(None, description="Búsqueda por nombre o cédula"),
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
+    current_user: Usuario = Depends(check_role(RolEnum.ADMIN, RolEnum.AGENTE)),
     db: AsyncSession = Depends(get_db),
 ) -> List[ClienteResponse]:
     """Lista todos los clientes registrados."""
@@ -115,6 +119,7 @@ async def listar_clientes(
 @router.get("/{cliente_id}", response_model=ClienteResponse)
 async def obtener_cliente(
     cliente_id: uuid.UUID,
+    current_user: Usuario = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> ClienteResponse:
     """Obtiene el detalle de un cliente asegurado."""
@@ -128,6 +133,14 @@ async def obtener_cliente(
             detail="Cliente no encontrado.",
         )
 
+    # Si es cliente asegurado, solo puede acceder a su propio registro (Anti-BOLA/IDOR)
+    if current_user.rol not in (RolEnum.ADMIN, RolEnum.AGENTE):
+        if cliente.usuario_id != current_user.id:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Cliente no encontrado.",
+            )
+
     return ClienteResponse.model_validate(cliente)
 
 
@@ -135,6 +148,7 @@ async def obtener_cliente(
 async def regenerar_otp_cliente(
     cliente_id: uuid.UUID,
     background_tasks: BackgroundTasks,
+    current_user: Usuario = Depends(check_role(RolEnum.ADMIN, RolEnum.AGENTE)),
     db: AsyncSession = Depends(get_db),
 ) -> ClienteResponse:
     """Regenera un nuevo código OTP de vinculación para un cliente existente."""

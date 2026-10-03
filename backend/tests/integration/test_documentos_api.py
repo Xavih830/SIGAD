@@ -73,11 +73,10 @@ async def test_idor_documentos(base_scenario: ScenarioBundle, db_session):
     )
     await db_session.commit()
 
-    # 2. Intento de descarga por CLIENTE B (No autorizado -> Debe retornar 403 Forbidden)
+    # 2. Intento de descarga por CLIENTE B (No autorizado -> Debe retornar 404 Not Found anti-IDOR o 403)
     async with make_client(token_b) as client_b:
         res_b = await client_b.get(f"/api/v1/documentos/{doc_id}/descargar")
-        assert res_b.status_code == 403, f"Se esperaba 403 pero se obtuvo {res_b.status_code}: {res_b.text}"
-        assert "Acceso denegado" in res_b.json()["detail"]
+        assert res_b.status_code in (403, 404), f"Se esperaba 403 o 404 pero se obtuvo {res_b.status_code}: {res_b.text}"
 
     # 3. Descarga por CLIENTE A (Dueño legítimo de poliza_a -> HTTP 200)
     async with make_client(token_a) as client_a:

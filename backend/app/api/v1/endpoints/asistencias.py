@@ -8,8 +8,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.deps import check_role
 from app.db.session import get_db
 from app.models.asistencia import Asistencia
+from app.models.usuario import RolEnum, Usuario
 from app.schemas.catalogo import AsistenciaCreate, AsistenciaResponse
 
 logger = logging.getLogger("sigad.asistencias")
@@ -35,6 +37,7 @@ async def listar_asistencias(
 @router.post("", response_model=AsistenciaResponse, status_code=status.HTTP_201_CREATED)
 async def crear_asistencia(
     body: AsistenciaCreate,
+    current_user: Usuario = Depends(check_role(RolEnum.ADMIN)),
     db: AsyncSession = Depends(get_db),
 ) -> AsistenciaResponse:
     """Registra un nuevo servicio de asistencia."""

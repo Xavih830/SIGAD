@@ -8,8 +8,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.deps import check_role
 from app.db.session import get_db
 from app.models.taller import Taller
+from app.models.usuario import RolEnum, Usuario
 from app.schemas.catalogo import TallerCreate, TallerResponse
 
 logger = logging.getLogger("sigad.talleres")
@@ -38,6 +40,7 @@ async def listar_talleres(
 @router.post("", response_model=TallerResponse, status_code=status.HTTP_201_CREATED)
 async def crear_taller(
     body: TallerCreate,
+    current_user: Usuario = Depends(check_role(RolEnum.ADMIN)),
     db: AsyncSession = Depends(get_db),
 ) -> TallerResponse:
     """Registra un nuevo taller autorizado."""
