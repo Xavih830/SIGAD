@@ -1,0 +1,1 @@
+typedef TokenProvider = String? Function();
