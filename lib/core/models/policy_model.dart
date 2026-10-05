@@ -85,6 +85,18 @@ class PolicyModel {
   bool get isExpiringSoon =>
       !isExpired && daysUntilExpiration <= 30 && daysUntilExpiration >= 0;
 
+  /// Ordena una lista de pólizas priorizando las vigentes sobre las vencidas.
+  static List<PolicyModel> sortByActivePriority(List<PolicyModel> policies) {
+    final copy = List<PolicyModel>.from(policies);
+    copy.sort((a, b) => (!b.isExpired ? 1 : 0).compareTo(!a.isExpired ? 1 : 0));
+    return copy;
+  }
+
+  /// Cuenta las pólizas activas/vigentes en una lista.
+  static int countActivePolicies(List<PolicyModel> policies) {
+    return policies.where((p) => !p.isExpired).length;
+  }
+
   factory PolicyModel.fromJson(Map<String, dynamic> json) {
     VehicleModel? veh;
     if (json['vehiculo'] is Map<String, dynamic>) {

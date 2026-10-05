@@ -27,6 +27,20 @@ class PaymentModel {
   bool get isPending => status.toLowerCase() == 'pendiente';
   bool get isOverdue => status.toLowerCase() == 'atrasado';
 
+  /// Evalúa el estado financiero consolidado a partir de una lista de cuotas.
+  static String calculateConsolidatedStatus(List<PaymentModel> payments, {String? defaultStatus}) {
+    if (payments.isEmpty) {
+      return defaultStatus ?? 'Sin cuotas registradas';
+    }
+    if (payments.any((p) => p.isOverdue)) {
+      return 'En mora';
+    }
+    if (payments.every((p) => p.isPaid)) {
+      return 'Pagada';
+    }
+    return 'Al día';
+  }
+
   factory PaymentModel.fromJson(Map<String, dynamic> json) {
     return PaymentModel(
       id: json['id'] as String,

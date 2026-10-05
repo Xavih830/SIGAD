@@ -12,6 +12,9 @@ class DocumentModel {
   final bool hasResultado;
   final DateTime createdAt;
   final Map<String, dynamic>? camposExtraidos;
+  final String? metodo;
+  final double? confianza;
+  final String? textoCompleto;
 
   const DocumentModel({
     required this.id,
@@ -23,12 +26,22 @@ class DocumentModel {
     this.hasResultado = false,
     required this.createdAt,
     this.camposExtraidos,
+    this.metodo,
+    this.confianza,
+    this.textoCompleto,
   });
 
   factory DocumentModel.fromJson(Map<String, dynamic> json) {
     Map<String, dynamic>? campos;
+    String? metodo;
+    double? confianza;
+    String? textoCompleto;
+
     if (json['resultado'] is Map<String, dynamic>) {
       final res = json['resultado'] as Map<String, dynamic>;
+      metodo = res['metodo'] as String?;
+      confianza = (res['confianza'] as num?)?.toDouble();
+      textoCompleto = res['texto_completo'] as String?;
       if (res['campos_extraidos'] is Map<String, dynamic>) {
         campos = Map<String, dynamic>.from(res['campos_extraidos'] as Map);
       }
@@ -46,6 +59,9 @@ class DocumentModel {
       hasResultado: json['has_resultado'] == true || json['resultado'] != null,
       createdAt: DateTime.parse(json['created_at'] as String),
       camposExtraidos: campos,
+      metodo: metodo,
+      confianza: confianza,
+      textoCompleto: textoCompleto,
     );
   }
 
@@ -59,5 +75,8 @@ class DocumentModel {
         'has_resultado': hasResultado,
         'created_at': createdAt.toIso8601String(),
         if (camposExtraidos != null) 'campos_extraidos': camposExtraidos,
+        if (metodo != null) 'metodo': metodo,
+        if (confianza != null) 'confianza': confianza,
+        if (textoCompleto != null) 'texto_completo': textoCompleto,
       };
 }
