@@ -21,6 +21,8 @@ class LoginSubmitted extends AuthEvent {
 
 class LogoutRequested extends AuthEvent {}
 
+class SessionExpired extends AuthEvent {}
+
 class ResetLockout extends AuthEvent {}
 
 class ActivationSubmitted extends AuthEvent {

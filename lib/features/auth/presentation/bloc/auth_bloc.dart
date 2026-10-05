@@ -2,8 +2,10 @@ import 'dart:convert';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:http/http.dart' as http;
 import 'package:sigad/core/config/api_config.dart';
+import 'package:sigad/core/constants/api_endpoints.dart';
+import 'package:sigad/core/constants/app_constants.dart';
 import 'package:sigad/core/models/user_model.dart';
-import 'package:sigad/core/services/hive_helper.dart';
+import 'package:sigad/core/services/session_vault.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_event.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_state.dart';
 
@@ -19,20 +21,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<LoginSubmitted>(_onLoginSubmitted);
     on<ActivationSubmitted>(_onActivationSubmitted);
     on<LogoutRequested>(_onLogoutRequested);
+    on<SessionExpired>(_onSessionExpired);
     on<ResetLockout>(_onResetLockout);
   }
 
-  void _onCheckSession(CheckSession event, Emitter<AuthState> emit) {
-    final raw = HiveHelper.sessionBox.get('active_user');
+  Future<void> _onCheckSession(CheckSession event, Emitter<AuthState> emit) async {
+    final raw = await SessionVault.getSession();
     if (raw != null) {
-      final json = Map<String, dynamic>.from(raw as Map);
-      final user = UserModel.fromJson(json);
-      final token = json['access_token'] as String? ?? '';
-      if (user.isActive) {
-        emit(AuthSuccess(token: token, user: user));
-        return;
+      final token = raw['access_token'] as String?;
+      if (token != null && token.isNotEmpty) {
+        final user = UserModel.fromJson(raw);
+        if (user.isActive) {
+          emit(AuthSuccess(token: token, user: user));
+          return;
+        }
       }
-      HiveHelper.sessionBox.delete('active_user');
+      await SessionVault.clearSession();
     }
     emit(AuthInitial());
   }
@@ -47,13 +51,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
     try {
       final response = await _client.post(
-        Uri.parse('${ApiConfig.baseUrl}/api/v1/auth/login'),
+        Uri.parse('${ApiConfig.baseUrl}${ApiEndpoints.authLogin}'),
         headers: ApiConfig.authHeaders(null),
         body: jsonEncode({
           'identificador': event.identificador.trim(),
           'password': event.password,
         }),
-      ).timeout(ApiConfig.defaultTimeout);
+      ).timeout(AppConstants.apiDefaultTimeout);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -71,7 +75,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
         _failedAttempts = 0;
         _lockoutUntil = null;
-        await HiveHelper.sessionBox.put('active_user', enriched);
+        await SessionVault.saveSession(enriched);
         emit(AuthSuccess(token: token, user: user));
       } else {
         _handleLoginFailure(emit);
@@ -92,7 +96,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   Future<void> _onLogoutRequested(LogoutRequested event, Emitter<AuthState> emit) async {
-    await HiveHelper.sessionBox.delete('active_user');
+    await SessionVault.clearSession();
+    emit(AuthInitial());
+  }
+
+  Future<void> _onSessionExpired(SessionExpired event, Emitter<AuthState> emit) async {
+    await SessionVault.clearSession();
     emit(AuthInitial());
   }
 
@@ -109,7 +118,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     try {
       final response = await _client.post(
-        Uri.parse('${ApiConfig.baseUrl}/api/v1/auth/vinculacion'),
+        Uri.parse('${ApiConfig.baseUrl}${ApiEndpoints.authVinculacion}'),
         headers: ApiConfig.authHeaders(null),
         body: jsonEncode({
           'identificacion': event.identificacion.trim(),
@@ -119,7 +128,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           if (event.email != null && event.email!.trim().isNotEmpty)
             'email': event.email!.trim(),
         }),
-      ).timeout(ApiConfig.defaultTimeout);
+      ).timeout(AppConstants.apiDefaultTimeout);
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
@@ -136,7 +145,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
         _failedAttempts = 0;
         _lockoutUntil = null;
-        await HiveHelper.sessionBox.put('active_user', enriched);
+        await SessionVault.saveSession(enriched);
         emit(AuthSuccess(token: token, user: user));
       } else {
         final body = jsonDecode(response.body);

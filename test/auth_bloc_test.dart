@@ -1,9 +1,8 @@
 import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
-import 'package:sigad/core/services/hive_helper.dart';
+import 'package:sigad/core/services/session_vault.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_event.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_state.dart';
@@ -14,27 +13,20 @@ class MockHttpClient extends Mock implements http.Client {}
 void main() {
   late AuthBloc authBloc;
   late MockHttpClient mockClient;
-  late Directory tempDir;
 
   setUpAll(() {
     registerFallbackValue(Uri());
   });
 
   setUp(() async {
-    tempDir = await Directory.systemTemp.createTemp('sigad_hive_test_dir');
-    Hive.init(tempDir.path);
-    await Hive.openBox(HiveHelper.sessionBoxName);
-
+    SessionVault.enableTestMode();
     mockClient = MockHttpClient();
     authBloc = AuthBloc(client: mockClient);
   });
 
   tearDown(() async {
     await authBloc.close();
-    await Hive.close();
-    if (await tempDir.exists()) {
-      await tempDir.delete(recursive: true);
-    }
+    SessionVault.resetTestMode();
   });
 
   test('Initial state should be AuthInitial', () {
@@ -52,7 +44,7 @@ void main() {
   });
 
   test('CheckSession should emit AuthSuccess when active user is cached in sessionBox', () async {
-    await HiveHelper.sessionBox.put('active_user', TestFixtures.adminUserJson);
+    await SessionVault.saveSession(TestFixtures.adminUserJson);
 
     authBloc.add(CheckSession());
     await expectLater(
@@ -194,7 +186,7 @@ void main() {
         ]),
       );
 
-      final stored = HiveHelper.sessionBox.get('active_user') as Map;
+      final stored = (await SessionVault.getSession())!;
       expect(stored['rol'], equals('cliente'));
       expect(stored['access_token'], equals(TestFixtures.activationToken));
     });

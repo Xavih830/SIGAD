@@ -1,10 +1,11 @@
 import 'dart:convert';
 import 'dart:typed_data';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:sigad/core/config/api_config.dart';
-import 'package:sigad/core/services/hive_helper.dart';
+import 'package:sigad/core/constants/app_constants.dart';
+import 'package:sigad/core/network/token_provider.dart';
+import 'package:sigad/core/services/session_vault.dart';
 
 /// Excepción tipada para respuestas de error de la API HTTP.
 class ApiException implements Exception {
@@ -17,22 +18,33 @@ class ApiException implements Exception {
   String toString() => message;
 }
 
+/// Excepción para acceso no autorizado o permisos insuficientes (HTTP 403).
+class ApiForbiddenException extends ApiException {
+  const ApiForbiddenException({
+    required super.statusCode,
+    required super.message,
+  });
+}
+
 /// Cliente HTTP canónico y centralizado para la aplicación.
 ///
 /// Encapsula:
 /// 1. Resolución de URL base y timeouts.
-/// 2. Inyección automática del Bearer token de la sesión activa de Hive.
+/// 2. Inyección automática del Bearer token de la sesión activa de SessionVault.
 /// 3. Decodificación UTF-8 consistente y parseo de JSON.
-/// 4. Manejo unificado de excepciones mediante [ApiException].
+/// 4. Manejo unificado de excepciones mediante [ApiException] y [ApiForbiddenException].
+/// 5. Notificación reactiva ante expiración de sesión (HTTP 401).
 class ApiClient {
   final http.Client _client;
   final String baseUrl;
-  final String? Function()? tokenProvider;
+  final TokenProvider? tokenProvider;
+  final void Function()? onUnauthorized;
 
   ApiClient({
     http.Client? client,
     String? baseUrl,
     this.tokenProvider,
+    this.onUnauthorized,
   })  : _client = client ?? http.Client(),
         baseUrl = baseUrl ?? ApiConfig.baseUrl;
 
@@ -43,15 +55,7 @@ class ApiClient {
     if (tokenProvider != null) {
       return tokenProvider!();
     }
-    try {
-      if (Hive.isBoxOpen(HiveHelper.sessionBoxName)) {
-        final raw = HiveHelper.sessionBox.get('active_user');
-        if (raw is Map) {
-          return raw['access_token'] as String?;
-        }
-      }
-    } catch (_) {}
-    return null;
+    return SessionVault.currentAccessToken;
   }
 
   Map<String, String> _buildHeaders(String? token, Map<String, String>? extraHeaders) {
@@ -69,6 +73,9 @@ class ApiClient {
   }
 
   Never _handleError(http.Response response) {
+    if (response.statusCode == 401) {
+      onUnauthorized?.call();
+    }
     String detail;
     try {
       final decoded = jsonDecode(utf8.decode(response.bodyBytes));
@@ -79,6 +86,12 @@ class ApiClient {
       }
     } catch (_) {
       detail = response.body;
+    }
+    if (response.statusCode == 403) {
+      throw ApiForbiddenException(
+        statusCode: 403,
+        message: 'Acceso denegado (403): $detail',
+      );
     }
     throw ApiException(
       statusCode: response.statusCode,
@@ -96,7 +109,7 @@ class ApiClient {
     final response = await _client.get(
       Uri.parse('$baseUrl$path'),
       headers: _buildHeaders(token, headers),
-    ).timeout(timeout ?? ApiConfig.defaultTimeout);
+    ).timeout(timeout ?? AppConstants.apiDefaultTimeout);
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       final decoded = jsonDecode(utf8.decode(response.bodyBytes));
@@ -118,7 +131,7 @@ class ApiClient {
     final response = await _client.get(
       Uri.parse('$baseUrl$path'),
       headers: _buildHeaders(token, headers),
-    ).timeout(timeout ?? ApiConfig.defaultTimeout);
+    ).timeout(timeout ?? AppConstants.apiDefaultTimeout);
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       return jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
@@ -138,7 +151,7 @@ class ApiClient {
       Uri.parse('$baseUrl$path'),
       headers: _buildHeaders(token, headers),
       body: body != null ? jsonEncode(body) : null,
-    ).timeout(timeout ?? ApiConfig.defaultTimeout);
+    ).timeout(timeout ?? AppConstants.apiDefaultTimeout);
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       final decoded = jsonDecode(utf8.decode(response.bodyBytes));
@@ -162,7 +175,7 @@ class ApiClient {
       Uri.parse('$baseUrl$path'),
       headers: _buildHeaders(token, headers),
       body: body != null ? jsonEncode(body) : null,
-    ).timeout(timeout ?? ApiConfig.defaultTimeout);
+    ).timeout(timeout ?? AppConstants.apiDefaultTimeout);
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
       final decoded = jsonDecode(utf8.decode(response.bodyBytes));
@@ -182,7 +195,7 @@ class ApiClient {
     String fieldName = 'file',
     String? token,
     Map<String, String>? fields,
-    Duration timeout = const Duration(seconds: 30),
+    Duration timeout = AppConstants.apiUploadTimeout,
   }) async {
     final request = http.MultipartRequest('POST', Uri.parse('$baseUrl$path'));
     final resolvedToken = _resolveToken(token);
@@ -219,6 +232,10 @@ class ApiClient {
       return jsonDecode(responseBody) as Map<String, dynamic>;
     }
 
+    if (streamResponse.statusCode == 401) {
+      onUnauthorized?.call();
+    }
+
     String detail;
     try {
       final decoded = jsonDecode(responseBody);
@@ -227,6 +244,13 @@ class ApiClient {
           : responseBody;
     } catch (_) {
       detail = responseBody;
+    }
+
+    if (streamResponse.statusCode == 403) {
+      throw ApiForbiddenException(
+        statusCode: 403,
+        message: 'Acceso denegado (403): $detail',
+      );
     }
 
     throw ApiException(

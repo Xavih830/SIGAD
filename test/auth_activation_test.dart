@@ -1,11 +1,9 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hive/hive.dart';
 import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
-import 'package:sigad/core/services/hive_helper.dart';
+import 'package:sigad/core/services/session_vault.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:sigad/features/auth/presentation/pages/account_activation_page.dart';
 import 'package:sigad/features/auth/presentation/pages/login_page.dart';
@@ -17,17 +15,14 @@ class MockHttpClient extends Mock implements http.Client {}
 void main() {
   late AuthBloc authBloc;
   late MockHttpClient mockClient;
-  late Directory tempDir;
 
   setUpAll(() {
     registerFallbackValue(Uri());
   });
 
   setUp(() async {
-    tempDir = await Directory.systemTemp.createTemp('sigad_activation_test_dir');
-    Hive.init(tempDir.path);
-    await Hive.openBox(HiveHelper.sessionBoxName);
-    await HiveHelper.sessionBox.put('welcome_sent_${TestFixtures.clientEmail}', true);
+    SessionVault.enableTestMode();
+    await SessionVault.setFlag('welcome_sent_${TestFixtures.clientEmail}', true);
 
     mockClient = MockHttpClient();
     authBloc = AuthBloc(client: mockClient);
@@ -35,10 +30,7 @@ void main() {
 
   tearDown(() async {
     await authBloc.close();
-    await Hive.close();
-    if (await tempDir.exists()) {
-      await tempDir.delete(recursive: true);
-    }
+    SessionVault.resetTestMode();
   });
 
   Widget createWidgetUnderTest(Widget child) {
