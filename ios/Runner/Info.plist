@@ -4,6 +4,10 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>SIGAD requiere acceso a la cámara para digitalizar pólizas y documentos vehiculares mediante OCR.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>SIGAD requiere acceso a la galería para cargar imágenes de pólizas y documentos vehiculares.</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>
