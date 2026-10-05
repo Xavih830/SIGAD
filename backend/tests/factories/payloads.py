@@ -17,6 +17,23 @@ from tests.factories.fixtures import (
     TALLER_DIRECCION,
     TALLER_NOMBRE,
     TALLER_TELEFONO,
+    CAMPOS_ESQUEMA_HOGAR,
+    CAMPOS_ESQUEMA_VEHICULAR,
+    CAMPOS_ESQUEMA_VIDA,
+    DEFAULT_CAMPOS_ESQUEMA,
+    DEFAULT_REGLA_PLACA,
+    ESQUEMA_CODIGO_CANONICO,
+    ESQUEMA_CODIGO_HOGAR,
+    ESQUEMA_CODIGO_VEHICULAR,
+    ESQUEMA_CODIGO_VIDA,
+    ESQUEMA_DESCRIPCION_CANONICA,
+    ESQUEMA_DESCRIPCION_HOGAR,
+    ESQUEMA_DESCRIPCION_VEHICULAR,
+    ESQUEMA_DESCRIPCION_VIDA,
+    ESQUEMA_NOMBRE_CANONICO,
+    ESQUEMA_NOMBRE_HOGAR,
+    ESQUEMA_NOMBRE_VEHICULAR,
+    ESQUEMA_NOMBRE_VIDA,
 )
 from tests.factories.helpers import generar_cedula_valida, generar_placa_valida
 
@@ -167,5 +184,61 @@ def asistencia_payload(**overrides) -> dict:
         "activo": True,
     }
     return _apply_overrides(default, overrides)
+
+
+def campo_regla_payload(**overrides) -> dict:
+    """Generate a valid CampoReglaCreate request dictionary."""
+    default = DEFAULT_REGLA_PLACA.copy()
+    return _apply_overrides(default, overrides)
+
+
+def esquema_payload(
+    codigo: str = ESQUEMA_CODIGO_CANONICO,
+    nombre: str = ESQUEMA_NOMBRE_CANONICO,
+    descripcion: str | None = ESQUEMA_DESCRIPCION_CANONICA,
+    campos: list[dict] | None = None,
+    **overrides,
+) -> dict:
+    """Generate a valid EsquemaCreate request dictionary with sensible defaults."""
+    default = {
+        "codigo": codigo,
+        "nombre": nombre,
+        "descripcion": descripcion,
+        "campos": [c.copy() for c in (campos if campos is not None else DEFAULT_CAMPOS_ESQUEMA)],
+    }
+    return _apply_overrides(default, overrides)
+
+
+def esquema_vehicular_payload(**overrides) -> dict:
+    """Generate EsquemaCreate payload for Equinoccial Vehicular."""
+    return esquema_payload(
+        codigo=ESQUEMA_CODIGO_VEHICULAR,
+        nombre=ESQUEMA_NOMBRE_VEHICULAR,
+        descripcion=ESQUEMA_DESCRIPCION_VEHICULAR,
+        campos=CAMPOS_ESQUEMA_VEHICULAR,
+        **overrides,
+    )
+
+
+def esquema_vida_payload(**overrides) -> dict:
+    """Generate EsquemaCreate payload for Chubb Vida Colectiva."""
+    return esquema_payload(
+        codigo=ESQUEMA_CODIGO_VIDA,
+        nombre=ESQUEMA_NOMBRE_VIDA,
+        descripcion=ESQUEMA_DESCRIPCION_VIDA,
+        campos=CAMPOS_ESQUEMA_VIDA,
+        **overrides,
+    )
+
+
+def esquema_hogar_payload(**overrides) -> dict:
+    """Generate EsquemaCreate payload for Mapfre Hogar."""
+    return esquema_payload(
+        codigo=ESQUEMA_CODIGO_HOGAR,
+        nombre=ESQUEMA_NOMBRE_HOGAR,
+        descripcion=ESQUEMA_DESCRIPCION_HOGAR,
+        campos=CAMPOS_ESQUEMA_HOGAR,
+        **overrides,
+    )
 
 

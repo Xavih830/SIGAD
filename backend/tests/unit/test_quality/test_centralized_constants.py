@@ -47,3 +47,11 @@ def test_constantes_pagos_y_cuotas():
     assert constants.MAX_CUOTAS_POLIZA_ANUAL == 12
     assert constants.DIAS_PERIODO_CUOTA_MENSUAL == 30
 
+
+def test_constantes_esquemas_extraccion():
+    """Verifica constantes canónicas para esquemas de extracción configurables."""
+    assert constants.MAX_CAMPOS_POR_ESQUEMA == 50
+    assert constants.MAX_REGEX_LENGTH == 500
+    assert constants.MAX_NOMBRE_CAMPO_LENGTH == 100
+    assert constants.MAX_DESCRIPCION_ESQUEMA_LENGTH == 500
+

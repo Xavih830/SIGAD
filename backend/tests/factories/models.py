@@ -18,6 +18,7 @@ from app.models.asistencia import Asistencia
 from app.models.cliente import Cliente
 from app.models.deducible import Deducible, TipoSiniestroEnum
 from app.models.documento import Documento, EstadoExtraccionEnum
+from app.models.esquema_extraccion import EsquemaExtraccion
 from app.models.inspeccion import Inspeccion
 from app.models.pago import Pago
 from app.models.poliza import Poliza
@@ -305,4 +306,44 @@ async def create_resultado_extraccion(
     session.add(res)
     await session.flush()
     return res
+
+
+async def create_esquema(
+    session: AsyncSession,
+    *,
+    codigo: str = "POLIZA_VEHICULAR_TEST",
+    nombre: str = "Póliza Vehicular Test",
+    descripcion: str | None = "Esquema de prueba",
+    version: int = 1,
+    es_activo: bool = True,
+    campos: list[dict] | None = None,
+    creado_por: uuid.UUID | None = None,
+    id: uuid.UUID | None = None,
+) -> EsquemaExtraccion:
+    """Create and persist an EsquemaExtraccion model."""
+    if campos is None:
+        campos = [
+            {
+                "nombre": "placa",
+                "regex": r"\b([A-Z]{3}-?\d{3,4})\b",
+                "tipo": "texto",
+                "grupo_captura": 1,
+                "formato_fecha": None,
+                "es_obligatorio": True,
+                "orden": 0,
+            }
+        ]
+    esquema = EsquemaExtraccion(
+        id=id or uuid.uuid4(),
+        codigo=codigo,
+        nombre=nombre,
+        descripcion=descripcion,
+        version=version,
+        es_activo=es_activo,
+        campos=campos,
+        creado_por=creado_por,
+    )
+    session.add(esquema)
+    await session.flush()
+    return esquema
 

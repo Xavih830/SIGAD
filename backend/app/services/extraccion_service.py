@@ -19,87 +19,6 @@ from app.core.constants import (
     TESSERACT_STANDARD_DPI,
 )
 
-COMMON_BRANDS = [
-    "TOYOTA", "CHEVROLET", "HYUNDAI", "KIA", "NISSAN",
-    "FORD", "MAZDA", "HINO", "SUZUKI", "RENAULT",
-    "VOLKSWAGEN", "MITSUBISHI", "CHERY", "GREAT WALL", "ISUZU",
-]
-
-COMMON_MODELS = [
-    "COROLLA", "YARIS", "HILUX", "RAV4", "ONIX", "AVEO", "D-MAX", "SAIL",
-    "TUCSON", "ACCENT", "SANTA FE", "SPORTAGE", "RIO", "CERATO", "PICANTO",
-    "300", "500", "RANGER", "F-150", "DIMAX", "SZ", "GRAND VITARA",
-]
-
-
-def extraer_campos_regex(texto: str) -> tuple[dict[str, Any], Decimal]:
-    """Parse key vehicle registration and policy fields using regex rules."""
-    texto_upper = texto.upper()
-    campos: dict[str, Any] = {
-        "placa": None,
-        "chasis": None,
-        "motor": None,
-        "marca": None,
-        "modelo": None,
-        "anio": None,
-    }
-
-    # 1. Placa: Formato ecuatoriano AAA-0123 o AAA-123 o AAA0123
-    placa_match = re.search(r"\b([A-Z]{3})[- ]?(\d{3,4})\b", texto_upper)
-    if placa_match:
-        campos["placa"] = f"{placa_match.group(1)}-{placa_match.group(2)}"
-
-    # 2. Chasis / VIN: 17 caracteres alfanuméricos estándar ISO 3779
-    vin_keyword_match = re.search(r"(?:CHASIS|VIN|SERIE)[\s:]+([A-HJ-NPR-Z0-9]{11,17})", texto_upper)
-    if vin_keyword_match:
-        campos["chasis"] = vin_keyword_match.group(1).strip()
-    else:
-        vin_match = re.search(r"\b([A-HJ-NPR-Z0-9]{17})\b", texto_upper)
-        if vin_match:
-            campos["chasis"] = vin_match.group(1)
-
-    # 3. Motor
-    motor_match = re.search(r"(?:MOTOR|ENGINE)[\s:]+([A-Z0-9\-]{5,20})", texto_upper)
-    if motor_match:
-        campos["motor"] = motor_match.group(1).strip()
-
-    # 4. Marca
-    for brand in COMMON_BRANDS:
-        if re.search(rf"\b{re.escape(brand)}\b", texto_upper):
-            campos["marca"] = brand.capitalize()
-            break
-
-    # 5. Modelo
-    for model in COMMON_MODELS:
-        if re.search(rf"\b{re.escape(model)}\b", texto_upper):
-            campos["modelo"] = model.capitalize()
-            break
-
-    # 6. Año
-    anio_match = re.search(r"(?:A[ÑN]O|FABRICACI[OÓ]N|MODELO)?[\s:]*\b(19\d{2}|20[0-2]\d)\b", texto_upper)
-    if anio_match:
-        campos["anio"] = int(anio_match.group(1))
-
-    # Cálculo ponderado de confianza
-    confianza = Decimal("10.00")
-    if campos["placa"]:
-        confianza += Decimal("25.00")
-    if campos["chasis"]:
-        confianza += Decimal("25.00")
-    if campos["motor"]:
-        confianza += Decimal("15.00")
-    if campos["marca"]:
-        confianza += Decimal("15.00")
-    if campos["modelo"]:
-        confianza += Decimal("5.00")
-    if campos["anio"]:
-        confianza += Decimal("5.00")
-
-    if confianza > Decimal("100.00"):
-        confianza = Decimal("100.00")
-
-    return campos, confianza
-
 
 def _extraer_compuerta_1_pdfplumber(file_path: str) -> str:
     """Gate 1: Fast native digital text extraction via pdfplumber."""
@@ -163,23 +82,30 @@ def _extraer_compuerta_2_tesseract_200dpi(file_path: str) -> str:
     return "\n".join(full_text).strip()
 
 
-def extraer_documento_sync(file_path: str) -> dict[str, Any]:
+def extraer_documento_sync(
+    file_path: str,
+    campos_esquema: list[dict] | None = None,
+) -> dict[str, Any]:
     """Execute the two-gate extraction pipeline on a target file.
+
+    Extracts raw text via Gate 1 (pdfplumber) or Gate 2 (tesseract_200dpi)
+    and applies dynamic schema rules via aplicar_esquema().
     
     Returns:
         dict with keys:
             - 'metodo': 'pdfplumber' | 'tesseract_200dpi'
             - 'texto_completo': str
-            - 'confianza': Decimal
+            - 'confianza': float
             - 'campos_extraidos': dict
     """
     ext = Path(file_path).suffix.lower()
+    reglas = campos_esquema or []
 
     # Compuerta 1: Solo aplica para PDFs
     if ext == ".pdf":
         texto_digital = _extraer_compuerta_1_pdfplumber(file_path)
         if len(texto_digital.strip()) > GATE1_TEXT_LENGTH_THRESHOLD:
-            campos, confianza = extraer_campos_regex(texto_digital)
+            campos, confianza = aplicar_esquema(texto_digital, reglas)
             return {
                 "metodo": "pdfplumber",
                 "texto_completo": texto_digital,
@@ -189,7 +115,7 @@ def extraer_documento_sync(file_path: str) -> dict[str, Any]:
 
     # Compuerta 2: Documentos escaneados, imágenes o PDFs sin texto embebido
     texto_ocr = _extraer_compuerta_2_tesseract_200dpi(file_path)
-    campos, confianza = extraer_campos_regex(texto_ocr)
+    campos, confianza = aplicar_esquema(texto_ocr, reglas)
     return {
         "metodo": "tesseract_200dpi",
         "texto_completo": texto_ocr,
@@ -227,3 +153,46 @@ def evaluar_decision_extraccion(
         return "Aprobar Automáticamente"
 
     return "Revisión Manual Obligatoria"
+
+
+def aplicar_esquema(texto: str, campos: list[dict]) -> tuple[dict, float]:
+    """Aplica las reglas JSONB de un EsquemaExtraccion al texto OCR extraído.
+
+    Reemplaza extraer_campos_regex() para esquemas configurados en BD.
+    Las compuertas OCR (_extraer_compuerta_1_pdfplumber, _extraer_compuerta_2_tesseract_200dpi)
+    NO se modifican.
+
+    Args:
+        texto: Texto plano devuelto por extraer_documento_sync().
+        campos: Lista de dicts del campo JSONB del modelo EsquemaExtraccion.
+
+    Returns:
+        (resultado: dict[nombre→valor|None], confianza: float 0.0–100.0)
+
+    Raises:
+        KeyError: Si un campo no tiene 'nombre' o 'regex' (datos corruptos en BD).
+    """
+    if not campos:
+        return {}, 0.0
+
+    resultado: dict = {}
+    aciertos = 0
+
+    for regla in sorted(campos, key=lambda r: int(r.get("orden", 0))):
+        nombre = regla["nombre"]  # Fail-Fast: KeyError si BD está corrompida
+        patron = regla["regex"]  # Fail-Fast: KeyError si BD está corrompida
+        grupo = int(regla.get("grupo_captura", 1))
+
+        match = re.search(patron, texto, re.IGNORECASE)
+        if match:
+            try:
+                valor = match.group(grupo).strip()
+            except IndexError:
+                valor = match.group(0).strip()
+            resultado[nombre] = valor
+            aciertos += 1
+        else:
+            resultado[nombre] = None
+
+    confianza = round((aciertos / len(campos)) * 100, 2)
+    return resultado, confianza

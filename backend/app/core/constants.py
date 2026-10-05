@@ -66,3 +66,9 @@ MIN_CUOTAS_POLIZA: int = 1
 MAX_CUOTAS_POLIZA_ANUAL: int = 12
 DIAS_PERIODO_CUOTA_MENSUAL: int = 30
 
+# ── Esquemas de Extracción Configurables ──────────────────────────────────────
+MAX_CAMPOS_POR_ESQUEMA: int = 50
+MAX_REGEX_LENGTH: int = 500
+MAX_NOMBRE_CAMPO_LENGTH: int = 100
+MAX_DESCRIPCION_ESQUEMA_LENGTH: int = 500
+

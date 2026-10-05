@@ -14,6 +14,7 @@ from app.core.constants import (
 )
 from app.db.session import async_session_factory
 from app.models.documento import Documento, EstadoExtraccionEnum
+from app.models.esquema_extraccion import EsquemaExtraccion
 from app.models.resultado_extraccion import ResultadoExtraccion
 from app.services.extraccion_service import extraer_documento_sync
 from app.services.resilient_pool import DocumentProcessingTimeoutException, resilient_pool
@@ -71,9 +72,16 @@ async def procesar_documento_adquirido(
 ) -> bool:
     """Executes extraction in resilient pool and safely commits results with fencing token check."""
     try:
+        # Obtener campos del esquema activo (si existe)
+        esquema_res = await db.execute(
+            select(EsquemaExtraccion.campos).where(EsquemaExtraccion.es_activo.is_(True)).limit(1)
+        )
+        campos_activos = esquema_res.scalar_one_or_none() or []
+
         resultado_dict = await resilient_pool.ejecutar_con_timeout(
             extraer_documento_sync,
             ruta_archivo,
+            campos_activos,
             timeout=timeout_seconds,
         )
 

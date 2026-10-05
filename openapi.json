@@ -1357,6 +1357,239 @@
         }
       }
     },
+    "/api/v1/esquemas": {
+      "get": {
+        "tags": [
+          "Esquemas de Extracción"
+        ],
+        "summary": "Listar Esquemas",
+        "description": "Lista todos los esquemas (todas las versiones). Solo ADMIN y AGENTE.",
+        "operationId": "listar_esquemas_api_v1_esquemas_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EsquemaListItem"
+                  },
+                  "type": "array",
+                  "title": "Response Listar Esquemas Api V1 Esquemas Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Esquemas de Extracción"
+        ],
+        "summary": "Crear Esquema",
+        "description": "Crea una nueva versión del esquema (append-only).\n\n- Si el `codigo` no existe, crea versión 1.\n- Si ya existe, incrementa la versión. La versión nueva empieza inactiva.",
+        "operationId": "crear_esquema_api_v1_esquemas_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EsquemaCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EsquemaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/esquemas/{esquema_id}": {
+      "get": {
+        "tags": [
+          "Esquemas de Extracción"
+        ],
+        "summary": "Obtener Esquema",
+        "description": "Detalle de un esquema con sus campos. Solo ADMIN y AGENTE.",
+        "operationId": "obtener_esquema_api_v1_esquemas__esquema_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "esquema_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Esquema Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EsquemaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/esquemas/{esquema_id}/activar": {
+      "patch": {
+        "tags": [
+          "Esquemas de Extracción"
+        ],
+        "summary": "Activar Esquema",
+        "description": "Activa una versión y desactiva las demás del mismo codigo.\n\nSin body — previene over-posting (OWASP API3).\nOperación atómica: desactivación masiva + activación en la misma transacción.",
+        "operationId": "activar_esquema_api_v1_esquemas__esquema_id__activar_patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "esquema_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Esquema Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EsquemaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/esquemas/{esquema_id}/probar": {
+      "post": {
+        "tags": [
+          "Esquemas de Extracción"
+        ],
+        "summary": "Probar Esquema",
+        "description": "Aplica el esquema a un archivo sin persistir ningún resultado.\n\nPermite verificar reglas regex antes de activar la versión.\nLímite: mismo MAX_DOCUMENT_SIZE_BYTES que el endpoint /documentos.",
+        "operationId": "probar_esquema_api_v1_esquemas__esquema_id__probar_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "esquema_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Esquema Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_probar_esquema_api_v1_esquemas__esquema_id__probar_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProbarEsquemaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health/live": {
       "get": {
         "tags": [
@@ -1545,6 +1778,86 @@
           "file"
         ],
         "title": "Body_cargar_documento_api_v1_documentos_post"
+      },
+      "Body_probar_esquema_api_v1_esquemas__esquema_id__probar_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_probar_esquema_api_v1_esquemas__esquema_id__probar_post"
+      },
+      "CampoReglaCreate": {
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Nombre"
+          },
+          "regex": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Regex"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "texto",
+              "numero",
+              "decimal",
+              "fecha"
+            ],
+            "title": "Tipo",
+            "default": "texto"
+          },
+          "grupo_captura": {
+            "type": "integer",
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Grupo Captura",
+            "default": 1
+          },
+          "formato_fecha": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Formato Fecha"
+          },
+          "es_obligatorio": {
+            "type": "boolean",
+            "title": "Es Obligatorio",
+            "default": false
+          },
+          "orden": {
+            "type": "integer",
+            "maximum": 999.0,
+            "minimum": 0.0,
+            "title": "Orden",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "nombre",
+          "regex"
+        ],
+        "title": "CampoReglaCreate",
+        "description": "Una regla de extracción con validación Fail-Fast de regex y tipo."
       },
       "ClienteCreate": {
         "properties": {
@@ -2052,6 +2365,172 @@
         ],
         "title": "DocumentoRevisionResponse"
       },
+      "EsquemaCreate": {
+        "properties": {
+          "codigo": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "pattern": "^[A-Z0-9_]+$",
+            "title": "Codigo",
+            "description": "Identificador en MAYUSCULAS_GUION_BAJO (ej. EQUINOCCIAL_VEHICULAR)"
+          },
+          "nombre": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Nombre"
+          },
+          "descripcion": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Descripcion"
+          },
+          "campos": {
+            "items": {
+              "$ref": "#/components/schemas/CampoReglaCreate"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Campos"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "codigo",
+          "nombre",
+          "campos"
+        ],
+        "title": "EsquemaCreate",
+        "description": "Payload para crear una nueva versión de esquema de extracción."
+      },
+      "EsquemaListItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "codigo": {
+            "type": "string",
+            "title": "Codigo"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "es_activo": {
+            "type": "boolean",
+            "title": "Es Activo"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "codigo",
+          "nombre",
+          "version",
+          "es_activo",
+          "created_at"
+        ],
+        "title": "EsquemaListItem",
+        "description": "Item de lista — sin campos para reducir tamaño del payload."
+      },
+      "EsquemaResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "codigo": {
+            "type": "string",
+            "title": "Codigo"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "descripcion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Descripcion"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "es_activo": {
+            "type": "boolean",
+            "title": "Es Activo"
+          },
+          "creado_por": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Creado Por"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "campos": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Campos"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "codigo",
+          "nombre",
+          "descripcion",
+          "version",
+          "es_activo",
+          "creado_por",
+          "created_at",
+          "campos"
+        ],
+        "title": "EsquemaResponse",
+        "description": "Detalle completo del esquema incluyendo las reglas de campos."
+      },
       "EstadoPoliza": {
         "type": "string",
         "enum": [
@@ -2409,6 +2888,37 @@
         ],
         "title": "PolizaUpdateEstado",
         "description": "Schema para transición de estado de póliza."
+      },
+      "ProbarEsquemaResponse": {
+        "properties": {
+          "metodo": {
+            "type": "string",
+            "title": "Metodo"
+          },
+          "confianza": {
+            "type": "number",
+            "title": "Confianza"
+          },
+          "campos_extraidos": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Campos Extraidos"
+          },
+          "texto_completo": {
+            "type": "string",
+            "title": "Texto Completo"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "metodo",
+          "confianza",
+          "campos_extraidos",
+          "texto_completo"
+        ],
+        "title": "ProbarEsquemaResponse",
+        "description": "Resultado de prueba sin persistir."
       },
       "RegistrarPagoRequest": {
         "properties": {

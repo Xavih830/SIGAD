@@ -61,3 +61,33 @@ def test_extraccion_200_dpi_liberacion_memoria():
         tracemalloc.stop()
         if os.path.exists(pdf_path):
             os.remove(pdf_path)
+
+
+def test_extraer_documento_sync_con_esquemas_personalizados():
+    """Verifica que extraer_documento_sync utiliza esquemas dinámicos para extraer campos personalizados."""
+    pdf_path = _crear_pdf_multipagina_temporal(num_paginas=1)
+    try:
+        from tests.factories.fixtures import (
+            CAMPOS_ESQUEMA_VEHICULAR,
+            CAMPOS_ESQUEMA_VIDA,
+            TEXTO_OCR_VEHICULAR,
+            TEXTO_OCR_VIDA,
+        )
+
+        # 1. Extracción con esquema vehicular
+        with patch("app.services.extraccion_service._extraer_compuerta_1_pdfplumber", return_value=TEXTO_OCR_VEHICULAR):
+            res_veh = extraer_documento_sync(pdf_path, campos_esquema=CAMPOS_ESQUEMA_VEHICULAR)
+            assert res_veh["metodo"] == "pdfplumber"
+            assert res_veh["campos_extraidos"]["placa"] == "PBX-1234"
+            assert res_veh["campos_extraidos"]["numero_poliza"] == "POL-2026-004521"
+            assert res_veh["confianza"] == 100.0
+
+        # 2. Extracción con esquema de vida colectiva
+        with patch("app.services.extraccion_service._extraer_compuerta_1_pdfplumber", return_value=TEXTO_OCR_VIDA):
+            res_vida = extraer_documento_sync(pdf_path, campos_esquema=CAMPOS_ESQUEMA_VIDA)
+            assert res_vida["campos_extraidos"]["numero_certificado"] == "849201"
+            assert res_vida["campos_extraidos"]["titular_cedula"] == "0926687856"
+            assert res_vida["confianza"] == 100.0
+    finally:
+        if os.path.exists(pdf_path):
+            os.remove(pdf_path)

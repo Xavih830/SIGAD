@@ -7,6 +7,7 @@ from app.api.v1.endpoints import (
     auth,
     clientes,
     documentos,
+    esquemas,
     pagos,
     polizas,
     talleres,
@@ -22,5 +23,6 @@ api_router.include_router(vehiculos.router)
 api_router.include_router(talleres.router)
 api_router.include_router(asistencias.router)
 api_router.include_router(documentos.router)
+api_router.include_router(esquemas.router)
 
 

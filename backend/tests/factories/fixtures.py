@@ -59,6 +59,194 @@ ASISTENCIA_DESCRIPCION = "Remolque y asistencia mecánica ligera en todo el paí
 ASISTENCIA_TELEFONO = "1800-ASISTE"
 ASISTENCIA_ICONO = "tow-truck"
 
+# ── Esquemas de Extracción Canónicos (3 Tipos de Póliza Diferentes) ───────────
+# 1. Esquema Vehicular
+ESQUEMA_CODIGO_VEHICULAR = "EQUINOCCIAL_VEHICULAR"
+ESQUEMA_NOMBRE_VEHICULAR = "Póliza Vehicular Equinoccial"
+ESQUEMA_DESCRIPCION_VEHICULAR = "Esquema para pólizas vehiculares de Seguros Equinoccial"
+
+CAMPOS_ESQUEMA_VEHICULAR = [
+    {
+        "nombre": "numero_poliza",
+        "regex": r"\b(POL-\d{4}-\d{3,6})\b",
+        "tipo": "texto",
+        "grupo_captura": 1,
+        "formato_fecha": None,
+        "es_obligatorio": True,
+        "orden": 0,
+    },
+    {
+        "nombre": "placa",
+        "regex": r"PLACA:\s*([A-Z]{3}-\d{3,4})",
+        "tipo": "texto",
+        "grupo_captura": 1,
+        "formato_fecha": None,
+        "es_obligatorio": True,
+        "orden": 1,
+    },
+    {
+        "nombre": "chasis",
+        "regex": r"\b([A-HJ-NPR-Z0-9]{17})\b",
+        "tipo": "texto",
+        "grupo_captura": 1,
+        "formato_fecha": None,
+        "es_obligatorio": True,
+        "orden": 2,
+    },
+    {
+        "nombre": "valor_asegurado",
+        "regex": r"VALOR ASEGURADO:\s*\$?\s*([\d,]+\.\d{2})",
+        "tipo": "decimal",
+        "grupo_captura": 1,
+        "formato_fecha": None,
+        "es_obligatorio": True,
+        "orden": 3,
+    },
+    {
+        "nombre": "fecha_emision",
+        "regex": r"EMISION:\s*(\d{4}-\d{2}-\d{2})",
+        "tipo": "fecha",
+        "formato_fecha": "YYYY-MM-DD",
+        "es_obligatorio": True,
+        "orden": 4,
+    },
+]
+
+# 2. Esquema Vida Colectiva
+ESQUEMA_CODIGO_VIDA = "CHUBB_VIDA_COLECTIVA"
+ESQUEMA_NOMBRE_VIDA = "Póliza Colectiva de Vida Chubb"
+ESQUEMA_DESCRIPCION_VIDA = "Extracción de certificados de vida y accidentes personales"
+
+CAMPOS_ESQUEMA_VIDA = [
+    {
+        "nombre": "numero_certificado",
+        "regex": r"CERTIFICADO:\s*(\d{6,10})",
+        "tipo": "numero",
+        "grupo_captura": 1,
+        "formato_fecha": None,
+        "es_obligatorio": True,
+        "orden": 0,
+    },
+    {
+        "nombre": "titular_cedula",
+        "regex": r"CEDULA:\s*(\d{10})",
+        "tipo": "texto",
+        "grupo_captura": 1,
+        "formato_fecha": None,
+        "es_obligatorio": True,
+        "orden": 1,
+    },
+    {
+        "nombre": "beneficiario_nombre",
+        "regex": r"BENEFICIARIO:\s*([A-Z ]{5,50})",
+        "tipo": "texto",
+        "grupo_captura": 1,
+        "formato_fecha": None,
+        "es_obligatorio": True,
+        "orden": 2,
+    },
+    {
+        "nombre": "suma_asegurada",
+        "regex": r"SUMA ASEGURADA:\s*USD\s*([\d\.]+)",
+        "tipo": "decimal",
+        "grupo_captura": 1,
+        "formato_fecha": None,
+        "es_obligatorio": True,
+        "orden": 3,
+    },
+    {
+        "nombre": "fecha_inicio_vigencia",
+        "regex": r"VIGENCIA DESDE:\s*(\d{2}/\d{2}/\d{4})",
+        "tipo": "fecha",
+        "formato_fecha": "DD/MM/YYYY",
+        "es_obligatorio": True,
+        "orden": 4,
+    },
+]
+
+# 3. Esquema Hogar / Estructura
+ESQUEMA_CODIGO_HOGAR = "MAPFRE_HOGAR_ESTRUCTURA"
+ESQUEMA_NOMBRE_HOGAR = "Seguro Multirriesgo Hogar Mapfre"
+ESQUEMA_DESCRIPCION_HOGAR = "Extracción de contratos de cobertura de incendios y terremotos"
+
+CAMPOS_ESQUEMA_HOGAR = [
+    {
+        "nombre": "numero_contrato",
+        "regex": r"CONTRATO:\s*(HOG-\d{5})",
+        "tipo": "texto",
+        "grupo_captura": 1,
+        "formato_fecha": None,
+        "es_obligatorio": True,
+        "orden": 0,
+    },
+    {
+        "nombre": "direccion_predio",
+        "regex": r"PREDIO:\s*([^,\n]{5,100})",
+        "tipo": "texto",
+        "grupo_captura": 1,
+        "formato_fecha": None,
+        "es_obligatorio": True,
+        "orden": 1,
+    },
+    {
+        "nombre": "cobertura_terremoto",
+        "regex": r"COBERTURA TERREMOTO:\s*(SI|NO)",
+        "tipo": "texto",
+        "grupo_captura": 1,
+        "formato_fecha": None,
+        "es_obligatorio": True,
+        "orden": 2,
+    },
+    {
+        "nombre": "prima_neta",
+        "regex": r"PRIMA NETA:\s*USD\s*([\d\.]+)",
+        "tipo": "decimal",
+        "grupo_captura": 1,
+        "formato_fecha": None,
+        "es_obligatorio": True,
+        "orden": 3,
+    },
+]
+
+# Textos OCR canónicos de prueba correspondientes a cada esquema
+TEXTO_OCR_VEHICULAR = (
+    "COMPAÑIA DE SEGUROS EQUINOCCIAL S.A.\n"
+    "EMISION: 2026-03-15\n"
+    "NUMERO DE POLIZA: POL-2026-004521\n"
+    "VEHICULO PLACA: PBX-1234\n"
+    "CHASIS: 1HGCR2F83HA123456\n"
+    "VALOR ASEGURADO: $ 25,500.00\n"
+    "ESTADO: VIGENTE"
+)
+
+TEXTO_OCR_VIDA = (
+    "CHUBB SEGUROS ECUADOR S.A.\n"
+    "CERTIFICADO: 849201\n"
+    "TITULAR CEDULA: 0926687856\n"
+    "BENEFICIARIO: MARIA JOSE LEON ANDRADE\n"
+    "SUMA ASEGURADA: USD 50000.00\n"
+    "VIGENCIA DESDE: 01/01/2026"
+)
+
+TEXTO_OCR_HOGAR = (
+    "MAPFRE ATLAS COMPAÑIA DE SEGUROS S.A.\n"
+    "CONTRATO: HOG-99214\n"
+    "PREDIO: URB LA JOYA ETAPA CORAL MZ 12 SL 4\n"
+    "COBERTURA TERREMOTO: SI\n"
+    "PRIMA NETA: USD 450.00\n"
+    "POLIZA DE HOGAR VIGENTE"
+)
+
+# Aliases retrocompatibles para default
+ESQUEMA_CODIGO_CANONICO = ESQUEMA_CODIGO_VEHICULAR
+ESQUEMA_NOMBRE_CANONICO = ESQUEMA_NOMBRE_VEHICULAR
+ESQUEMA_DESCRIPCION_CANONICA = ESQUEMA_DESCRIPCION_VEHICULAR
+DEFAULT_CAMPOS_ESQUEMA = CAMPOS_ESQUEMA_VEHICULAR
+DEFAULT_REGLA_PLACA = CAMPOS_ESQUEMA_VEHICULAR[1]
+DEFAULT_REGLA_CHASIS = CAMPOS_ESQUEMA_VEHICULAR[2]
+CAMPO_PLACA_NOMBRE = "placa"
+CAMPO_CHASIS_NOMBRE = "chasis"
+
 
 # ── Validation Messages & Error Strings ───────────────────────────────────────
 MSG_PASSWORD_MIN_LENGTH = "al menos 12 caracteres"

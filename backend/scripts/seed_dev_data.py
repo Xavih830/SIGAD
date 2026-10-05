@@ -43,6 +43,7 @@ from app.models.cliente import Cliente
 from app.models.codigo_vinculacion import CodigoVinculacion
 from app.models.cobertura import Cobertura
 from app.models.deducible import Deducible, TipoSiniestroEnum
+from app.models.esquema_extraccion import EsquemaExtraccion
 from app.models.inspeccion import Inspeccion
 from app.models.pago import Pago
 from app.models.poliza import Poliza
@@ -73,6 +74,7 @@ async def clean_database(session: AsyncSession) -> None:
         "clientes",
         "talleres",
         "asistencias",
+        "esquemas_extraccion",
         "usuarios",
     ]
     # Fast atomic truncate with CASCADE
@@ -618,6 +620,75 @@ async def seed_data(session: AsyncSession, clean: bool = False) -> None:
             )
             session.add(asistencia)
             logger.info("  + Asistencia creada: %s (%s)", a_data["titulo"], a_data["telefono_emergencia"])
+
+    # ─────────────────────────────────────────────────────────────────────────
+    # 8. ESQUEMAS DE EXTRACCIÓN OCR (Vehicular activo, Vida, Hogar)
+    # ─────────────────────────────────────────────────────────────────────────
+    logger.info("Seeding dynamic OCR extraction schemas...")
+    admin_res = await session.execute(select(Usuario).where(Usuario.email == "admin@sigad.ec"))
+    admin_user = admin_res.scalar_one_or_none()
+    admin_id = admin_user.id if admin_user else None
+
+    esquemas_seed = [
+        {
+            "codigo": "POLIZA_VEHICULAR",
+            "nombre": "Esquema Canónico Vehicular",
+            "descripcion": "Extracción OCR para pólizas de seguro vehicular liviano y pesado.",
+            "es_activo": True,
+            "campos": [
+                {"nombre_campo": "numero_poliza", "regex": r"(?:P[OÓ]LIZA|No\.?)\s*[:#]?\s*([A-Z0-9-]+)", "tipo": "texto", "requerido": True, "orden": 1},
+                {"nombre_campo": "placa", "regex": r"PLACA:\s*([A-Z]{3}-\d{3,4})", "tipo": "texto", "requerido": True, "orden": 2},
+                {"nombre_campo": "marca", "regex": r"MARCA:\s*([A-Z0-9]+)", "tipo": "texto", "requerido": True, "orden": 3},
+                {"nombre_campo": "modelo", "regex": r"MODELO:\s*([A-Z0-9]+)", "tipo": "texto", "requerido": True, "orden": 4},
+                {"nombre_campo": "anio", "regex": r"(?:A[ÑN]O|MODELO)\s*[:#]?\s*(\d{4})", "tipo": "entero", "requerido": False, "orden": 5},
+                {"nombre_campo": "ramo", "regex": r"RAMO:\s*([A-Z ]+)", "tipo": "texto", "requerido": False, "orden": 6},
+                {"nombre_campo": "prima_neta", "regex": r"PRIMA\s+NETA\s*[:$]?\s*([\d,.]+)", "tipo": "decimal", "requerido": False, "orden": 7},
+            ],
+        },
+        {
+            "codigo": "POLIZA_VIDA",
+            "nombre": "Esquema Vida Colectiva",
+            "descripcion": "Extracción OCR para pólizas de accidentes personales y vida grupal.",
+            "es_activo": False,
+            "campos": [
+                {"nombre_campo": "numero_poliza", "regex": r"(?:P[OÓ]LIZA|No\.?)\s*[:#]?\s*([A-Z0-9-]+)", "tipo": "texto", "requerido": True, "orden": 1},
+                {"nombre_campo": "titular", "regex": r"ASEGURADO:\s*([A-Z ]+)", "tipo": "texto", "requerido": True, "orden": 2},
+                {"nombre_campo": "suma_asegurada", "regex": r"SUMA\s+ASEGURADA\s*[:$]?\s*([\d,.]+)", "tipo": "decimal", "requerido": True, "orden": 3},
+                {"nombre_campo": "beneficiario", "regex": r"BENEFICIARIO:\s*([A-Z ]+)", "tipo": "texto", "requerido": False, "orden": 4},
+            ],
+        },
+        {
+            "codigo": "POLIZA_HOGAR",
+            "nombre": "Esquema Hogar Multirriesgo",
+            "descripcion": "Extracción OCR para pólizas de cobertura domiciliaria e incendios.",
+            "es_activo": False,
+            "campos": [
+                {"nombre_campo": "numero_poliza", "regex": r"(?:P[OÓ]LIZA|No\.?)\s*[:#]?\s*([A-Z0-9-]+)", "tipo": "texto", "requerido": True, "orden": 1},
+                {"nombre_campo": "direccion_riesgo", "regex": r"DIRECCI[OÓ]N\s*:\s*([A-Z0-9 -]+)", "tipo": "texto", "requerido": True, "orden": 2},
+                {"nombre_campo": "valor_inmueble", "regex": r"AVAL[UÚ]O\s*:\s*\$?([\d,.]+)", "tipo": "decimal", "requerido": True, "orden": 3},
+            ],
+        },
+    ]
+
+    for e_data in esquemas_seed:
+        res_e = await session.execute(
+            select(EsquemaExtraccion).where(
+                EsquemaExtraccion.codigo == e_data["codigo"],
+                EsquemaExtraccion.version == 1,
+            )
+        )
+        if not res_e.scalar_one_or_none():
+            esquema = EsquemaExtraccion(
+                codigo=e_data["codigo"],
+                version=1,
+                nombre=e_data["nombre"],
+                descripcion=e_data["descripcion"],
+                es_activo=e_data["es_activo"],
+                campos=e_data["campos"],
+                creado_por=admin_id,
+            )
+            session.add(esquema)
+            logger.info("  + Esquema creado: %s v1 (activo=%s)", e_data["codigo"], e_data["es_activo"])
 
     await session.commit()
     logger.info("Seeding process completed successfully!")
