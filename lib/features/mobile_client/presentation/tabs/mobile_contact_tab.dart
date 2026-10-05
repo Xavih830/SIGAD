@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:sigad/core/utils/url_security_helper.dart';
 import 'package:sigad/core/theme/app_theme.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_event.dart';
@@ -11,27 +11,21 @@ class MobileContactTab extends StatelessWidget {
   Future<void> _makeCall(BuildContext context, String phone) async {
     final cleanPhone = phone.replaceAll(RegExp(r'\s+|-'), '');
     final url = Uri.parse('tel:$cleanPhone');
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url);
-    } else {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('No se pudo iniciar llamada al $phone')),
-        );
-      }
+    final launched = await UrlSecurityHelper.launchSafeUrl(url);
+    if (!launched && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo iniciar llamada al $phone')),
+      );
     }
   }
 
   Future<void> _sendMail(BuildContext context, String email) async {
     final url = Uri.parse('mailto:$email?subject=Consulta SIGAD');
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url);
-    } else {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('No se pudo abrir el correo para $email')),
-        );
-      }
+    final launched = await UrlSecurityHelper.launchSafeUrl(url);
+    if (!launched && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo abrir el correo para $email')),
+      );
     }
   }
 

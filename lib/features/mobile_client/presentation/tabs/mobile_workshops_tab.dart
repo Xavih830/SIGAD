@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:sigad/core/utils/url_security_helper.dart';
 import 'package:sigad/core/models/catalog_model.dart';
 import 'package:sigad/core/repositories/catalog_repository.dart';
 import 'package:sigad/core/theme/app_theme.dart';
@@ -34,14 +34,11 @@ class _MobileWorkshopsTabState extends State<MobileWorkshopsTab> {
   Future<void> _makeCall(BuildContext context, String phone) async {
     final cleanPhone = phone.replaceAll(RegExp(r'\s+|-'), '');
     final url = Uri.parse('tel:$cleanPhone');
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url);
-    } else {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('No se pudo iniciar llamada al $phone')),
-        );
-      }
+    final launched = await UrlSecurityHelper.launchSafeUrl(url);
+    if (!launched && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo iniciar llamada al $phone')),
+      );
     }
   }
 

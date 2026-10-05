@@ -43,8 +43,8 @@ class _MobilePoliciesTabState extends State<MobilePoliciesTab> {
       final parsed = await _policiesRepo.getPolicies(token: token);
       if (!mounted) return;
 
-      parsed.sort((a, b) => (!b.isExpired ? 1 : 0).compareTo(!a.isExpired ? 1 : 0));
-      setState(() { _policies = parsed; _isLoading = false; });
+      final sorted = PolicyModel.sortByActivePriority(parsed);
+      setState(() { _policies = sorted; _isLoading = false; });
     } catch (e) {
       if (!mounted) return;
       setState(() { _errorMessage = e.toString(); _isLoading = false; });
@@ -56,7 +56,7 @@ class _MobilePoliciesTabState extends State<MobilePoliciesTab> {
     if (_isLoading) return const Center(child: CircularProgressIndicator());
     if (_errorMessage != null) return ErrorView(message: _errorMessage!, onRetry: _loadPolicies);
 
-    final activeCount = _policies.where((p) => !p.isExpired).length;
+    final activeCount = PolicyModel.countActivePolicies(_policies);
 
     return RefreshIndicator(
       onRefresh: _loadPolicies,

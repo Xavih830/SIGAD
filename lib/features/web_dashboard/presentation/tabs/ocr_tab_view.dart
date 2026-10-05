@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sigad/core/models/client_model.dart';
+import 'package:sigad/core/models/document_model.dart';
 import 'package:sigad/core/models/policy_model.dart';
 import 'package:sigad/core/repositories/clients_repository.dart';
 import 'package:sigad/core/repositories/documents_repository.dart';
@@ -37,8 +38,8 @@ class _OcrTabViewState extends State<OcrTabView> {
   late final PoliciesRepository _policiesRepo;
   bool _isLoadingList = false, _isUploading = false, _isLoadingDetail = false;
   String? _errorMessage;
-  List<Map<String, dynamic>> _documentos = [];
-  Map<String, dynamic>? _selectedDocument;
+  List<DocumentModel> _documentos = [];
+  DocumentModel? _selectedDocument;
 
   @override
   void initState() {
@@ -64,7 +65,7 @@ class _OcrTabViewState extends State<OcrTabView> {
         _isLoadingList = false;
       });
       if (_documentos.isNotEmpty && _selectedDocument == null) {
-        _seleccionarDocumento(_documentos.first['id'] as String);
+        await _seleccionarDocumento(_documentos.first.id);
       }
     } catch (e) {
       if (mounted) setState(() { _isLoadingList = false; _errorMessage = e.toString(); });
@@ -83,7 +84,7 @@ class _OcrTabViewState extends State<OcrTabView> {
 
   Future<void> _abrirSelectorArchivo() async {
     final file = await FilePickerHelper.pickDocumentFile();
-    if (file != null) _subirArchivo(file.bytes, file.name);
+    if (file != null) await _subirArchivo(file.bytes, file.name);
   }
 
   Future<void> _subirArchivo(Uint8List bytes, String filename) async {
@@ -99,7 +100,7 @@ class _OcrTabViewState extends State<OcrTabView> {
         SnackBar(content: Text('Archivo $filename subido.'), backgroundColor: AppTheme.successColor),
       );
       await _cargarDocumentos();
-      await _seleccionarDocumento(doc['id'] as String);
+      await _seleccionarDocumento(doc.id);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -185,7 +186,7 @@ class _OcrTabViewState extends State<OcrTabView> {
               flex: 2,
               child: OcrDocumentListPanel(
                 documentos: _documentos,
-                selectedId: _selectedDocument?['id'] as String?,
+                selectedId: _selectedDocument?.id,
                 isLoading: _isLoadingList,
                 isUploading: _isUploading,
                 onRefresh: _cargarDocumentos,
@@ -199,7 +200,7 @@ class _OcrTabViewState extends State<OcrTabView> {
               child: OcrDocumentDetailCard(
                 document: _selectedDocument,
                 isLoading: _isLoadingDetail,
-                onRefresh: () => _selectedDocument != null ? _seleccionarDocumento(_selectedDocument!['id'] as String) : null,
+                onRefresh: () => _selectedDocument != null ? _seleccionarDocumento(_selectedDocument!.id) : null,
                 onLinkPolicy: _vincularNuevaPoliza,
                 authToken: _getAuthToken() ?? (throw StateError('OcrTabView renderizado con sesión nula. El BLoC de autenticación está en estado inválido.')),
                 documentsRepository: _docsRepo,

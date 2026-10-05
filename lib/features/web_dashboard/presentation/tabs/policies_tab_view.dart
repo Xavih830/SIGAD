@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:sigad/core/models/client_model.dart';
 import 'package:sigad/core/models/policy_model.dart';
 import 'package:sigad/core/repositories/clients_repository.dart';
 import 'package:sigad/core/repositories/policies_repository.dart';
@@ -89,18 +88,14 @@ class _PoliciesTabViewState extends State<PoliciesTabView> {
   }
 
   Future<void> _openPolicyForm([PolicyModel? existing]) async {
-    List<ClientModel> clients = [];
     try {
-      clients = await _clientsRepo.getClients(token: _getAuthToken());
-    } catch (_) {}
-
-    if (!mounted) return;
-    final result = await showDialog<PolicyModel>(
-      context: context,
-      builder: (_) => PolicyFormDialog(initialPolicy: existing, clients: clients),
-    );
-    if (result != null && mounted) {
-      try {
+      final clients = await _clientsRepo.getClients(token: _getAuthToken());
+      if (!mounted) return;
+      final result = await showDialog<PolicyModel>(
+        context: context,
+        builder: (_) => PolicyFormDialog(initialPolicy: existing, clients: clients),
+      );
+      if (result != null && mounted) {
         await _policiesRepo.createPolicy(result, token: _getAuthToken());
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
@@ -110,15 +105,15 @@ class _PoliciesTabViewState extends State<PoliciesTabView> {
           ),
         );
         await _loadPolicies();
-      } catch (e) {
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error al registrar póliza: $e'),
-            backgroundColor: AppTheme.errorColor,
-          ),
-        );
       }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error en operación de pólizas: $e'),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
     }
   }
 

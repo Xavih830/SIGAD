@@ -3,7 +3,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_10y.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:sigad/core/models/policy_model.dart';
-import 'package:sigad/core/services/hive_helper.dart';
+import 'package:sigad/core/services/session_vault.dart';
 
 class NotificationsManagerImpl {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
@@ -42,9 +42,8 @@ class NotificationsManagerImpl {
   }
 
   static Future<void> showWelcomeNotification(String email) async {
-    final box = HiveHelper.sessionBox;
     final welcomedKey = 'welcome_sent_$email';
-    final hasBeenWelcomed = box.get(welcomedKey, defaultValue: false);
+    final hasBeenWelcomed = await SessionVault.getFlag(welcomedKey, defaultValue: false);
 
     if (hasBeenWelcomed) return;
 
@@ -68,7 +67,7 @@ class NotificationsManagerImpl {
       notificationDetails: notificationDetails,
     );
 
-    await box.put(welcomedKey, true);
+    await SessionVault.setFlag(welcomedKey, true);
   }
 
   static Future<void> schedulePolicy(PolicyModel policy) async {

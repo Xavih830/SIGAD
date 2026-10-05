@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:sigad/core/models/document_model.dart';
 import 'package:sigad/core/repositories/documents_repository.dart';
 import 'package:sigad/core/theme/app_theme.dart';
 
 class OcrDocumentDetailCard extends StatefulWidget {
-  final Map<String, dynamic>? document;
+  final DocumentModel? document;
   final bool isLoading;
   final VoidCallback onRefresh;
   final Function(Map<String, dynamic> confirmedFields) onLinkPolicy;
@@ -48,9 +49,7 @@ class _OcrDocumentDetailCardState extends State<OcrDocumentDetailCard> {
     }
     _controllers.clear();
 
-    final resultado = widget.document?['resultado'] as Map<String, dynamic>?;
-    final campos = resultado?['campos_extraidos'] as Map<String, dynamic>? ?? {};
-
+    final campos = widget.document?.camposExtraidos ?? {};
     for (final entry in campos.entries) {
       _controllers[entry.key] = TextEditingController(text: entry.value?.toString() ?? '');
     }
@@ -66,7 +65,7 @@ class _OcrDocumentDetailCardState extends State<OcrDocumentDetailCard> {
 
   Future<void> _guardarRevision() async {
     if (widget.document == null) return;
-    final docId = widget.document!['id'];
+    final docId = widget.document!.id;
 
     setState(() => _isSaving = true);
     final updatedCampos = <String, dynamic>{};
@@ -106,19 +105,20 @@ class _OcrDocumentDetailCardState extends State<OcrDocumentDetailCard> {
   }
 
   Widget _buildStatusBadge(String estado) {
-    Color color = Colors.grey;
+    Color color = AppTheme.textMuted;
     switch (estado.toLowerCase()) {
       case 'completado':
         color = AppTheme.successColor;
         break;
       case 'procesando':
-        color = AppTheme.accentColor;
-        break;
-      case 'requiere_revision_manual':
       case 'pendiente':
         color = AppTheme.warningColor;
         break;
+      case 'revision_requerida':
+        color = Colors.indigo;
+        break;
       case 'error':
+      case 'fallido':
       case 'error_permanente':
         color = AppTheme.errorColor;
         break;
@@ -183,10 +183,10 @@ class _OcrDocumentDetailCardState extends State<OcrDocumentDetailCard> {
     );
   }
 
-  Widget _buildResultContent(Map<String, dynamic> res) {
-    final metodo = res['metodo']?.toString() ?? 'desconocido';
-    final confianza = (res['confianza'] as num?)?.toDouble();
-    final texto = res['texto_completo']?.toString() ?? '';
+  Widget _buildResultContent(DocumentModel doc) {
+    final metodo = doc.metodo ?? 'desconocido';
+    final confianza = doc.confianza;
+    final texto = doc.textoCompleto ?? '';
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -296,8 +296,8 @@ class _OcrDocumentDetailCardState extends State<OcrDocumentDetailCard> {
     if (widget.isLoading) return const Center(child: CircularProgressIndicator());
 
     final doc = widget.document!;
-    final resultado = doc['resultado'] as Map<String, dynamic>?;
-    final tamanoKb = ((doc['tamano_bytes'] as num? ?? 0) / 1024).toStringAsFixed(1);
+    final tamanoKb = (doc.tamanoBytes / 1024).toStringAsFixed(1);
+    final shortId = doc.id.length >= 8 ? doc.id.substring(0, 8) : doc.id;
 
     return SingleChildScrollView(
       child: Column(
@@ -311,25 +311,25 @@ class _OcrDocumentDetailCardState extends State<OcrDocumentDetailCard> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      doc['nombre_archivo']?.toString() ?? 'Documento',
+                      doc.nombreArchivo,
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 17),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'ID: ${doc['id']?.toString().substring(0, 8)} • MIME: ${doc['tipo_mime']} • Tamaño: $tamanoKb KB',
+                      'ID: $shortId • MIME: ${doc.tipoMime} • Tamaño: $tamanoKb KB',
                       style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
                     ),
                   ],
                 ),
               ),
-              _buildStatusBadge(doc['estado_extraccion']?.toString() ?? ''),
+              _buildStatusBadge(doc.estadoExtraccion),
             ],
           ),
           const SizedBox(height: 16),
-          if (resultado != null)
-            _buildResultContent(resultado)
+          if (doc.hasResultado)
+            _buildResultContent(doc)
           else
-            _buildPendingBanner(doc['estado_extraccion']?.toString() ?? ''),
+            _buildPendingBanner(doc.estadoExtraccion),
         ],
       ),
     );

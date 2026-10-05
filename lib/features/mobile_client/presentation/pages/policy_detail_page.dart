@@ -68,26 +68,12 @@ class _PolicyDetailPageState extends State<PolicyDetailPage> {
     }
   }
 
-  String get _financialStatusText {
-    if (_payments.isEmpty) {
-      return widget.policy.paymentStatus ?? 'Sin cuotas registradas';
-    }
-    if (_payments.any((p) => p.isOverdue)) {
-      return 'En mora';
-    }
-    if (_payments.every((p) => p.isPaid)) {
-      return 'Pagada';
-    }
-    return 'Al día';
-  }
+  String get _financialStatusText =>
+      PaymentModel.calculateConsolidatedStatus(_payments, defaultStatus: widget.policy.paymentStatus);
 
   Color get _financialStatusColor {
-    if (_payments.isEmpty) {
-      return AppTheme.textMuted;
-    }
-    if (_payments.any((p) => p.isOverdue)) {
-      return AppTheme.errorColor;
-    }
+    if (_payments.isEmpty) return AppTheme.textMuted;
+    if (_payments.any((p) => p.isOverdue)) return AppTheme.errorColor;
     return AppTheme.successColor;
   }
 

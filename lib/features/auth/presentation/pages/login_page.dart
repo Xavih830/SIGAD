@@ -1,13 +1,15 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:sigad/core/security/app_capability.dart';
+import 'package:sigad/core/security/authorization_policy.dart';
 import 'package:sigad/core/theme/app_theme.dart';
 import 'package:sigad/core/widgets/sigad_logo.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_event.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_state.dart';
-import 'package:sigad/features/auth/presentation/widgets/lockout_view.dart';
 import 'package:sigad/features/auth/presentation/pages/account_activation_page.dart';
+import 'package:sigad/features/auth/presentation/widgets/lockout_view.dart';
 import 'package:sigad/features/mobile_client/presentation/pages/mobile_dashboard_page.dart';
 import 'package:sigad/features/web_dashboard/presentation/pages/web_dashboard_page.dart';
 
@@ -48,9 +50,7 @@ class _LoginPageState extends State<LoginPage> {
       body: BlocConsumer<AuthBloc, AuthState>(
         listener: (context, state) {
           if (state is AuthSuccess) {
-            final role = state.user.role;
-            final isStaff = role == 'admin' || role == 'agente' || role == 'admin_system' || role == 'admin_rjseguros';
-            final dashboard = isStaff
+            final dashboard = AuthorizationPolicy.canUser(state.user, AppCapability.accessWebDashboard)
                 ? WebDashboardPage(user: state.user)
                 : MobileDashboardPage(user: state.user);
             Navigator.of(context).pushReplacement(

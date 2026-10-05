@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sigad/core/models/user_model.dart';
+import 'package:sigad/core/security/app_capability.dart';
+import 'package:sigad/core/security/authorization_policy.dart';
 import 'package:sigad/core/theme/app_theme.dart';
 import 'package:sigad/core/widgets/sigad_logo.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_bloc.dart';
@@ -82,8 +84,7 @@ class _SplashScreenState extends State<SplashScreen> {
   void _navigateToDashboard(UserModel user) {
     final route = PageRouteBuilder(
       pageBuilder: (c, a1, a2) {
-        final isStaff = user.role == 'admin' || user.role == 'agente' || user.role == 'admin_system' || user.role == 'admin_rjseguros';
-        if (isStaff) {
+        if (AuthorizationPolicy.canUser(user, AppCapability.accessWebDashboard)) {
           return WebDashboardPage(user: user);
         } else {
           return MobileDashboardPage(user: user);
