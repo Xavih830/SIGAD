@@ -76,3 +76,7 @@ MAX_REGEX_LENGTH: int = 500
 MAX_NOMBRE_CAMPO_LENGTH: int = 100
 MAX_DESCRIPCION_ESQUEMA_LENGTH: int = 500
 
+# ── Paginación Canónica (Anti-Bloat / Safe Queries) ───────────────────────────
+DEFAULT_PAGE_LIMIT: int = 50
+MAX_PAGE_LIMIT: int = 100
+

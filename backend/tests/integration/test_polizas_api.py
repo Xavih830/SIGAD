@@ -139,3 +139,52 @@ async def test_crear_vehiculo_placa_invalida_rechaza_422(base_scenario: Scenario
         )
         assert response.status_code == 422
 
+
+async def test_listar_polizas_paginacion_limites_y_validacion(base_scenario: ScenarioBundle):
+    """Paginación en /api/v1/polizas respeta limit, skip y valida límites canónicos (422 si > 100 o < 0)."""
+    admin_token = base_scenario.admin_token
+
+    async with make_client(admin_token) as client:
+        # Petición por defecto (limit=50, skip=0)
+        res_default = await client.get("/api/v1/polizas")
+        assert res_default.status_code == 200
+        assert isinstance(res_default.json(), list)
+
+        # Petición con limit=1
+        res_limit1 = await client.get("/api/v1/polizas?limit=1")
+        assert res_limit1.status_code == 200
+        assert len(res_limit1.json()) <= 1
+
+        # Validación fail-fast: limit > 100 debe rechazar con 422
+        res_overflow = await client.get("/api/v1/polizas?limit=101")
+        assert res_overflow.status_code == 422
+
+        # Validación fail-fast: skip < 0 debe rechazar con 422
+        res_negative_skip = await client.get("/api/v1/polizas?skip=-1")
+        assert res_negative_skip.status_code == 422
+
+
+async def test_listar_vehiculos_paginacion_limites_y_validacion(base_scenario: ScenarioBundle):
+    """Paginación en /api/v1/vehiculos respeta limit, skip y valida límites canónicos (422 si > 100 o < 0)."""
+    admin_token = base_scenario.admin_token
+
+    async with make_client(admin_token) as client:
+        # Petición por defecto
+        res_default = await client.get("/api/v1/vehiculos")
+        assert res_default.status_code == 200
+        assert isinstance(res_default.json(), list)
+
+        # Petición con limit=1
+        res_limit1 = await client.get("/api/v1/vehiculos?limit=1")
+        assert res_limit1.status_code == 200
+        assert len(res_limit1.json()) <= 1
+
+        # Validación fail-fast: limit > 100 debe rechazar con 422
+        res_overflow = await client.get("/api/v1/vehiculos?limit=101")
+        assert res_overflow.status_code == 422
+
+        # Validación fail-fast: skip < 0 debe rechazar con 422
+        res_negative_skip = await client.get("/api/v1/vehiculos?skip=-1")
+        assert res_negative_skip.status_code == 422
+
+

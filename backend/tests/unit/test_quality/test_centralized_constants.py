@@ -59,3 +59,10 @@ def test_constantes_esquemas_extraccion():
     assert constants.MAX_NOMBRE_CAMPO_LENGTH == 100
     assert constants.MAX_DESCRIPCION_ESQUEMA_LENGTH == 500
 
+
+def test_constantes_paginacion():
+    """Verifica constantes canónicas para paginación segura de endpoints."""
+    assert constants.DEFAULT_PAGE_LIMIT == 50
+    assert constants.MAX_PAGE_LIMIT == 100
+
+

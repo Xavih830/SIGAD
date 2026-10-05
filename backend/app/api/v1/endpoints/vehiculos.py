@@ -3,11 +3,12 @@
 import uuid
 from typing import Sequence
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import check_role, get_current_user
+from app.core.constants import DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT
 from app.db.session import get_db
 from app.models.cliente import Cliente
 from app.models.usuario import RolEnum, Usuario
@@ -69,20 +70,24 @@ async def crear_vehiculo(
 
 @router.get("", response_model=list[VehiculoResponse])
 async def listar_vehiculos(
+    skip: int = Query(0, ge=0, description="Número de registros a omitir."),
+    limit: int = Query(
+        DEFAULT_PAGE_LIMIT,
+        ge=1,
+        le=MAX_PAGE_LIMIT,
+        description="Límite máximo de registros a retornar.",
+    ),
     current_user: Usuario = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> Sequence[Vehiculo]:
-    """Listar vehículos.
-    
-    Anti-BOLA estricto a nivel de consulta SQL:
-    Los usuarios con rol 'cliente' solo ven sus propios vehículos registrados.
-    """
+    """Listar vehículos con paginación y protección Anti-BOLA estricta."""
     stmt = select(Vehiculo)
     if current_user.rol == RolEnum.CLIENTE:
         stmt = stmt.join(Cliente, Vehiculo.cliente_id == Cliente.id).where(
             Cliente.usuario_id == current_user.id
         )
 
+    stmt = stmt.order_by(Vehiculo.created_at.desc()).offset(skip).limit(limit)
     result = await db.execute(stmt)
     return result.scalars().all()
 

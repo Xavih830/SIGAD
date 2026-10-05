@@ -5,15 +5,17 @@ from decimal import Decimal
 from typing import Sequence
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.api.deps import check_role, get_current_user
 from app.core.constants import (
+    DEFAULT_PAGE_LIMIT,
     DIAS_PERIODO_CUOTA_MENSUAL,
     MAX_CUOTAS_POLIZA_ANUAL,
+    MAX_PAGE_LIMIT,
     MIN_CUOTAS_POLIZA,
 )
 from app.db.session import get_db
@@ -159,19 +161,20 @@ async def crear_poliza(
 
 @router.get("", response_model=list[PolizaResponse])
 async def listar_polizas(
+    skip: int = Query(0, ge=0, description="Número de registros a omitir."),
+    limit: int = Query(
+        DEFAULT_PAGE_LIMIT,
+        ge=1,
+        le=MAX_PAGE_LIMIT,
+        description="Límite máximo de registros a retornar.",
+    ),
     current_user: Usuario = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> Sequence[Poliza]:
-    """Listar pólizas.
-    
-    Anti-BOLA estricto a nivel de consulta SQL:
-    Los usuarios con rol 'cliente' únicamente pueden consultar pólizas asociadas
-    a su propia identificación registrada (Sección 17.1).
-    """
+    """Listar pólizas con paginación y protección Anti-BOLA estricta a nivel de consulta SQL."""
     stmt = (
         select(Poliza)
         .options(selectinload(Poliza.deducibles), selectinload(Poliza.coberturas))
-        .order_by(Poliza.created_at.desc())
     )
 
     if current_user.rol == RolEnum.CLIENTE:
@@ -179,6 +182,7 @@ async def listar_polizas(
             Cliente.usuario_id == current_user.id
         )
 
+    stmt = stmt.order_by(Poliza.created_at.desc()).offset(skip).limit(limit)
     result = await db.execute(stmt)
     return result.scalars().all()
 

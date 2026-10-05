@@ -318,35 +318,6 @@
       }
     },
     "/api/v1/polizas": {
-      "get": {
-        "tags": [
-          "Pólizas"
-        ],
-        "summary": "Listar Polizas",
-        "description": "Listar pólizas.\n\nAnti-BOLA estricto a nivel de consulta SQL:\nLos usuarios con rol 'cliente' únicamente pueden consultar pólizas asociadas\na su propia identificación registrada (Sección 17.1).",
-        "operationId": "listar_polizas_api_v1_polizas_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/PolizaResponse"
-                  },
-                  "type": "array",
-                  "title": "Response Listar Polizas Api V1 Polizas Get"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
-      },
       "post": {
         "tags": [
           "Pólizas"
@@ -354,15 +325,20 @@
         "summary": "Crear Poliza",
         "description": "Emisión formal de póliza con snapshot inmutable de kilometraje y evaluación de CFG.",
         "operationId": "crear_poliza_api_v1_polizas_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/PolizaCreate"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "201": {
@@ -385,12 +361,75 @@
               }
             }
           }
-        },
+        }
+      },
+      "get": {
+        "tags": [
+          "Pólizas"
+        ],
+        "summary": "Listar Polizas",
+        "description": "Listar pólizas con paginación y protección Anti-BOLA estricta a nivel de consulta SQL.",
+        "operationId": "listar_polizas_api_v1_polizas_get",
         "security": [
           {
             "HTTPBearer": []
           }
-        ]
+        ],
+        "parameters": [
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Número de registros a omitir.",
+              "default": 0,
+              "title": "Skip"
+            },
+            "description": "Número de registros a omitir."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Límite máximo de registros a retornar.",
+              "default": 50,
+              "title": "Limit"
+            },
+            "description": "Límite máximo de registros a retornar."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PolizaResponse"
+                  },
+                  "title": "Response Listar Polizas Api V1 Polizas Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/polizas/{id}": {
@@ -677,35 +716,6 @@
       }
     },
     "/api/v1/vehiculos": {
-      "get": {
-        "tags": [
-          "Vehículos"
-        ],
-        "summary": "Listar Vehiculos",
-        "description": "Listar vehículos.\n\nAnti-BOLA estricto a nivel de consulta SQL:\nLos usuarios con rol 'cliente' solo ven sus propios vehículos registrados.",
-        "operationId": "listar_vehiculos_api_v1_vehiculos_get",
-        "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/VehiculoResponse"
-                  },
-                  "type": "array",
-                  "title": "Response Listar Vehiculos Api V1 Vehiculos Get"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ]
-      },
       "post": {
         "tags": [
           "Vehículos"
@@ -713,15 +723,20 @@
         "summary": "Crear Vehiculo",
         "description": "Registrar un nuevo vehículo con validación de placa ANT.\n\nAnti-BOLA: Clientes solo pueden registrar vehículos asociados a su propia ficha de cliente.",
         "operationId": "crear_vehiculo_api_v1_vehiculos_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/VehiculoCreate"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "201": {
@@ -744,12 +759,75 @@
               }
             }
           }
-        },
+        }
+      },
+      "get": {
+        "tags": [
+          "Vehículos"
+        ],
+        "summary": "Listar Vehiculos",
+        "description": "Listar vehículos con paginación y protección Anti-BOLA estricta.",
+        "operationId": "listar_vehiculos_api_v1_vehiculos_get",
         "security": [
           {
             "HTTPBearer": []
           }
-        ]
+        ],
+        "parameters": [
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Número de registros a omitir.",
+              "default": 0,
+              "title": "Skip"
+            },
+            "description": "Número de registros a omitir."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Límite máximo de registros a retornar.",
+              "default": 50,
+              "title": "Limit"
+            },
+            "description": "Límite máximo de registros a retornar."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VehiculoResponse"
+                  },
+                  "title": "Response Listar Vehiculos Api V1 Vehiculos Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/vehiculos/{id}": {
