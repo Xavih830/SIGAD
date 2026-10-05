@@ -12,9 +12,11 @@ Covers:
    - Exception in OCR extraction returns 422 and guarantees temp file cleanup (no disk leak).
 """
 
+import io
 from unittest.mock import patch
 import uuid
 
+from PIL import Image
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -206,6 +208,27 @@ async def test_probar_esquema_error_extraccion_limpia_temporal(
             )
             assert res.status_code == 422
             assert "Error durante el procesamiento" in res.text
+
+
+async def test_probar_esquema_imagen_dimensiones_excedidas_400(
+    base_scenario: ScenarioBundle,
+    db_session: AsyncSession,
+):
+    """Subir una imagen con dimensiones mayores a 4096 px retorna 400 Bad Request (Anti-Pixel-Flood)."""
+    token_admin = base_scenario.admin_token
+    esquema = await create_esquema(db_session)
+
+    buf = io.BytesIO()
+    Image.new("RGB", (4097, 100), color="white").save(buf, format="PNG")
+    oversized_bytes = buf.getvalue()
+
+    async with make_client(token_admin) as client:
+        res = await client.post(
+            f"/api/v1/esquemas/{esquema.id}/probar",
+            files={"file": ("pixel_bomb.png", oversized_bytes, "image/png")},
+        )
+        assert res.status_code == 400
+        assert "exceden el límite máximo" in res.text
 
 
 async def test_probar_esquema_exitoso_multi_dominio(

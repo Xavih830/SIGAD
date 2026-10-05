@@ -12,6 +12,8 @@ from app.core.config import settings
 
 from app.core.constants import (
     MAX_DOCUMENT_SIZE_BYTES,
+    MAX_IMAGE_DIMENSION_PX,
+    MAX_IMAGE_PIXELS,
     MAX_PDF_PAGES_PERMITTED,
     PERMITTED_MIME_TYPES,
 )
@@ -26,6 +28,10 @@ ALLOWED_EXTENSIONS_BY_MIME: dict[str, set[str]] = {
     "image/png": {".png"},
     "image/tiff": {".tif", ".tiff"},
 }
+
+IMAGE_EXTENSIONS: frozenset[str] = frozenset(
+    ext for mime, exts in ALLOWED_EXTENSIONS_BY_MIME.items() if mime.startswith("image/") for ext in exts
+)
 
 
 class StorageException(Exception):
@@ -50,6 +56,11 @@ class MaxPagesExceededException(StorageException):
 
 class StorageSecurityException(StorageException):
     """Raised when path traversal or unauthorized path access is detected."""
+    pass
+
+
+class ImageDimensionsExceededException(StorageSecurityException):
+    """Raised when image resolution exceeds permitted dimensions (Anti-Pixel-Flood)."""
     pass
 
 
@@ -82,6 +93,47 @@ class StorageService:
         elif mime_type == "image/tiff":
             return content.startswith(b"II*\x00") or content.startswith(b"MM\x00*")
         return False
+
+    def is_image_file(self, filename: str, content: bytes | None = None) -> bool:
+        """Determina de forma canónica si un archivo es una imagen usando extensiones y magic bytes."""
+        ext = Path(filename).suffix.lower()
+        if ext in IMAGE_EXTENSIONS:
+            return True
+        if content and len(content) >= 4:
+            return any(
+                self._validate_magic_bytes(content, mime)
+                for mime in ALLOWED_MIME_TYPES
+                if mime.startswith("image/")
+            )
+        return False
+
+    def validate_image_dimensions(self, content: bytes) -> tuple[int, int]:
+        """Valida que una imagen no exceda las dimensiones máximas permitidas (Anti-Pixel-Flood).
+        
+        Returns:
+            tuple[width, height]
+        Raises:
+            ImageDimensionsExceededException: Si width o height > 4096 px o total > 16MP.
+            StorageException: Si la imagen está dañada o no se puede leer.
+        """
+        try:
+            from PIL import Image
+
+            with Image.open(io.BytesIO(content)) as img:
+                w, h = img.size
+                if w > MAX_IMAGE_DIMENSION_PX or h > MAX_IMAGE_DIMENSION_PX:
+                    raise ImageDimensionsExceededException(
+                        f"Las dimensiones de la imagen ({w}x{h} px) exceden el límite máximo permitido de {MAX_IMAGE_DIMENSION_PX}x{MAX_IMAGE_DIMENSION_PX} px."
+                    )
+                if (w * h) > MAX_IMAGE_PIXELS:
+                    raise ImageDimensionsExceededException(
+                        f"La resolución total de la imagen ({w * h} px) excede el límite máximo de {MAX_IMAGE_PIXELS} píxeles."
+                    )
+                return w, h
+        except ImageDimensionsExceededException:
+            raise
+        except Exception as e:
+            raise StorageException(f"El archivo de imagen está dañado o es ilegible: {e}")
 
     def save_file(
         self,
@@ -131,6 +183,8 @@ class StorageService:
                 raise MaxPagesExceededException(
                     f"El documento excede el límite de 10 páginas (tiene {page_count} páginas)."
                 )
+        elif mime in ("image/jpeg", "image/png", "image/tiff"):
+            self.validate_image_dimensions(content)
 
         sha256_hash = hashlib.sha256(content).hexdigest()
         sanitized = self._sanitize_filename(filename)

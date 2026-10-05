@@ -8,6 +8,8 @@ def test_constantes_limites_almacenamiento():
     """Verifica que los límites de subida coincidan exactamente con la especificación de 15MB y 10 páginas."""
     assert constants.MAX_DOCUMENT_SIZE_BYTES == 15 * 1024 * 1024
     assert constants.MAX_PDF_PAGES_PERMITTED == 10
+    assert constants.MAX_IMAGE_DIMENSION_PX == 4096
+    assert constants.MAX_IMAGE_PIXELS == 16_000_000
     assert "application/pdf" in constants.PERMITTED_MIME_TYPES
     assert "image/jpeg" in constants.PERMITTED_MIME_TYPES
 

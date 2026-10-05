@@ -29,6 +29,11 @@ from app.schemas.esquema_extraccion import (
     ProbarEsquemaResponse,
 )
 from app.services.extraccion_service import aplicar_esquema, extraer_documento_sync
+from app.services.storage_service import (
+    ImageDimensionsExceededException,
+    StorageException,
+    storage_service,
+)
 
 router = APIRouter(prefix="/esquemas", tags=["Esquemas de Extracción"])
 
@@ -177,6 +182,15 @@ async def probar_esquema(
         )
 
     suffix = Path(file.filename or "test.pdf").suffix or ".pdf"
+    if storage_service.is_image_file(file.filename or "", content):
+        try:
+            storage_service.validate_image_dimensions(content)
+        except (ImageDimensionsExceededException, StorageException) as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(e),
+            )
+
     with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
         tmp.write(content)
         tmp_path = tmp.name

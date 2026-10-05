@@ -23,6 +23,7 @@ from app.schemas.documento import (
 )
 from app.core.constants import MAX_DOCUMENT_SIZE_BYTES
 from app.services.storage_service import (
+    ImageDimensionsExceededException,
     InvalidMimeTypeException,
     MaxPagesExceededException,
     StorageSecurityException,
@@ -107,7 +108,7 @@ async def cargar_documento(
         )
     except StorageSizeLimitException as e:
         raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail=str(e))
-    except (InvalidMimeTypeException, MaxPagesExceededException) as e:
+    except (InvalidMimeTypeException, MaxPagesExceededException, ImageDimensionsExceededException) as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Error al procesar archivo: {e}")

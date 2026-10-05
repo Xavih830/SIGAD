@@ -299,3 +299,25 @@ async def test_revisar_campos_documento_no_encontrado_404(base_scenario: Scenari
             json={"campos_extraidos": {"placa": "ABC-1234"}},
         )
         assert res.status_code == 404
+
+
+async def test_subida_imagen_dimensiones_excedidas_400(base_scenario: ScenarioBundle, db_session):
+    """Subida de imagen con dimensiones exorbitantes (Anti-Pixel-Flood) retorna HTTP 400."""
+    from PIL import Image
+    admin_token = base_scenario.admin_token
+
+    # Generar imagen sintética de 5000 x 50 px en memoria
+    img = Image.new("RGB", (5000, 50), color="white")
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    png_bytes = buf.getvalue()
+
+    async with make_client(admin_token) as client:
+        res = await client.post(
+            "/api/v1/documentos",
+            files={"file": ("pixel_flood.png", png_bytes, "image/png")},
+            data={"poliza_id": str(base_scenario.poliza_a.id)},
+        )
+        assert res.status_code == 400
+        assert "exceden el límite máximo permitido" in res.json()["detail"]
+

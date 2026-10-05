@@ -8,6 +8,8 @@ from decimal import Decimal
 # ── Almacenamiento y Documentos ──────────────────────────────────────────────
 MAX_DOCUMENT_SIZE_BYTES: int = 15 * 1024 * 1024  # 15 Megabytes exactos
 MAX_PDF_PAGES_PERMITTED: int = 10
+MAX_IMAGE_DIMENSION_PX: int = 4096
+MAX_IMAGE_PIXELS: int = 16_000_000  # 16 Megapíxeles
 PERMITTED_MIME_TYPES: tuple[str, ...] = (
     "application/pdf",
     "image/jpeg",
