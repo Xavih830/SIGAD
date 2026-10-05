@@ -30,6 +30,8 @@ from app.core.constants import (
     RATE_LIMIT_TARPIT_BURST_THRESHOLD,
     RATE_LIMIT_TARPIT_BURST_WINDOW_SECONDS,
     RATE_LIMIT_TARPIT_MAX_DELAY_SECONDS,
+    RATE_LIMIT_CATALOGO_MAX_REQUESTS,
+    RATE_LIMIT_CATALOGO_WINDOW_SECONDS,
     RATE_LIMIT_VINCULACION_IDENTITY_WINDOW_SECONDS,
     RATE_LIMIT_VINCULACION_MAX_REQUESTS,
     RATE_LIMIT_VINCULACION_WINDOW_SECONDS,
@@ -63,6 +65,7 @@ class RateLimiter:
         self.ip_limits: Dict[str, Tuple[int, int]] = {
             "login": (RATE_LIMIT_LOGIN_MAX_REQUESTS, RATE_LIMIT_LOGIN_WINDOW_SECONDS),
             "vinculacion": (RATE_LIMIT_VINCULACION_MAX_REQUESTS, RATE_LIMIT_VINCULACION_WINDOW_SECONDS),
+            "catalogo": (RATE_LIMIT_CATALOGO_MAX_REQUESTS, RATE_LIMIT_CATALOGO_WINDOW_SECONDS),
         }
 
         # Layer 2: Identity limits (max_requests, window_seconds)
@@ -100,7 +103,8 @@ class RateLimiter:
         if not ip:
             return
         now = now if now is not None else time.time()
-        endpoint_key = "vinculacion" if "vinculacion" in endpoint.lower() else "login"
+        ep = endpoint.lower()
+        endpoint_key = "vinculacion" if "vinculacion" in ep else ("catalogo" if "catalogo" in ep else "login")
         if endpoint_key not in self.ip_limits:
             raise KeyError(f"Endpoint '{endpoint_key}' sin política de IP Rate Limit definida.")
         max_req, window = self.ip_limits[endpoint_key]
@@ -119,7 +123,8 @@ class RateLimiter:
         if not ip:
             return
         now = now if now is not None else time.time()
-        endpoint_key = "vinculacion" if "vinculacion" in endpoint.lower() else "login"
+        ep = endpoint.lower()
+        endpoint_key = "vinculacion" if "vinculacion" in ep else ("catalogo" if "catalogo" in ep else "login")
         cache_key = f"ip:{endpoint_key}:{ip}"
         self._append_history(cache_key, now)
 

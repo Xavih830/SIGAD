@@ -1,6 +1,6 @@
 """Shared FastAPI dependencies — DB session and auth guards."""
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from jose import JWTError
 from sqlalchemy import select
@@ -45,3 +45,20 @@ def check_role(*allowed_roles: RolEnum):
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Acceso denegado")
         return user
     return role_guard
+
+
+def get_client_ip(request: Request) -> str:
+    """Extrae la IP real del cliente detrás del proxy inverso (Caddy X-Real-IP)."""
+    real_ip = request.headers.get("x-real-ip")
+    if real_ip:
+        return real_ip.strip()
+    return request.client.host if request.client else "127.0.0.1"
+
+
+async def check_catalog_rate_limit(request: Request) -> None:
+    """Guardián de rate limiting por IP para catálogos públicos sin autenticación."""
+    from app.core.rate_limit import rate_limiter
+
+    ip = get_client_ip(request)
+    rate_limiter.check_ip(ip=ip, endpoint="catalogo")
+

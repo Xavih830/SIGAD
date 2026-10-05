@@ -4,11 +4,11 @@ import logging
 import uuid
 from typing import List, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import check_role
+from app.api.deps import check_catalog_rate_limit, check_role
 from app.db.session import get_db
 from app.models.taller import Taller
 from app.models.usuario import RolEnum, Usuario
@@ -21,11 +21,14 @@ router = APIRouter(prefix="/talleres", tags=["Talleres"])
 
 @router.get("", response_model=List[TallerResponse])
 async def listar_talleres(
+    response: Response,
     ciudad: Optional[str] = Query(None, description="Filtrar por ciudad"),
     solo_activos: bool = Query(True, description="Mostrar solo talleres activos"),
+    _: None = Depends(check_catalog_rate_limit),
     db: AsyncSession = Depends(get_db),
 ) -> List[TallerResponse]:
     """Obtiene el catálogo de talleres autorizados."""
+    response.headers["Cache-Control"] = "public, max-age=300"
     stmt = select(Taller)
     if solo_activos:
         stmt = stmt.where(Taller.activo.is_(True))
@@ -60,9 +63,12 @@ async def crear_taller(
 @router.get("/{taller_id}", response_model=TallerResponse)
 async def obtener_taller(
     taller_id: uuid.UUID,
+    response: Response,
+    _: None = Depends(check_catalog_rate_limit),
     db: AsyncSession = Depends(get_db),
 ) -> TallerResponse:
     """Obtiene un taller por su ID."""
+    response.headers["Cache-Control"] = "public, max-age=300"
     stmt = select(Taller).where(Taller.id == taller_id)
     res = await db.execute(stmt)
     taller = res.scalar_one_or_none()

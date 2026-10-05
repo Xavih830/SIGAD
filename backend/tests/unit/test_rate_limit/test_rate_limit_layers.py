@@ -97,3 +97,40 @@ def test_layer4_account_lockout():
     # Successful login resets lockout
     limiter.record_success(identity)
     assert limiter.is_account_locked(identity) is False
+
+
+def test_layer1_ip_rate_limit_catalogo():
+    """Layer 1: Max 60 requests per 1 minute for catalogo endpoints."""
+    limiter = RateLimiter(maxsize=100)
+    test_ip = "192.168.1.102"
+
+    for _ in range(60):
+        limiter.check_ip(test_ip, endpoint="catalogo")
+        limiter.record_ip(test_ip, endpoint="catalogo")
+
+    with pytest.raises(RateLimitExceeded, match="Límite de peticiones por IP excedido"):
+        limiter.check_ip(test_ip, endpoint="catalogo")
+
+
+def test_get_client_ip_resolution():
+    """get_client_ip must strictly prioritize X-Real-IP over client host and ignore spoofed headers."""
+    from unittest.mock import MagicMock
+    from app.api.deps import get_client_ip
+
+    # 1. Con X-Real-IP establecido por Caddy
+    mock_req_caddy = MagicMock()
+    mock_req_caddy.headers.get.side_effect = lambda h: "203.0.113.195" if h == "x-real-ip" else None
+    assert get_client_ip(mock_req_caddy) == "203.0.113.195"
+
+    # 2. Sin X-Real-IP -> fallback a client.host
+    mock_req_direct = MagicMock()
+    mock_req_direct.headers.get.return_value = None
+    mock_req_direct.client.host = "192.168.1.50"
+    assert get_client_ip(mock_req_direct) == "192.168.1.50"
+
+    # 3. Sin headers ni client -> fallback a 127.0.0.1
+    mock_req_none = MagicMock()
+    mock_req_none.headers.get.return_value = None
+    mock_req_none.client = None
+    assert get_client_ip(mock_req_none) == "127.0.0.1"
+

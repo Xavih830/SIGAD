@@ -4,11 +4,11 @@ import logging
 import uuid
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import check_role
+from app.api.deps import check_catalog_rate_limit, check_role
 from app.db.session import get_db
 from app.models.asistencia import Asistencia
 from app.models.usuario import RolEnum, Usuario
@@ -21,10 +21,13 @@ router = APIRouter(prefix="/asistencias", tags=["Asistencias"])
 
 @router.get("", response_model=List[AsistenciaResponse])
 async def listar_asistencias(
+    response: Response,
     solo_activas: bool = Query(True, description="Mostrar solo asistencias activas"),
+    _: None = Depends(check_catalog_rate_limit),
     db: AsyncSession = Depends(get_db),
 ) -> List[AsistenciaResponse]:
     """Obtiene el catálogo de servicios de asistencia en carretera y emergencias."""
+    response.headers["Cache-Control"] = "public, max-age=300"
     stmt = select(Asistencia)
     if solo_activas:
         stmt = stmt.where(Asistencia.activo.is_(True))
@@ -57,9 +60,12 @@ async def crear_asistencia(
 @router.get("/{asistencia_id}", response_model=AsistenciaResponse)
 async def obtener_asistencia(
     asistencia_id: uuid.UUID,
+    response: Response,
+    _: None = Depends(check_catalog_rate_limit),
     db: AsyncSession = Depends(get_db),
 ) -> AsistenciaResponse:
     """Obtiene el detalle de un servicio de asistencia por ID."""
+    response.headers["Cache-Control"] = "public, max-age=300"
     stmt = select(Asistencia).where(Asistencia.id == asistencia_id)
     res = await db.execute(stmt)
     asistencia = res.scalar_one_or_none()

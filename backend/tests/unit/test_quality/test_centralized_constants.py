@@ -33,6 +33,8 @@ def test_constantes_rate_limit_y_polizas():
     """Verifica límites de rate limit y vigencia de pólizas."""
     assert constants.RATE_LIMIT_LOGIN_MAX_REQUESTS == 5
     assert constants.RATE_LIMIT_LOGIN_WINDOW_SECONDS == 900
+    assert constants.RATE_LIMIT_CATALOGO_MAX_REQUESTS == 60
+    assert constants.RATE_LIMIT_CATALOGO_WINDOW_SECONDS == 60
     assert constants.RATE_LIMIT_LOCKOUT_MAX_FAILS == 10
     assert constants.RATE_LIMIT_LOCKOUT_WINDOW_SECONDS == 3600
     assert constants.RATE_LIMIT_LOCKOUT_DURATION_SECONDS == 1800

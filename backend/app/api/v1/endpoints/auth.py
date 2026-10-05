@@ -15,6 +15,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.api.deps import get_client_ip
 from app.core.exceptions import EmailDuplicadoException
 from app.core.rate_limit import rate_limiter
 from app.core.security import (
@@ -42,17 +43,6 @@ _LOGIN_ERROR = "Las credenciales ingresadas no son válidas."
 _VINCULACION_ERROR = "Código de vinculación inválido o expirado."
 
 
-def _get_client_ip(request: Request) -> str:
-    """Extract real client IP behind reverse proxy (Caddy X-Real-IP / X-Forwarded-For)."""
-    real_ip = request.headers.get("x-real-ip")
-    if real_ip:
-        return real_ip.strip()
-    forwarded = request.headers.get("x-forwarded-for")
-    if forwarded:
-        return forwarded.split(",")[0].strip()
-    return request.client.host if request.client else "127.0.0.1"
-
-
 @router.post("/login", response_model=TokenResponse)
 async def login(
     body: LoginRequest,
@@ -60,7 +50,7 @@ async def login(
     db: AsyncSession = Depends(get_db),
 ) -> TokenResponse:
     """Polymorphic login: email → direct lookup, cédula → join through clientes."""
-    ip = _get_client_ip(request)
+    ip = get_client_ip(request)
     identificador = body.identificador.strip()
 
     # Rate limiting (Layers 1, 2, 3, 4)
@@ -127,7 +117,7 @@ async def vincular_cliente(
     db: AsyncSession = Depends(get_db),
 ) -> TokenResponse:
     """Flujo de vinculación móvil para clientes asegurados."""
-    ip = _get_client_ip(request)
+    ip = get_client_ip(request)
     cedula = body.cedula.strip()
 
     # 1. Rate limiting en 4 capas
