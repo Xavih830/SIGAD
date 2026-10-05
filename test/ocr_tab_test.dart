@@ -7,7 +7,7 @@ import 'helpers/test_fixtures.dart';
 
 void main() {
   group('HU-06: OcrDocumentDetailCard Widget & Revision Tests', () {
-    final sampleDocument = TestFixtures.ocrDocumentSample;
+    final sampleDocument = TestFixtures.ocrDocumentModel;
 
     testWidgets('Muestra campos extraidos editables con valores precargados', (tester) async {
       tester.view.physicalSize = const Size(1280, 1024);
@@ -37,7 +37,7 @@ void main() {
       expect(find.textContaining('CONFIANZA MEDIA (78.5%)'), findsOneWidget);
 
       // Verificar que los campos aparecen como inputs editables
-      final campos = sampleDocument['resultado']['campos_extraidos'] as Map<String, dynamic>;
+      final campos = sampleDocument.camposExtraidos!;
       expect(find.text(campos['placa'] as String), findsOneWidget);
       expect(find.text(campos['valor_asegurado'] as String), findsOneWidget);
       expect(find.text(campos['prima_mensual'] as String), findsOneWidget);
@@ -74,7 +74,7 @@ void main() {
         ),
       );
 
-      final campos = sampleDocument['resultado']['campos_extraidos'] as Map<String, dynamic>;
+      final campos = sampleDocument.camposExtraidos!;
       // Localizar el campo de texto de la placa y modificarlo
       final placaField = find.widgetWithText(TextFormField, campos['placa'] as String);
       expect(placaField, findsOneWidget);

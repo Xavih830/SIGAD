@@ -306,17 +306,25 @@ class TestFactories {
     String? id,
     String? email,
     String? name,
-    String? role,
+    dynamic role,
     String? accessToken,
     String? refreshToken,
     bool? isActive,
   }) {
     final seq = nextSequence;
+    final UserRole parsedRole;
+    if (role is UserRole) {
+      parsedRole = role;
+    } else if (role is String) {
+      parsedRole = UserRole.fromValue(role);
+    } else {
+      parsedRole = UserRole.cliente;
+    }
     return UserModel(
       id: id ?? 'usr-$seq',
       email: email ?? 'usuario$seq@sigad.ec',
       name: name ?? 'Usuario Test $seq',
-      role: role ?? 'cliente',
+      role: parsedRole,
       accessToken: accessToken,
       refreshToken: refreshToken,
       isActive: isActive ?? true,

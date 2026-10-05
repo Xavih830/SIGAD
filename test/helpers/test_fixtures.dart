@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:sigad/core/models/catalog_model.dart';
 import 'package:sigad/core/models/client_model.dart';
 import 'package:sigad/core/models/deductible_model.dart';
+import 'package:sigad/core/models/document_model.dart';
 import 'package:sigad/core/models/payment_model.dart';
 import 'package:sigad/core/models/policy_model.dart';
 import 'package:sigad/core/models/user_model.dart';
@@ -70,7 +71,7 @@ class TestFixtures {
     id: 'usr-admin-1',
     email: adminEmail,
     name: 'Administrador del Sistema',
-    role: 'admin_system',
+    role: 'admin',
     accessToken: validToken,
     refreshToken: refreshToken,
     isActive: true,
@@ -80,7 +81,7 @@ class TestFixtures {
         id: adminUser.id,
         email: adminUser.email,
         name: adminUser.name,
-        role: adminUser.role,
+        role: adminUser.role.value,
         isActive: adminUser.isActive,
         accessToken: validToken,
         refreshToken: refreshToken,
@@ -100,7 +101,7 @@ class TestFixtures {
         id: clientUser.id,
         email: clientUser.email,
         name: clientUser.name,
-        role: clientUser.role,
+        role: clientUser.role.value,
         isActive: clientUser.isActive,
         accessToken: activationToken,
         refreshToken: activationRefreshToken,
@@ -120,7 +121,7 @@ class TestFixtures {
         id: u.id,
         email: u.email,
         name: u.name,
-        role: u.role,
+        role: u.role.value,
         isActive: u.isActive,
       ),
     });
@@ -139,7 +140,7 @@ class TestFixtures {
         id: u.id,
         email: u.email,
         name: u.name,
-        role: u.role,
+        role: u.role.value,
         isActive: u.isActive,
       ),
     });
@@ -260,6 +261,7 @@ class TestFixtures {
     'tipo_mime': 'application/pdf',
     'tamano_bytes': 204800,
     'estado_extraccion': 'requiere_revision_manual',
+    'created_at': '2026-03-15T10:00:00Z',
     'resultado': {
       'metodo': 'tesseract_200dpi',
       'confianza': 78.5,
@@ -273,6 +275,8 @@ class TestFixtures {
       'texto_completo': 'CONTRATO DE SEGURO VEHICULAR PLACA PBX-1234',
     },
   };
+
+  static final DocumentModel ocrDocumentModel = DocumentModel.fromJson(ocrDocumentSample);
 
   // --- CATÁLOGOS CANÓNICOS ---
   static final WorkshopModel standardWorkshop = TestFactories.createWorkshop(
