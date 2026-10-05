@@ -1,4 +1,5 @@
 import 'package:http/http.dart' as http;
+import 'package:sigad/core/constants/api_endpoints.dart';
 import 'package:sigad/core/models/client_model.dart';
 import 'package:sigad/core/network/api_client.dart';
 
@@ -11,13 +12,13 @@ class ClientsRepository {
       : _client = client ?? ApiClient(client: httpClient);
 
   Future<List<ClientModel>> getClients({String? token}) async {
-    final list = await _client.getList('/api/v1/clientes', token: token);
+    final list = await _client.getList(ApiEndpoints.clientes, token: token);
     return list.map((item) => ClientModel.fromJson(item)).toList();
   }
 
   Future<ClientModel> createClient(CreateClientRequest request, {String? token}) async {
     final data = await _client.post(
-      '/api/v1/clientes',
+      ApiEndpoints.clientes,
       body: request.toJson(),
       token: token,
     );
@@ -26,7 +27,7 @@ class ClientsRepository {
 
   Future<ClientModel> requestOtp(String clientId, {String? token}) async {
     final data = await _client.post(
-      '/api/v1/clientes/$clientId/otp',
+      ApiEndpoints.clienteOtp(clientId),
       token: token,
     );
     return ClientModel.fromJson(data);

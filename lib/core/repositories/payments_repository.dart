@@ -1,4 +1,5 @@
 import 'package:http/http.dart' as http;
+import 'package:sigad/core/constants/api_endpoints.dart';
 import 'package:sigad/core/models/payment_model.dart';
 import 'package:sigad/core/network/api_client.dart';
 
@@ -10,7 +11,7 @@ class PaymentsRepository {
       : _client = client ?? ApiClient(client: httpClient);
 
   Future<List<PaymentModel>> getPaymentsByPolicy(String policyId, {String? token}) async {
-    final list = await _client.getList('/api/v1/polizas/$policyId/pagos', token: token);
+    final list = await _client.getList(ApiEndpoints.polizaPagos(policyId), token: token);
     final payments = list.map((e) => PaymentModel.fromJson(e)).toList();
     payments.sort((a, b) => a.installmentNumber.compareTo(b.installmentNumber));
     return payments;
@@ -32,7 +33,7 @@ class PaymentsRepository {
     };
 
     final data = await _client.post(
-      '/api/v1/polizas/$policyId/pagos/$paymentId/registrar',
+      ApiEndpoints.polizaRegistrarPago(policyId, paymentId),
       body: payload,
       token: token,
     );

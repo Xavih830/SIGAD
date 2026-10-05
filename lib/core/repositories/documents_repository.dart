@@ -1,47 +1,61 @@
 import 'dart:typed_data';
 import 'package:http/http.dart' as http;
+import 'package:sigad/core/constants/api_endpoints.dart';
+import 'package:sigad/core/constants/domain_status.dart';
+import 'package:sigad/core/models/document_model.dart';
 import 'package:sigad/core/network/api_client.dart';
+import 'package:sigad/core/security/file_security_validator.dart';
 
-/// Repositorio canónico para el ciclo de vida de documentos OCR (HU-06).
+/// Repositorio canónico fuertemente tipado para el ciclo de vida de documentos OCR (HU-06).
 class DocumentsRepository {
   final ApiClient _client;
 
   DocumentsRepository({ApiClient? client, http.Client? httpClient})
       : _client = client ?? ApiClient(client: httpClient);
 
-  Future<List<Map<String, dynamic>>> getDocuments({String? token}) async {
-    return _client.getList('/api/v1/documentos', token: token);
+  Future<List<DocumentModel>> getDocuments({String? token}) async {
+    final list = await _client.getList(ApiEndpoints.documentos, token: token);
+    return list.map((json) => DocumentModel.fromJson(json)).toList();
   }
 
-  Future<Map<String, dynamic>> getDocumentById(String documentId, {String? token}) async {
-    return _client.getMap('/api/v1/documentos/$documentId', token: token);
+  Future<DocumentModel> getDocumentById(String documentId, {String? token}) async {
+    final json = await _client.getMap(ApiEndpoints.documento(documentId), token: token);
+    return DocumentModel.fromJson(json);
   }
 
-  Future<Map<String, dynamic>> uploadDocument({
+  /// Valida la integridad del archivo antes de transmitirlo al servidor (Pre-Flight Guard).
+  static void validateFileIntegrity(Uint8List bytes, String filename) {
+    FileSecurityValidator.validatePreFlight(bytes: bytes, filename: filename);
+  }
+
+  Future<DocumentModel> uploadDocument({
     required Uint8List bytes,
     required String filename,
     String? token,
   }) async {
-    return _client.multipart(
-      path: '/api/v1/documentos',
+    validateFileIntegrity(bytes, filename);
+    final data = await _client.multipart(
+      path: ApiEndpoints.documentos,
       bytes: bytes,
       filename: filename,
       token: token,
     );
+    return DocumentModel.fromJson(data);
   }
 
-  Future<Map<String, dynamic>> confirmRevision({
+  Future<DocumentModel> confirmRevision({
     required String documentId,
     required Map<String, dynamic> camposCorregidos,
     String? token,
   }) async {
-    return _client.patch(
-      '/api/v1/documentos/$documentId/revision',
+    final data = await _client.patch(
+      ApiEndpoints.documentoRevision(documentId),
       body: {
         'campos_extraidos': camposCorregidos,
-        'estado_extraccion': 'completado',
+        'estado_extraccion': ExtractionStatus.completado.value,
       },
       token: token,
     );
+    return DocumentModel.fromJson(data);
   }
 }

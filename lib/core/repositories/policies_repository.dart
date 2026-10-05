@@ -1,4 +1,6 @@
 import 'package:http/http.dart' as http;
+import 'package:sigad/core/constants/api_endpoints.dart';
+import 'package:sigad/core/constants/app_constants.dart';
 import 'package:sigad/core/models/policy_model.dart';
 import 'package:sigad/core/network/api_client.dart';
 
@@ -10,8 +12,15 @@ class PoliciesRepository {
   PoliciesRepository({ApiClient? client, http.Client? httpClient})
       : _client = client ?? ApiClient(client: httpClient);
 
-  Future<List<PolicyModel>> getPolicies({String? token}) async {
-    final list = await _client.getList('/api/v1/polizas', token: token);
+  Future<List<PolicyModel>> getPolicies({
+    int skip = AppConstants.defaultPageSkip,
+    int limit = AppConstants.defaultPageLimit,
+    String? token,
+  }) async {
+    final list = await _client.getList(
+      ApiEndpoints.polizas(skip: skip, limit: limit),
+      token: token,
+    );
     return list.map((item) => PolicyModel.fromJson(item)).toList();
   }
 
@@ -20,30 +29,26 @@ class PoliciesRepository {
 
     if (vehicleId.isEmpty && policy.vehicle != null) {
       final plate = policy.vehicle!.plate.toUpperCase();
-      try {
-        final vehicles = await _client.getList('/api/v1/vehiculos', token: token);
-        final match = vehicles.firstWhere(
-          (v) => (v['placa'] as String).toUpperCase() == plate,
-          orElse: () => {},
+      final vehicles = await _client.getList(ApiEndpoints.vehiculos, token: token);
+      final match = vehicles.firstWhere(
+        (v) => (v['placa'] as String).toUpperCase() == plate,
+        orElse: () => {},
+      );
+      if (match.isNotEmpty && match['id'] != null) {
+        vehicleId = match['id'] as String;
+      } else {
+        final createdVeh = await _client.post(
+          ApiEndpoints.vehiculos,
+          body: {
+            'placa': plate,
+            'marca': policy.vehicle!.brand,
+            'modelo': policy.vehicle!.model,
+            'anio': policy.vehicle!.year,
+            'cliente_id': policy.clientId,
+          },
+          token: token,
         );
-        if (match.isNotEmpty && match['id'] != null) {
-          vehicleId = match['id'] as String;
-        } else {
-          final createdVeh = await _client.post(
-            '/api/v1/vehiculos',
-            body: {
-              'placa': plate,
-              'marca': policy.vehicle!.brand,
-              'modelo': policy.vehicle!.model,
-              'anio': policy.vehicle!.year,
-              'cliente_id': policy.clientId,
-            },
-            token: token,
-          );
-          vehicleId = createdVeh['id'] as String;
-        }
-      } catch (_) {
-        // En caso de error de búsqueda, se intenta con el ID original
+        vehicleId = createdVeh['id'] as String;
       }
     }
 
@@ -53,7 +58,7 @@ class PoliciesRepository {
     }
 
     final data = await _client.post(
-      '/api/v1/polizas',
+      ApiEndpoints.polizasBase,
       body: payload,
       token: token,
     );
