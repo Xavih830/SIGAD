@@ -11,7 +11,7 @@ from datetime import datetime, timedelta, timezone
 
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
-from jose import jwt
+import jwt
 from pydantic import SecretStr
 
 from app.core.config import settings

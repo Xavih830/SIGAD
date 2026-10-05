@@ -16,7 +16,7 @@ from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 import uuid
 
-from jose import jwt
+import jwt
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
