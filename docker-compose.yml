@@ -30,7 +30,7 @@ services:
     restart: always
     command: >
       sh -c "alembic upgrade head &&
-             python -m scripts.seed_dev_data &&
+             if [ \"$$ENVIRONMENT\" != \"production\" ]; then python -m scripts.seed_dev_data; fi &&
              uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2"
     env_file:
       - .env

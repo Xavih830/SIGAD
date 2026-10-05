@@ -92,6 +92,13 @@ async def seed_data(session: AsyncSession, clean: bool = False) -> None:
         )
         raise RuntimeError("No se puede ejecutar el seeder de desarrollo en un entorno de producción.")
 
+    db_url_str = str(session.bind.url) if (session.bind and hasattr(session.bind, "url")) else ""
+    if "sigad_test_db" in db_url_str:
+        logger.critical(
+            "SEED_DATA_ABORTED: PROHIBIDO poblar la base de datos de pruebas sigad_test_db."
+        )
+        raise RuntimeError("PROHIBIDO ejecutar el seeder de desarrollo sobre la base de datos de pruebas sigad_test_db.")
+
     if clean:
         await clean_database(session)
 

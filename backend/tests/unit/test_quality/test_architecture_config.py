@@ -178,6 +178,23 @@ async def test_seeder_blocks_execution_in_production():
             await seed_data(mock_session)
 
 
+@pytest.mark.asyncio
+async def test_seeder_blocks_execution_on_test_database():
+    """Verify that seed_dev_data refuses to populate sigad_test_db to preserve test isolation."""
+    from unittest.mock import AsyncMock, MagicMock
+    import pytest
+    from scripts.seed_dev_data import seed_data
+
+    mock_session = AsyncMock()
+    mock_bind = MagicMock()
+    mock_bind.url = "postgresql+asyncpg://sigad:sigad_dev_2024@localhost:5432/sigad_test_db"
+    mock_session.bind = mock_bind
+
+    with pytest.raises(RuntimeError, match="PROHIBIDO ejecutar el seeder de desarrollo sobre la base de datos de pruebas"):
+        await seed_data(mock_session)
+
+
+
 def test_dockerfile_enforces_non_root_user():
     """Verify that Dockerfile defines and switches to a non-privileged user (CWE-250 / CIS Benchmark)."""
     repo_root = Path(__file__).resolve().parents[4]
