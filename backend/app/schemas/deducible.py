@@ -16,6 +16,7 @@ class DeducibleCreate(StrictBaseSchema):
     """Schema para creación de deducible."""
     tipo_siniestro: TipoSiniestroEnum = Field(
         default=TipoSiniestroEnum.GENERAL,
+        strict=False,
         description="Tipo de siniestro cubierto (general, robo, choque, perdida_total)",
     )
     porcentaje_valor: Decimal = Field(

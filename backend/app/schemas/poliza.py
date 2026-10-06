@@ -13,6 +13,7 @@ from app.domain.poliza_evaluator import (
 )
 from app.schemas.base import StrictBaseSchema
 from app.schemas.deducible import DeducibleCreate, DeducibleResponse
+from app.schemas.vehiculo import VehiculoResponse
 
 
 class CoberturaBase(BaseModel):
@@ -83,5 +84,6 @@ class PolizaResponse(BaseModel):
     kilometraje_emision: int
     created_at: datetime
     updated_at: datetime
+    vehiculo: VehiculoResponse | None = None
     deducibles: list[DeducibleResponse] = []
     coberturas: list[CoberturaResponse] = []
