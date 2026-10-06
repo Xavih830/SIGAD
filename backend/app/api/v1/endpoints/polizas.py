@@ -152,7 +152,11 @@ async def crear_poliza(
     # Recargar con relaciones
     stmt = (
         select(Poliza)
-        .options(selectinload(Poliza.deducibles), selectinload(Poliza.coberturas))
+        .options(
+            selectinload(Poliza.vehiculo),
+            selectinload(Poliza.deducibles),
+            selectinload(Poliza.coberturas),
+        )
         .where(Poliza.id == poliza.id)
     )
     result = await db.execute(stmt)
@@ -174,7 +178,11 @@ async def listar_polizas(
     """Listar pólizas con paginación y protección Anti-BOLA estricta a nivel de consulta SQL."""
     stmt = (
         select(Poliza)
-        .options(selectinload(Poliza.deducibles), selectinload(Poliza.coberturas))
+        .options(
+            selectinload(Poliza.vehiculo),
+            selectinload(Poliza.deducibles),
+            selectinload(Poliza.coberturas),
+        )
     )
 
     if current_user.rol == RolEnum.CLIENTE:
@@ -196,7 +204,11 @@ async def obtener_poliza(
     """Detalle de una póliza con Anti-BOLA en SQL."""
     stmt = (
         select(Poliza)
-        .options(selectinload(Poliza.deducibles), selectinload(Poliza.coberturas))
+        .options(
+            selectinload(Poliza.vehiculo),
+            selectinload(Poliza.deducibles),
+            selectinload(Poliza.coberturas),
+        )
         .where(Poliza.id == id)
     )
 
@@ -251,7 +263,11 @@ async def actualizar_estado_poliza(
     """Actualizar estado de póliza. Dispara triggers de auditoría en PostgreSQL."""
     stmt = (
         select(Poliza)
-        .options(selectinload(Poliza.deducibles), selectinload(Poliza.coberturas))
+        .options(
+            selectinload(Poliza.vehiculo),
+            selectinload(Poliza.deducibles),
+            selectinload(Poliza.coberturas),
+        )
         .where(Poliza.id == id)
     )
     result = await db.execute(stmt)
