@@ -144,7 +144,7 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.initialPolicy == null ? 'Nueva Póliza Vehicular' : 'Editar Póliza'),
+      title: Text(widget.initialPolicy == null ? 'Nueva Póliza Vehicular' : 'Emisión de Póliza (Borrador)'),
       content: SizedBox(
         width: 600,
         child: Form(

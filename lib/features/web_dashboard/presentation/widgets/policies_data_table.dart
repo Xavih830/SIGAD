@@ -5,12 +5,12 @@ import 'package:sigad/core/theme/app_theme.dart';
 
 class PoliciesDataTable extends StatefulWidget {
   final List<PolicyModel> policies;
-  final ValueChanged<PolicyModel> onEdit;
+  final ValueChanged<PolicyModel> onViewDetail;
 
   const PoliciesDataTable({
     super.key,
     required this.policies,
-    required this.onEdit,
+    required this.onViewDetail,
   });
 
   @override
@@ -41,10 +41,15 @@ class _PoliciesDataTableState extends State<PoliciesDataTable> {
       children: [
         Expanded(
           child: SingleChildScrollView(
-            child: SizedBox(
-              width: double.infinity,
-              child: DataTable(
-                headingRowColor: WidgetStateProperty.all(AppTheme.lightBg),
+            scrollDirection: Axis.vertical,
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: 800),
+                child: DataTable(
+                  columnSpacing: 28,
+                  horizontalMargin: 16,
+                  headingRowColor: WidgetStateProperty.all(AppTheme.lightBg),
                 columns: const [
                   DataColumn(label: Text('Nro. Póliza', style: TextStyle(fontWeight: FontWeight.bold))),
                   DataColumn(label: Text('Placa', style: TextStyle(fontWeight: FontWeight.bold))),
@@ -54,24 +59,61 @@ class _PoliciesDataTableState extends State<PoliciesDataTable> {
                   DataColumn(label: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold))),
                 ],
                 rows: displayedPolicies.map((p) {
-                  final isExp = p.isExpired;
+                  final statusNorm = p.status.toLowerCase().replaceAll('-', '_');
+                  final Color statusColor;
+                  final Color statusBg;
+                  final String statusText;
+
+                  switch (statusNorm) {
+                    case 'activa':
+                      statusColor = Colors.green.shade700;
+                      statusBg = Colors.green.shade50;
+                      statusText = 'ACTIVA';
+                      break;
+                    case 'por_vencer':
+                      statusColor = Colors.orange.shade800;
+                      statusBg = Colors.orange.shade50;
+                      statusText = 'POR VENCER';
+                      break;
+                    case 'cancelada':
+                      statusColor = Colors.grey.shade700;
+                      statusBg = Colors.grey.shade100;
+                      statusText = 'CANCELADA';
+                      break;
+                    case 'pendiente':
+                      statusColor = Colors.blue.shade700;
+                      statusBg = Colors.blue.shade50;
+                      statusText = 'PENDIENTE';
+                      break;
+                    case 'vencida':
+                    default:
+                      statusColor = Colors.red.shade700;
+                      statusBg = Colors.red.shade50;
+                      statusText = 'VENCIDA';
+                      break;
+                  }
+
+                  final vehicleParts = [
+                    if (p.vehicle?.brand != null && p.vehicle!.brand.isNotEmpty) p.vehicle!.brand,
+                    if (p.vehicle?.model != null && p.vehicle!.model.isNotEmpty) p.vehicle!.model,
+                  ].join(' ').trim();
                   return DataRow(cells: [
                     DataCell(Text(p.number, style: const TextStyle(fontWeight: FontWeight.bold))),
                     DataCell(Text(p.vehicle?.plate ?? 'S/P')),
-                    DataCell(Text('${p.vehicle?.brand ?? ''} ${p.vehicle?.model ?? ''}'.trim())),
+                    DataCell(Text(vehicleParts.isNotEmpty ? vehicleParts : '-')),
                     DataCell(Text(p.endDate.toIso8601String().substring(0, 10))),
                     DataCell(Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: isExp ? Colors.red.shade50 : Colors.green.shade50,
+                        color: statusBg,
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Text(
-                        isExp ? 'VENCIDA' : p.status.toUpperCase(),
+                        statusText,
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.bold,
-                          color: isExp ? Colors.red.shade700 : Colors.green.shade700,
+                          color: statusColor,
                         ),
                       ),
                     )),
@@ -79,9 +121,9 @@ class _PoliciesDataTableState extends State<PoliciesDataTable> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.edit_outlined, color: Colors.blue, size: 20),
-                          tooltip: 'Editar',
-                          onPressed: () => widget.onEdit(p),
+                          icon: const Icon(Icons.visibility_outlined, color: Colors.blue, size: 20),
+                          tooltip: 'Ver Detalle',
+                          onPressed: () => widget.onViewDetail(p),
                         ),
                       ],
                     )),
@@ -91,7 +133,8 @@ class _PoliciesDataTableState extends State<PoliciesDataTable> {
             ),
           ),
         ),
-        const Divider(height: 1),
+      ),
+      const Divider(height: 1),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
           child: Row(

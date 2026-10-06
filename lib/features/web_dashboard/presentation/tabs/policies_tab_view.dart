@@ -7,6 +7,7 @@ import 'package:sigad/core/theme/app_theme.dart';
 import 'package:sigad/core/widgets/error_view.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_state.dart';
+import 'package:sigad/features/web_dashboard/presentation/dialogs/policy_detail_dialog.dart';
 import 'package:sigad/features/web_dashboard/presentation/dialogs/policy_form_dialog.dart';
 import 'package:sigad/features/web_dashboard/presentation/widgets/policies_data_table.dart';
 
@@ -87,13 +88,13 @@ class _PoliciesTabViewState extends State<PoliciesTabView> {
     }).toList();
   }
 
-  Future<void> _openPolicyForm([PolicyModel? existing]) async {
+  Future<void> _openPolicyForm() async {
     try {
       final clients = await _clientsRepo.getClients(token: _getAuthToken());
       if (!mounted) return;
       final result = await showDialog<PolicyModel>(
         context: context,
-        builder: (_) => PolicyFormDialog(initialPolicy: existing, clients: clients),
+        builder: (_) => PolicyFormDialog(clients: clients),
       );
       if (result != null && mounted) {
         await _policiesRepo.createPolicy(result, token: _getAuthToken());
@@ -110,11 +111,45 @@ class _PoliciesTabViewState extends State<PoliciesTabView> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error en operación de pólizas: $e'),
+          content: Text('Error en emisión de póliza: $e'),
           backgroundColor: AppTheme.errorColor,
         ),
       );
     }
+  }
+
+  Future<void> _showPolicyDetail(PolicyModel policy) async {
+    await showDialog(
+      context: context,
+      builder: (_) => PolicyDetailDialog(
+        policy: policy,
+        onStatusChange: (nuevoEstado) async {
+          try {
+            await _policiesRepo.updatePolicyStatus(
+              policy.id,
+              nuevoEstado,
+              token: _getAuthToken(),
+            );
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Estado de póliza ${policy.number} actualizado a $nuevoEstado.'),
+                backgroundColor: AppTheme.successColor,
+              ),
+            );
+            await _loadPolicies();
+          } catch (e) {
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Error al actualizar estado: $e'),
+                backgroundColor: AppTheme.errorColor,
+              ),
+            );
+          }
+        },
+      ),
+    );
   }
 
   @override
@@ -176,7 +211,7 @@ class _PoliciesTabViewState extends State<PoliciesTabView> {
                   ? const Center(child: CircularProgressIndicator())
                   : PoliciesDataTable(
                       policies: _getFilteredPolicies(),
-                      onEdit: _openPolicyForm,
+                      onViewDetail: _showPolicyDetail,
                     ),
             ),
           ],

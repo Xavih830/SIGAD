@@ -64,4 +64,21 @@ class PoliciesRepository {
     );
     return PolicyModel.fromJson(data);
   }
+
+  Future<PolicyModel> getPolicy(String id, {String? token}) async {
+    final data = await _client.getMap(
+      ApiEndpoints.poliza(id),
+      token: token,
+    );
+    return PolicyModel.fromJson(data);
+  }
+
+  Future<PolicyModel> updatePolicyStatus(String id, String nuevoEstado, {String? token}) async {
+    final data = await _client.patch(
+      ApiEndpoints.polizaEstado(id),
+      body: {'estado': nuevoEstado},
+      token: token,
+    );
+    return PolicyModel.fromJson(data);
+  }
 }
