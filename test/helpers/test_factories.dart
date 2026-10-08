@@ -2,6 +2,7 @@
 import 'package:sigad/core/models/catalog_model.dart';
 import 'package:sigad/core/models/client_model.dart';
 import 'package:sigad/core/models/deductible_model.dart';
+import 'package:sigad/core/models/document_model.dart';
 import 'package:sigad/core/models/payment_model.dart';
 import 'package:sigad/core/models/policy_model.dart';
 import 'package:sigad/core/models/user_model.dart';
@@ -473,5 +474,70 @@ class TestFactories {
       icon: icon,
       active: active,
     ).toJson();
+  }
+
+  // --- DOCUMENT FACTORIES ---
+
+  static DocumentModel createDocument({
+    String? id,
+    String? polizaId,
+    String? nombreArchivo,
+    String? tipoMime,
+    int? tamanoBytes,
+    String? estadoExtraccion,
+    bool? hasResultado,
+    DateTime? createdAt,
+    Map<String, dynamic>? camposExtraidos,
+    String? metodo,
+    double? confianza,
+    String? textoCompleto,
+  }) {
+    final seq = nextSequence;
+    return DocumentModel(
+      id: id ?? 'doc-$seq',
+      polizaId: polizaId,
+      nombreArchivo: nombreArchivo ?? 'documento_$seq.pdf',
+      tipoMime: tipoMime ?? 'application/pdf',
+      tamanoBytes: tamanoBytes ?? 102400,
+      estadoExtraccion: estadoExtraccion ?? 'completado',
+      hasResultado: hasResultado ?? true,
+      createdAt: createdAt ?? DateTime.parse('2026-03-15T10:00:00Z'),
+      camposExtraidos: camposExtraidos ?? {'numero_poliza': 'POL-$seq'},
+      metodo: metodo ?? 'tesseract_200dpi',
+      confianza: confianza ?? 95.0,
+      textoCompleto: textoCompleto ?? 'Texto del documento $seq',
+    );
+  }
+
+  static Map<String, dynamic> createDocumentJson({
+    String? id,
+    String? polizaId,
+    String? nombreArchivo,
+    String? tipoMime,
+    int? tamanoBytes,
+    String? estadoExtraccion,
+    DateTime? createdAt,
+    Map<String, dynamic>? camposExtraidos,
+    String? metodo,
+    double? confianza,
+    String? textoCompleto,
+  }) {
+    final seq = nextSequence;
+    final created = createdAt ?? DateTime.parse('2026-03-15T10:00:00Z');
+    return {
+      'id': id ?? 'doc-$seq',
+      if (polizaId != null) 'poliza_id': polizaId,
+      'nombre_archivo': nombreArchivo ?? 'documento_$seq.pdf',
+      'tipo_mime': tipoMime ?? 'application/pdf',
+      'tamano_bytes': tamanoBytes ?? 102400,
+      'estado_extraccion': estadoExtraccion ?? 'completado',
+      'created_at': created.toIso8601String(),
+      'resultado': {
+        'metodo': metodo ?? 'tesseract_200dpi',
+        'confianza': confianza ?? 95.0,
+        'texto_completo': textoCompleto ?? 'Texto del documento $seq',
+        'campos_extraidos': camposExtraidos ?? {'numero_poliza': 'POL-$seq'},
+      },
+    };
   }
 }

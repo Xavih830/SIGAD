@@ -129,5 +129,20 @@ void main() {
 
       expect(capturedHeaders?['Authorization'], equals('Bearer ${TestFixtures.manualOverrideToken}'));
     });
+
+    test('getBytes resuelve peticion GET y retorna Uint8List en HTTP 200', () async {
+      final expectedBytes = [1, 2, 3, 4];
+      when(() => mockHttp.get(
+            Uri.parse('${TestFixtures.testBaseUrl}/api/v1/download'),
+            headers: any(named: 'headers'),
+          )).thenAnswer((_) async => http.Response.bytes(
+            expectedBytes,
+            200,
+          ));
+
+      final result = await client.getBytes('/api/v1/download');
+
+      expect(result, equals(expectedBytes));
+    });
   });
 }

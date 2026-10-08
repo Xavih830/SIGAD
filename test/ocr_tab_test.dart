@@ -1,6 +1,11 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
 import 'package:sigad/core/constants/app_constants.dart';
+import 'package:sigad/core/network/api_client.dart';
+import 'package:sigad/core/repositories/documents_repository.dart';
 import 'package:sigad/features/web_dashboard/presentation/widgets/ocr_document_detail_card.dart';
 import 'helpers/test_factories.dart';
 import 'helpers/test_fixtures.dart';
@@ -136,6 +141,51 @@ void main() {
       expect(model.monthlyPremium, equals(55.75));
       expect(model.emissionMileage, equals(45200));
       expect(model.number, equals('POL-EC-2026-001'));
+    });
+
+    testWidgets('Boton Descargar Documento invoca downloadDocumentBytes en DocumentsRepository', (tester) async {
+      tester.view.physicalSize = const Size(1280, 1024);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      bool downloadCalled = false;
+      final mockHttpClient = MockClient((request) async {
+        if (request.url.path.contains('/descargar')) {
+          downloadCalled = true;
+          return http.Response.bytes(Uint8List.fromList([1, 2, 3]), 200);
+        }
+        return http.Response('{}', 200);
+      });
+
+      final customRepo = DocumentsRepository(
+        client: ApiClient(client: mockHttpClient, baseUrl: TestFixtures.testBaseUrl),
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: OcrDocumentDetailCard(
+              document: sampleDocument,
+              isLoading: false,
+              onRefresh: () {},
+              onLinkPolicy: (_) {},
+              authToken: TestFixtures.validToken,
+              documentsRepository: customRepo,
+            ),
+          ),
+        ),
+      );
+
+      final downloadBtn = find.text('Descargar Documento');
+      expect(downloadBtn, findsOneWidget);
+
+      await tester.tap(downloadBtn);
+      await tester.pump();
+
+      expect(downloadCalled, isTrue);
     });
   });
 }
