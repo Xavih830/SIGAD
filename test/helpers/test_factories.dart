@@ -241,6 +241,37 @@ class TestFactories {
     return map;
   }
 
+  static CreatePolicyRequest createPolicyRequest({
+    String? number,
+    String? clientId,
+    String? vehicleId,
+    VehicleModel? vehicle,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? status,
+    double? insuredValue,
+    double? monthlyPremium,
+    int? emissionMileage,
+    List<String>? coverages,
+    List<DeductibleModel>? deductibles,
+  }) {
+    final seq = nextSequence;
+    return CreatePolicyRequest(
+      number: number ?? 'POL-2026-REQ-$seq',
+      clientId: clientId ?? 'cli-$seq',
+      vehicleId: vehicleId,
+      vehicle: vehicle,
+      startDate: startDate ?? DateTime(2026, 1, 1),
+      endDate: endDate ?? DateTime(2027, 1, 1),
+      status: status ?? 'activa',
+      insuredValue: insuredValue ?? 19500.00,
+      monthlyPremium: monthlyPremium ?? 65.00,
+      emissionMileage: emissionMileage ?? 15000,
+      coverages: coverages ?? const ['Responsabilidad Civil'],
+      deductibles: deductibles ?? [createDeductible()],
+    );
+  }
+
   // --- PAYMENT FACTORIES ---
 
   static PaymentModel createPayment({

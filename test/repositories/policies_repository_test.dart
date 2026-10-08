@@ -185,5 +185,49 @@ void main() {
 
       expect(result.status, equals('cancelada'));
     });
+
+    test('createPolicy envía POST con CreatePolicyRequest y retorna PolicyModel', () async {
+      final request = TestFactories.createPolicyRequest(vehicleId: mockVehicle.id);
+
+      final mockHttpClient = MockClient((httpRequest) async {
+        expect(httpRequest.url.path, equals(ApiEndpoints.polizasBase));
+        expect(httpRequest.method, equals('POST'));
+        expect(httpRequest.headers['Authorization'], equals('Bearer ${TestFixtures.validToken}'));
+
+        final body = jsonDecode(httpRequest.body) as Map<String, dynamic>;
+        expect(body['numero_poliza'], equals(request.number));
+        expect(body['vehiculo_id'], equals(mockVehicle.id));
+
+        return http.Response(
+          jsonEncode(mockPolicyJson),
+          201,
+          headers: {'content-type': 'application/json'},
+        );
+      });
+
+      final apiClient = ApiClient(client: mockHttpClient, baseUrl: TestFixtures.testBaseUrl);
+      final repo = PoliciesRepository(client: apiClient);
+
+      final result = await repo.createPolicy(request, token: TestFixtures.validToken);
+
+      expect(result.id, equals(mockPolicy.id));
+      expect(result.number, equals(mockPolicy.number));
+    });
+
+    test('createPolicy lanza StateError si falta vehículo y no puede resolverse', () async {
+      final request = TestFactories.createPolicyRequest(vehicleId: null, vehicle: null);
+
+      final mockHttpClient = MockClient((httpRequest) async {
+        return http.Response('{}', 200);
+      });
+
+      final apiClient = ApiClient(client: mockHttpClient, baseUrl: TestFixtures.testBaseUrl);
+      final repo = PoliciesRepository(client: apiClient);
+
+      expect(
+        () => repo.createPolicy(request, token: TestFixtures.validToken),
+        throwsA(isA<StateError>()),
+      );
+    });
   });
 }
