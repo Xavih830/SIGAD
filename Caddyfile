@@ -8,6 +8,11 @@
         Permissions-Policy "camera=(), microphone=(), geolocation=()"
     }
 
+    # Control de tamaño de buffer de subida (Anti-DoS / Buffer Overflow)
+    request_body {
+        max_size 15MB
+    }
+
     # Enrutamiento de la API REST hacia el contenedor backend
     handle /api/* {
         reverse_proxy api:8000 {

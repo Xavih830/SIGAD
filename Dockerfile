@@ -17,10 +17,14 @@ RUN apt-get update && \
         poppler-utils && \
     rm -rf /var/lib/apt/lists/*
 
-# Instalar dependencias Python
+# Instalar dependencias Python y purgar compiladores temporales (CWE-250)
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir -r requirements.txt && \
+    apt-get purge -y --auto-remove gcc libpq-dev libtesseract-dev && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends libpq5 && \
+    rm -rf /var/lib/apt/lists/*
 
 # Crear usuario y grupo de ejecución sin privilegios (CIS Docker Benchmark / CWE-250)
 RUN groupadd -g 10001 sigad && \

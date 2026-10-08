@@ -15,7 +15,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - sigad_network
+      - sigad_internal
     deploy:
       resources:
         limits:
@@ -48,9 +48,10 @@ services:
       postgres:
         condition: service_healthy
       mailpit:
-        condition: service_started
+        condition: service_healthy
     networks:
-      - sigad_network
+      - sigad_public
+      - sigad_internal
     deploy:
       resources:
         limits:
@@ -78,7 +79,7 @@ services:
       postgres:
         condition: service_healthy
     networks:
-      - sigad_network
+      - sigad_internal
     deploy:
       resources:
         limits:
@@ -107,7 +108,7 @@ services:
     depends_on:
       - api
     networks:
-      - sigad_network
+      - sigad_public
     deploy:
       resources:
         limits:
@@ -121,8 +122,13 @@ services:
     ports:
       - "127.0.0.1:1025:1025"
       - "127.0.0.1:8025:8025"
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8025/ || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
     networks:
-      - sigad_network
+      - sigad_internal
     deploy:
       resources:
         limits:
@@ -130,7 +136,9 @@ services:
           cpus: "0.25"
 
 networks:
-  sigad_network:
+  sigad_public:
+    driver: bridge
+  sigad_internal:
     driver: bridge
 
 volumes:
