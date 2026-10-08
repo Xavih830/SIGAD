@@ -1,10 +1,8 @@
 /// Rutas canónicas de los endpoints del backend FastAPI de SIGAD.
-/// Erradica el anti-patrón de 'magic strings' y dispersión de URLs en la capa de red.
 abstract class ApiEndpoints {
   // Autenticación
   static const String authLogin = '/api/v1/auth/login';
   static const String authVinculacion = '/api/v1/auth/vinculacion';
-  static const String authMe = '/api/v1/auth/me';
 
   // Pólizas
   static const String polizasBase = '/api/v1/polizas';
@@ -19,10 +17,12 @@ abstract class ApiEndpoints {
 
   // Clientes
   static const String clientes = '/api/v1/clientes';
+  static String cliente(String clientId) => '/api/v1/clientes/$clientId';
   static String clienteOtp(String clientId) => '/api/v1/clientes/$clientId/otp';
 
   // Vehículos
   static const String vehiculos = '/api/v1/vehiculos';
+  static String vehiculo(String vehicleId) => '/api/v1/vehiculos/$vehicleId';
 
   // Documentos y OCR
   static const String documentos = '/api/v1/documentos';

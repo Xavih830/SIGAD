@@ -1,7 +1,9 @@
 import 'package:http/http.dart' as http;
 import 'package:sigad/core/constants/api_endpoints.dart';
 import 'package:sigad/core/constants/app_constants.dart';
+import 'package:sigad/core/models/deductible_model.dart';
 import 'package:sigad/core/models/policy_model.dart';
+import 'package:sigad/core/models/vehicle_model.dart';
 import 'package:sigad/core/network/api_client.dart';
 
 /// Repositorio canónico para gestión y consulta de pólizas de seguro.
@@ -80,5 +82,21 @@ class PoliciesRepository {
       token: token,
     );
     return PolicyModel.fromJson(data);
+  }
+
+  Future<List<DeductibleModel>> getPolicyDeductibles(String policyId, {String? token}) async {
+    final list = await _client.getList(
+      ApiEndpoints.polizaDeducibles(policyId),
+      token: token,
+    );
+    return list.map((item) => DeductibleModel.fromJson(item)).toList();
+  }
+
+  Future<VehicleModel> getVehicleById(String vehicleId, {String? token}) async {
+    final data = await _client.getMap(
+      ApiEndpoints.vehiculo(vehicleId),
+      token: token,
+    );
+    return VehicleModel.fromJson(data);
   }
 }

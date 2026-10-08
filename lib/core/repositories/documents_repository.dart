@@ -23,6 +23,13 @@ class DocumentsRepository {
     return DocumentModel.fromJson(json);
   }
 
+  Future<Uint8List> downloadDocumentBytes(String documentId, {String? token}) async {
+    return _client.getBytes(
+      ApiEndpoints.documentoDescarga(documentId),
+      token: token,
+    );
+  }
+
   /// Valida la integridad del archivo antes de transmitirlo al servidor (Pre-Flight Guard).
   static void validateFileIntegrity(Uint8List bytes, String filename) {
     FileSecurityValidator.validatePreFlight(bytes: bytes, filename: filename);

@@ -139,6 +139,24 @@ class ApiClient {
     _handleError(response);
   }
 
+  /// Realiza una petición GET y retorna los bytes binarios decodificados (Uint8List).
+  Future<Uint8List> getBytes(
+    String path, {
+    String? token,
+    Map<String, String>? headers,
+    Duration? timeout,
+  }) async {
+    final response = await _client.get(
+      Uri.parse('$baseUrl$path'),
+      headers: _buildHeaders(token, headers),
+    ).timeout(timeout ?? AppConstants.apiDefaultTimeout);
+
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return response.bodyBytes;
+    }
+    _handleError(response);
+  }
+
   /// Realiza una petición POST enviando un cuerpo JSON opcional.
   Future<Map<String, dynamic>> post(
     String path, {

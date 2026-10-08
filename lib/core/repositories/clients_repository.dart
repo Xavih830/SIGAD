@@ -16,6 +16,14 @@ class ClientsRepository {
     return list.map((item) => ClientModel.fromJson(item)).toList();
   }
 
+  Future<ClientModel> getClientById(String clientId, {String? token}) async {
+    final data = await _client.getMap(
+      ApiEndpoints.cliente(clientId),
+      token: token,
+    );
+    return ClientModel.fromJson(data);
+  }
+
   Future<ClientModel> createClient(CreateClientRequest request, {String? token}) async {
     final data = await _client.post(
       ApiEndpoints.clientes,

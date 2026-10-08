@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:sigad/core/models/document_model.dart';
 import 'package:sigad/core/repositories/documents_repository.dart';
 import 'package:sigad/core/theme/app_theme.dart';
+import 'package:sigad/core/utils/file_downloader_helper.dart';
 
 class OcrDocumentDetailCard extends StatefulWidget {
   final DocumentModel? document;
@@ -28,6 +29,7 @@ class OcrDocumentDetailCard extends StatefulWidget {
 class _OcrDocumentDetailCardState extends State<OcrDocumentDetailCard> {
   final Map<String, TextEditingController> _controllers = {};
   bool _isSaving = false;
+  bool _isDownloading = false;
 
   @override
   void initState() {
@@ -101,6 +103,43 @@ class _OcrDocumentDetailCardState extends State<OcrDocumentDetailCard> {
       }
     } finally {
       if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  Future<void> _descargarDocumento() async {
+    if (widget.document == null) return;
+    final doc = widget.document!;
+
+    setState(() => _isDownloading = true);
+    try {
+      final repo = widget.documentsRepository ?? DocumentsRepository();
+      final bytes = await repo.downloadDocumentBytes(
+        doc.id,
+        token: widget.authToken,
+      );
+      FileDownloaderHelper.download(
+        bytes: bytes,
+        filename: doc.nombreArchivo,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Documento "${doc.nombreArchivo}" descargado con éxito.'),
+            backgroundColor: AppTheme.successColor,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al descargar documento: $e'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isDownloading = false);
     }
   }
 
@@ -322,7 +361,24 @@ class _OcrDocumentDetailCardState extends State<OcrDocumentDetailCard> {
                   ],
                 ),
               ),
-              _buildStatusBadge(doc.estadoExtraccion),
+              Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 8,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: _isDownloading ? null : _descargarDocumento,
+                    icon: _isDownloading
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.download, size: 16),
+                    label: const Text('Descargar Documento'),
+                  ),
+                  _buildStatusBadge(doc.estadoExtraccion),
+                ],
+              ),
             ],
           ),
           const SizedBox(height: 16),
