@@ -5,6 +5,7 @@ import 'package:sigad/core/security/authorization_policy.dart';
 import 'package:sigad/features/web_dashboard/domain/dashboard_tab_item.dart';
 import 'package:sigad/features/web_dashboard/presentation/tabs/alerts_tab_view.dart';
 import 'package:sigad/features/web_dashboard/presentation/tabs/clients_tab_view.dart';
+import 'package:sigad/features/web_dashboard/presentation/tabs/ocr_schemas_tab_view.dart';
 import 'package:sigad/features/web_dashboard/presentation/tabs/ocr_tab_view.dart';
 import 'package:sigad/features/web_dashboard/presentation/tabs/policies_tab_view.dart';
 import 'package:sigad/features/web_dashboard/presentation/tabs/reports_tab_view.dart';
@@ -36,6 +37,14 @@ abstract class DashboardTabRegistry {
       icon: Icons.document_scanner_outlined,
       requiredCapability: AppCapability.scanOcr,
       builder: () => const OcrTabView(),
+    ),
+    DashboardTabItem(
+      id: 'schemas',
+      title: 'Esquemas de Extracción OCR',
+      subtitle: 'Configuración y calibración de plantillas regex por aseguradora.',
+      icon: Icons.rule_folder_outlined,
+      requiredCapability: AppCapability.manageOcrSchemas,
+      builder: () => const OcrSchemasTabView(),
     ),
     DashboardTabItem(
       id: 'reports',
