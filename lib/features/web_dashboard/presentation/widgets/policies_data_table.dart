@@ -99,7 +99,7 @@ class _PoliciesDataTableState extends State<PoliciesDataTable> {
                   ].join(' ').trim();
                   return DataRow(cells: [
                     DataCell(Text(p.number, style: const TextStyle(fontWeight: FontWeight.bold))),
-                    DataCell(Text(p.vehicle?.plate ?? 'S/P')),
+                    DataCell(Text(p.vehicle != null ? p.vehicle!.plate : '-')),
                     DataCell(Text(vehicleParts.isNotEmpty ? vehicleParts : '-')),
                     DataCell(Text(p.endDate.toIso8601String().substring(0, 10))),
                     DataCell(Container(

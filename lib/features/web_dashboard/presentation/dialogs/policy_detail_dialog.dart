@@ -44,7 +44,7 @@ class PolicyDetailDialog extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _buildSectionTitle('Información del Vehículo'),
-              _buildInfoRow('Placa:', veh?.plate ?? 'S/P'),
+              _buildInfoRow('Placa:', veh != null ? veh.plate : 'Sin placa asignada'),
               _buildInfoRow('Vehículo:', vehicleDesc.isNotEmpty ? vehicleDesc : 'No especificado'),
               const Divider(height: 24),
               _buildSectionTitle('Condiciones Contractuales'),

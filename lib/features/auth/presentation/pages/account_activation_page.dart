@@ -100,7 +100,7 @@ class _AccountActivationPageState extends State<AccountActivationPage> {
                   border: Border.all(color: AppTheme.borderLight),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.04),
+                      color: Colors.black.withValues(alpha: 0.04),
                       blurRadius: 15,
                       offset: const Offset(0, 6),
                     ),
@@ -129,9 +129,9 @@ class _AccountActivationPageState extends State<AccountActivationPage> {
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
-                            color: AppTheme.errorColor.withOpacity(0.1),
+                            color: AppTheme.errorColor.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: AppTheme.errorColor.withOpacity(0.3)),
+                            border: Border.all(color: AppTheme.errorColor.withValues(alpha: 0.3)),
                           ),
                           child: Text(
                             errorMsg,

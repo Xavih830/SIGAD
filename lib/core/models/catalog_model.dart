@@ -13,7 +13,7 @@ class CatalogItemModel {
 
   factory CatalogItemModel.fromJson(Map<String, dynamic> json) {
     return CatalogItemModel(
-      id: json['id']?.toString() ?? '',
+      id: json['id'] as String,
       code: json['codigo'] as String,
       name: json['nombre'] as String,
       description: json['descripcion'] as String?,
@@ -47,7 +47,7 @@ class WorkshopModel {
 
   factory WorkshopModel.fromJson(Map<String, dynamic> json) {
     return WorkshopModel(
-      id: json['id']?.toString() ?? '',
+      id: json['id'] as String,
       name: json['nombre'] as String,
       address: json['direccion'] as String,
       phone: json['telefono'] as String,
@@ -85,7 +85,7 @@ class AssistanceModel {
 
   factory AssistanceModel.fromJson(Map<String, dynamic> json) {
     return AssistanceModel(
-      id: json['id']?.toString() ?? '',
+      id: json['id'] as String,
       title: json['titulo'] as String,
       description: json['descripcion'] as String,
       emergencyPhone: json['telefono_emergencia'] as String,

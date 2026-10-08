@@ -1,7 +1,7 @@
 import 'package:sigad/core/models/policy_model.dart';
-import 'notifications_manager_stub.dart'
-    if (dart.library.html) 'notifications_manager_web.dart'
-    if (dart.library.io) 'notifications_manager_mobile.dart';
+import 'package:sigad/core/services/notifications/notifications_manager_stub.dart'
+    if (dart.library.html) 'package:sigad/core/services/notifications/notifications_manager_web.dart'
+    if (dart.library.io) 'package:sigad/core/services/notifications/notifications_manager_mobile.dart';
 
 class NotificationsManager {
   static Future<void> init() => NotificationsManagerImpl.init();

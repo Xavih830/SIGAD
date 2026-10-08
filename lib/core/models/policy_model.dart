@@ -171,3 +171,52 @@ class PolicyModel {
         if (lastPaymentDate != null) 'ultimo_pago': lastPaymentDate,
       };
 }
+
+/// DTO canónico para la emisión y registro de una póliza vehicular en el sistema.
+/// Encapsula los atributos requeridos por la API REST para la creación de pólizas.
+class CreatePolicyRequest {
+  final String number;
+  final String clientId;
+  final String? vehicleId;
+  final VehicleModel? vehicle;
+  final DateTime startDate;
+  final DateTime endDate;
+  final String status;
+  final double insuredValue;
+  final double monthlyPremium;
+  final int emissionMileage;
+  final List<String> coverages;
+  final List<DeductibleModel> deductibles;
+
+  const CreatePolicyRequest({
+    required this.number,
+    required this.clientId,
+    this.vehicleId,
+    this.vehicle,
+    required this.startDate,
+    required this.endDate,
+    this.status = 'activa',
+    required this.insuredValue,
+    required this.monthlyPremium,
+    required this.emissionMileage,
+    this.coverages = const [],
+    this.deductibles = const [],
+  });
+
+  Map<String, dynamic> toCreatePayloadJson({required String resolvedVehicleId}) => {
+        'numero_poliza': number,
+        'cliente_id': clientId,
+        'vehiculo_id': resolvedVehicleId,
+        'fecha_inicio': startDate.toIso8601String().substring(0, 10),
+        'fecha_fin': endDate.toIso8601String().substring(0, 10),
+        'valor_asegurado': insuredValue,
+        'prima_mensual': monthlyPremium,
+        'kilometraje_emision': emissionMileage,
+        if (deductibles.isNotEmpty)
+          'deducibles': deductibles.map((d) => d.toCreatePayloadJson()).toList(),
+        if (coverages.isNotEmpty)
+          'coberturas': coverages
+              .map((c) => {'nombre': c, 'monto': insuredValue})
+              .toList(),
+      };
+}

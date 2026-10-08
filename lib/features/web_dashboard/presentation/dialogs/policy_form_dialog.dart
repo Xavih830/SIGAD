@@ -7,9 +7,15 @@ import 'package:sigad/core/utils/plate_validator.dart';
 
 class PolicyFormDialog extends StatefulWidget {
   final PolicyModel? initialPolicy;
+  final CreatePolicyRequest? initialRequest;
   final List<ClientModel> clients;
 
-  const PolicyFormDialog({super.key, this.initialPolicy, required this.clients});
+  const PolicyFormDialog({
+    super.key,
+    this.initialPolicy,
+    this.initialRequest,
+    required this.clients,
+  });
 
   @override
   State<PolicyFormDialog> createState() => _PolicyFormDialogState();
@@ -30,31 +36,44 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
   void initState() {
     super.initState();
     final p = widget.initialPolicy;
-    _numCtrl = TextEditingController(text: p?.number ?? '');
-    _brandCtrl = TextEditingController(text: p?.vehicle?.brand ?? '');
-    _modelCtrl = TextEditingController(text: p?.vehicle?.model ?? '');
-    _yearCtrl = TextEditingController(text: p?.vehicle?.year.toString() ?? '');
-    _plateCtrl = TextEditingController(text: p?.vehicle?.plate ?? '');
-    _valCtrl = TextEditingController(text: p != null && p.insuredValue > 0 ? p.insuredValue.toStringAsFixed(2) : '');
-    _primaCtrl = TextEditingController(text: p != null && p.monthlyPremium > 0 ? p.monthlyPremium.toStringAsFixed(2) : '');
-    _kmCtrl = TextEditingController(text: p != null && p.emissionMileage > 0 ? p.emissionMileage.toString() : '');
-    _startCtrl = TextEditingController(
-      text: p != null
-          ? p.startDate.toIso8601String().substring(0, 10)
-          : DateTime.now().toIso8601String().substring(0, 10),
-    );
-    _endCtrl = TextEditingController(
-      text: p != null
-          ? p.endDate.toIso8601String().substring(0, 10)
-          : DateTime.now()
-              .add(const Duration(days: AppConstants.defaultPolicyDurationDays))
-              .toIso8601String()
-              .substring(0, 10),
-    );
+    final req = widget.initialRequest;
+    final number = p?.number ?? req?.number ?? '';
+    final brand = p?.vehicle?.brand ?? req?.vehicle?.brand ?? '';
+    final model = p?.vehicle?.model ?? req?.vehicle?.model ?? '';
+    final year = p?.vehicle?.year.toString() ?? req?.vehicle?.year.toString() ?? '';
+    final plate = p?.vehicle?.plate ?? req?.vehicle?.plate ?? '';
+    final val = (p != null && p.insuredValue > 0)
+        ? p.insuredValue.toStringAsFixed(2)
+        : (req != null && req.insuredValue > 0 ? req.insuredValue.toStringAsFixed(2) : '');
+    final prima = (p != null && p.monthlyPremium > 0)
+        ? p.monthlyPremium.toStringAsFixed(2)
+        : (req != null && req.monthlyPremium > 0 ? req.monthlyPremium.toStringAsFixed(2) : '');
+    final km = (p != null && p.emissionMileage > 0)
+        ? p.emissionMileage.toString()
+        : (req != null && req.emissionMileage > 0 ? req.emissionMileage.toString() : '');
+    final startDt = p?.startDate ?? req?.startDate ?? DateTime.now();
+    final endDt = p?.endDate ?? req?.endDate ?? DateTime.now().add(const Duration(days: AppConstants.defaultPolicyDurationDays));
 
-    _status = p?.status ?? 'activa';
-    _selectedClientDoc = p?.clientId ?? (widget.clients.isNotEmpty ? widget.clients.first.id : '');
-    _selectedCoverages.addAll(p != null ? p.coverages.map((c) => c.nombre) : ['Responsabilidad Civil']);
+    _numCtrl = TextEditingController(text: number);
+    _brandCtrl = TextEditingController(text: brand);
+    _modelCtrl = TextEditingController(text: model);
+    _yearCtrl = TextEditingController(text: year);
+    _plateCtrl = TextEditingController(text: plate);
+    _valCtrl = TextEditingController(text: val);
+    _primaCtrl = TextEditingController(text: prima);
+    _kmCtrl = TextEditingController(text: km);
+    _startCtrl = TextEditingController(text: startDt.toIso8601String().substring(0, 10));
+    _endCtrl = TextEditingController(text: endDt.toIso8601String().substring(0, 10));
+
+    _status = p?.status ?? req?.status ?? 'activa';
+    _selectedClientDoc = p?.clientId ?? req?.clientId ?? (widget.clients.isNotEmpty ? widget.clients.first.id : '');
+    if (p != null) {
+      _selectedCoverages.addAll(p.coverages.map((c) => c.nombre));
+    } else if (req != null && req.coverages.isNotEmpty) {
+      _selectedCoverages.addAll(req.coverages);
+    } else {
+      _selectedCoverages.add('Responsabilidad Civil');
+    }
   }
 
   @override
@@ -116,11 +135,10 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
       return;
     }
 
-    Navigator.of(context).pop(PolicyModel(
-      id: widget.initialPolicy?.id ?? '',
+    Navigator.of(context).pop(CreatePolicyRequest(
       number: _numCtrl.text.trim(),
       clientId: _selectedClientDoc,
-      vehicleId: widget.initialPolicy?.vehicleId ?? '',
+      vehicleId: widget.initialPolicy?.vehicleId ?? widget.initialRequest?.vehicleId,
       vehicle: VehicleModel(
         plate: _plateCtrl.text.trim().toUpperCase(),
         brand: _brandCtrl.text.trim(),
@@ -133,12 +151,9 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
       insuredValue: insuredVal,
       monthlyPremium: prima,
       emissionMileage: km,
-      coverages: _selectedCoverages
-          .map((name) => CoverageModel(id: '', nombre: name, monto: insuredVal))
-          .toList(),
-      deductibles: widget.initialPolicy?.deductibles ?? const [],
+      coverages: List<String>.from(_selectedCoverages),
+      deductibles: widget.initialPolicy?.deductibles ?? widget.initialRequest?.deductibles ?? const [],
     ));
-
   }
 
   @override
@@ -160,7 +175,7 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: DropdownButtonFormField<String>(
-                        value: _status,
+                        initialValue: _status,
                         decoration: const InputDecoration(labelText: 'Estado'),
                         items: const [DropdownMenuItem(value: 'activa', child: Text('Activa')), DropdownMenuItem(value: 'vencida', child: Text('Vencida')), DropdownMenuItem(value: 'cancelada', child: Text('Cancelada'))],
                         onChanged: (v) => setState(() => _status = v ?? 'activa'),
@@ -171,7 +186,7 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
                 const SizedBox(height: 12),
                 if (widget.clients.isNotEmpty)
                   DropdownButtonFormField<String>(
-                    value: _selectedClientDoc.isNotEmpty ? _selectedClientDoc : null,
+                    initialValue: _selectedClientDoc.isNotEmpty ? _selectedClientDoc : null,
                     decoration: const InputDecoration(labelText: 'Cliente Titular'),
                     items: widget.clients.map((c) => DropdownMenuItem(value: c.id, child: Text('${c.nombres} (${c.identificacion})'))).toList(),
                     onChanged: (v) => setState(() => _selectedClientDoc = v ?? ''),

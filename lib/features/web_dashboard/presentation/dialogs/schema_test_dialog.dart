@@ -94,9 +94,9 @@ class _SchemaTestDialogState extends State<SchemaTestDialog> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: confColor.withOpacity(0.12),
+                color: confColor.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(6),
-                border: Border.all(color: confColor.withOpacity(0.4)),
+                border: Border.all(color: confColor.withValues(alpha: 0.4)),
               ),
               child: Text(
                 'CONFIANZA: ${res.confianza.toStringAsFixed(1)}%',
@@ -236,9 +236,9 @@ class _SchemaTestDialogState extends State<SchemaTestDialog> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: AppTheme.errorColor.withOpacity(0.08),
+                    color: AppTheme.errorColor.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: AppTheme.errorColor.withOpacity(0.3)),
+                    border: Border.all(color: AppTheme.errorColor.withValues(alpha: 0.3)),
                   ),
                   child: Text(
                     _errorMessage!,

@@ -91,7 +91,7 @@ class OcrDocumentListPanel extends StatelessWidget {
                         final dateStr = doc.createdAt.toIso8601String().substring(0, 10);
                         return ListTile(
                           selected: isSelected,
-                          selectedTileColor: AppTheme.primaryColor.withOpacity(0.08),
+                          selectedTileColor: AppTheme.primaryColor.withValues(alpha: 0.08),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           leading: const Icon(Icons.description_outlined, color: AppTheme.textMuted),
                           title: Text(

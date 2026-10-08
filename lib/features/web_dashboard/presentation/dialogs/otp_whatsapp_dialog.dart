@@ -47,7 +47,7 @@ class OtpWhatsAppDialog extends StatelessWidget {
               decoration: BoxDecoration(
                 color: AppTheme.lightBg,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppTheme.primaryColor.withOpacity(0.3)),
+                border: Border.all(color: AppTheme.primaryColor.withValues(alpha: 0.3)),
               ),
               child: Column(
                 children: [
@@ -75,7 +75,7 @@ class OtpWhatsAppDialog extends StatelessWidget {
             if (clientEmail != null && clientEmail!.isNotEmpty)
               Container(
                 padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(color: Colors.blue.withOpacity(0.08), borderRadius: BorderRadius.circular(8)),
+                decoration: BoxDecoration(color: Colors.blue.withValues(alpha: 0.08), borderRadius: BorderRadius.circular(8)),
                 child: Row(
                   children: [
                     const Icon(Icons.mark_email_read_outlined, size: 20, color: Colors.blue),

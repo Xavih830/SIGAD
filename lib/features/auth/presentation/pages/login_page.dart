@@ -82,7 +82,7 @@ class _LoginPageState extends State<LoginPage> {
                         border: Border.all(color: AppTheme.borderLight),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.06),
+                            color: Colors.black.withValues(alpha: 0.06),
                             blurRadius: 20,
                             offset: const Offset(0, 10),
                           ),
@@ -104,7 +104,7 @@ class _LoginPageState extends State<LoginPage> {
                       if (errorMsg != null) ...[
                         Container(
                           padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(color: AppTheme.errorColor.withOpacity(0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: AppTheme.errorColor.withOpacity(0.3))),
+                          decoration: BoxDecoration(color: AppTheme.errorColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: AppTheme.errorColor.withValues(alpha: 0.3))),
                           child: Row(children: [const Icon(Icons.error_outline, color: AppTheme.errorColor), const SizedBox(width: 12), Expanded(child: Text(errorMsg, style: const TextStyle(color: AppTheme.errorColor, fontWeight: FontWeight.w600, fontSize: 13)))]),
                         ),
                         const SizedBox(height: 16),

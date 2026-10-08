@@ -1,6 +1,7 @@
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:sigad/core/constants/app_constants.dart';
 import 'package:sigad/core/models/client_model.dart';
 import 'package:sigad/core/models/document_model.dart';
 import 'package:sigad/core/models/policy_model.dart';
@@ -122,13 +123,16 @@ class _OcrTabViewState extends State<OcrTabView> {
     // Extraer campos reales detectados por OCR (sin inventar datos sintéticos)
     final String numeroPoliza = campos['numero_poliza']?.toString().trim() ?? '';
     final String rawValor = (campos['valor_asegurado']?.toString() ?? '').replaceAll(RegExp(r'[^0-9.]'), '');
-    final double valorAsegurado = rawValor.isNotEmpty ? (double.tryParse(rawValor) ?? 0.0) : 0.0;
+    final double? parsedValor = rawValor.isNotEmpty ? double.tryParse(rawValor) : null;
+    final double valorAsegurado = parsedValor ?? AppConstants.ocrDefaultInsuredValue;
 
     final String rawPrima = (campos['prima_mensual']?.toString() ?? '').replaceAll(RegExp(r'[^0-9.]'), '');
-    final double primaMensual = rawPrima.isNotEmpty ? (double.tryParse(rawPrima) ?? 0.0) : 0.0;
+    final double? parsedPrima = rawPrima.isNotEmpty ? double.tryParse(rawPrima) : null;
+    final double primaMensual = parsedPrima ?? AppConstants.ocrDefaultMonthlyPremium;
 
     final String rawKm = (campos['kilometraje']?.toString() ?? '').replaceAll(RegExp(r'[^0-9]'), '');
-    final int kilometraje = rawKm.isNotEmpty ? (int.tryParse(rawKm) ?? 0) : 0;
+    final int? parsedKm = rawKm.isNotEmpty ? int.tryParse(rawKm) : null;
+    final int kilometraje = parsedKm ?? AppConstants.ocrDefaultEmissionMileage;
 
     if (clients.isEmpty) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No hay clientes registrados. Cree un cliente antes de vincular una póliza OCR.'), backgroundColor: Colors.red));
@@ -137,22 +141,20 @@ class _OcrTabViewState extends State<OcrTabView> {
     // Usar UUID canónico del cliente
     final String clientId = clients.first.id;
 
-    final policy = PolicyModel(
-      id: '',
+    final request = CreatePolicyRequest(
       number: numeroPoliza,
       clientId: clientId,
-      vehicleId: '',
       startDate: DateTime.now(),
-      endDate: DateTime.now().add(const Duration(days: 365)),
+      endDate: DateTime.now().add(const Duration(days: AppConstants.defaultPolicyDurationDays)),
       status: 'activa',
       insuredValue: valorAsegurado,
       monthlyPremium: primaMensual,
       emissionMileage: kilometraje,
     );
 
-    final created = await showDialog<PolicyModel>(
+    final created = await showDialog<CreatePolicyRequest>(
       context: context,
-      builder: (_) => PolicyFormDialog(initialPolicy: policy, clients: clients),
+      builder: (_) => PolicyFormDialog(initialRequest: request, clients: clients),
     );
 
     if (created != null && mounted) {

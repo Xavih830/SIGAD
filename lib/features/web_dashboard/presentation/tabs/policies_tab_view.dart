@@ -92,7 +92,7 @@ class _PoliciesTabViewState extends State<PoliciesTabView> {
     try {
       final clients = await _clientsRepo.getClients(token: _getAuthToken());
       if (!mounted) return;
-      final result = await showDialog<PolicyModel>(
+      final result = await showDialog<CreatePolicyRequest>(
         context: context,
         builder: (_) => PolicyFormDialog(clients: clients),
       );

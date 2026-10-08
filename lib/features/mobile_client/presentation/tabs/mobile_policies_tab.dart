@@ -68,14 +68,14 @@ class _MobilePoliciesTabState extends State<MobilePoliciesTab> {
             decoration: BoxDecoration(
               gradient: const LinearGradient(colors: [AppTheme.primaryColor, AppTheme.accentColor], begin: Alignment.topLeft, end: Alignment.bottomRight),
               borderRadius: BorderRadius.circular(16),
-              boxShadow: [BoxShadow(color: AppTheme.primaryColor.withOpacity(0.2), blurRadius: 10, offset: const Offset(0, 4))],
+              boxShadow: [BoxShadow(color: AppTheme.primaryColor.withValues(alpha: 0.2), blurRadius: 10, offset: const Offset(0, 4))],
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Hola, ${widget.user.name}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
                 const SizedBox(height: 4),
-                Text('Tienes $activeCount póliza(s) vehicular(es) activa(s).', style: TextStyle(fontSize: 14, color: Colors.white.withOpacity(0.9))),
+                Text('Tienes $activeCount póliza(s) vehicular(es) activa(s).', style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.9))),
               ],
             ),
           ),
@@ -115,7 +115,7 @@ class _MobilePoliciesTabState extends State<MobilePoliciesTab> {
                   Text(p.number, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppTheme.primaryColor)),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(color: isExp ? AppTheme.errorColor.withOpacity(0.1) : AppTheme.successColor.withOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+                    decoration: BoxDecoration(color: isExp ? AppTheme.errorColor.withValues(alpha: 0.1) : AppTheme.successColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(8)),
                     child: Text(isExp ? 'Vencida' : 'Activa', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: isExp ? AppTheme.errorColor : AppTheme.successColor)),
                   ),
                 ],
@@ -123,7 +123,7 @@ class _MobilePoliciesTabState extends State<MobilePoliciesTab> {
               const SizedBox(height: 10),
               Text(veh != null ? '${veh.brand} ${veh.model} (${veh.year})' : 'Vehículo', style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16, color: AppTheme.textDark)),
               const SizedBox(height: 4),
-              Text('Placa: ${veh?.plate ?? 'S/P'}', style: const TextStyle(color: AppTheme.textMuted, fontSize: 13)),
+              Text(veh != null ? 'Placa: ${veh.plate}' : 'Sin vehículo asignado', style: const TextStyle(color: AppTheme.textMuted, fontSize: 13)),
               const Divider(height: 20, color: AppTheme.borderLight),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,

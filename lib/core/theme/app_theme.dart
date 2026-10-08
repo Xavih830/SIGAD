@@ -19,7 +19,6 @@ class AppTheme {
         seedColor: primaryColor,
         primary: primaryColor,
         secondary: accentColor,
-        background: lightBg,
         surface: cardBg,
         error: errorColor,
       ),
@@ -27,7 +26,7 @@ class AppTheme {
       cardTheme: CardThemeData(
         color: cardBg,
         elevation: 2,
-        shadowColor: Colors.black.withOpacity(0.05),
+        shadowColor: Colors.black.withValues(alpha: 0.05),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: const BorderSide(color: borderLight, width: 0.5),

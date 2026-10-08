@@ -101,7 +101,7 @@ class _MobileAssistanceTabState extends State<MobileAssistanceTab> {
                   margin: const EdgeInsets.only(bottom: 12),
                   child: ListTile(
                     leading: CircleAvatar(
-                      backgroundColor: AppTheme.errorColor.withOpacity(0.1),
+                      backgroundColor: AppTheme.errorColor.withValues(alpha: 0.1),
                       child: Icon(_getIcon(item.icon), color: AppTheme.errorColor),
                     ),
                     title: Text(item.title, style: const TextStyle(fontWeight: FontWeight.bold)),

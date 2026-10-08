@@ -180,7 +180,7 @@ class _OcrSchemasTabViewState extends State<OcrSchemasTabView> {
 
         return ListTile(
           selected: isSelected,
-          selectedTileColor: AppTheme.primaryColor.withOpacity(0.08),
+          selectedTileColor: AppTheme.primaryColor.withValues(alpha: 0.08),
           title: Text(
             item.nombre,
             style: TextStyle(
@@ -196,13 +196,13 @@ class _OcrSchemasTabViewState extends State<OcrSchemasTabView> {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
               color: item.esActivo
-                  ? AppTheme.successColor.withOpacity(0.12)
-                  : Colors.grey.withOpacity(0.12),
+                  ? AppTheme.successColor.withValues(alpha: 0.12)
+                  : Colors.grey.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(4),
               border: Border.all(
                 color: item.esActivo
-                    ? AppTheme.successColor.withOpacity(0.4)
-                    : Colors.grey.withOpacity(0.4),
+                    ? AppTheme.successColor.withValues(alpha: 0.4)
+                    : Colors.grey.withValues(alpha: 0.4),
               ),
             ),
             child: Text(

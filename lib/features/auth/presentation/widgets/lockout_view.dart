@@ -73,7 +73,7 @@ class _LockoutViewState extends State<LockoutView> {
                   border: Border.all(color: AppTheme.borderLight, width: 1),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
+                      color: Colors.black.withValues(alpha: 0.06),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
@@ -115,9 +115,9 @@ class _LockoutViewState extends State<LockoutView> {
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 20),
                 decoration: BoxDecoration(
-                  color: AppTheme.errorColor.withOpacity(0.05),
+                  color: AppTheme.errorColor.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppTheme.errorColor.withOpacity(0.15)),
+                  border: Border.all(color: AppTheme.errorColor.withValues(alpha: 0.15)),
                 ),
                 child: Column(
                   children: [

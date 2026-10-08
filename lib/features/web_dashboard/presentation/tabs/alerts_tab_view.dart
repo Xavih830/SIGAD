@@ -122,13 +122,15 @@ class _AlertsTabViewState extends State<AlertsTabView> {
                                     leading: Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: AppTheme.warningColor.withOpacity(0.15),
+                                        color: AppTheme.warningColor.withValues(alpha: 0.15),
                                         shape: BoxShape.circle,
                                       ),
                                       child: const Icon(Icons.warning_amber_rounded, color: AppTheme.warningColor),
                                     ),
                                     title: Text(
-                                      '${p.number} - ${p.vehicle?.brand ?? ''} ${p.vehicle?.model ?? ''} (${p.vehicle?.plate ?? 'S/P'})',
+                                      p.vehicle != null
+                                          ? '${p.number} - ${p.vehicle!.brand} ${p.vehicle!.model} (${p.vehicle!.plate})'
+                                          : '${p.number} - Sin vehículo asignado',
                                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                                     ),
                                     subtitle: Text(

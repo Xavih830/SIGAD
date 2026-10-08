@@ -26,11 +26,11 @@ class PoliciesRepository {
     return list.map((item) => PolicyModel.fromJson(item)).toList();
   }
 
-  Future<PolicyModel> createPolicy(PolicyModel policy, {String? token}) async {
-    String vehicleId = policy.vehicleId;
+  Future<PolicyModel> createPolicy(CreatePolicyRequest request, {String? token}) async {
+    String vehicleId = request.vehicleId ?? '';
 
-    if (vehicleId.isEmpty && policy.vehicle != null) {
-      final plate = policy.vehicle!.plate.toUpperCase();
+    if (vehicleId.isEmpty && request.vehicle != null) {
+      final plate = request.vehicle!.plate.toUpperCase();
       final vehicles = await _client.getList(ApiEndpoints.vehiculos, token: token);
       final match = vehicles.firstWhere(
         (v) => (v['placa'] as String).toUpperCase() == plate,
@@ -43,10 +43,10 @@ class PoliciesRepository {
           ApiEndpoints.vehiculos,
           body: {
             'placa': plate,
-            'marca': policy.vehicle!.brand,
-            'modelo': policy.vehicle!.model,
-            'anio': policy.vehicle!.year,
-            'cliente_id': policy.clientId,
+            'marca': request.vehicle!.brand,
+            'modelo': request.vehicle!.model,
+            'anio': request.vehicle!.year,
+            'cliente_id': request.clientId,
           },
           token: token,
         );
@@ -54,10 +54,11 @@ class PoliciesRepository {
       }
     }
 
-    final payload = policy.toCreatePayloadJson();
-    if (vehicleId.isNotEmpty) {
-      payload['vehiculo_id'] = vehicleId;
+    if (vehicleId.isEmpty) {
+      throw StateError('FAIL-FAST: No se pudo resolver ni registrar el vehículo asociado a la póliza.');
     }
+
+    final payload = request.toCreatePayloadJson(resolvedVehicleId: vehicleId);
 
     final data = await _client.post(
       ApiEndpoints.polizasBase,

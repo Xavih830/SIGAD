@@ -102,14 +102,14 @@ class _PolicyDetailPageState extends State<PolicyDetailPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('PÓLIZA NRO', style: TextStyle(fontSize: 12, color: Colors.white.withOpacity(0.7), fontWeight: FontWeight.bold, letterSpacing: 1.0)),
+                    Text('PÓLIZA NRO', style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.7), fontWeight: FontWeight.bold, letterSpacing: 1.0)),
                     const SizedBox(height: 4),
                     Text(policy.number, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white)),
                     const SizedBox(height: 16),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Text('VEHÍCULO ASEGURADO', style: TextStyle(fontSize: 13, color: Colors.white.withOpacity(0.9), fontWeight: FontWeight.bold)),
+                        Text('VEHÍCULO ASEGURADO', style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.9), fontWeight: FontWeight.bold)),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                           decoration: BoxDecoration(color: isExp ? Colors.red.shade400 : Colors.green.shade400, borderRadius: BorderRadius.circular(8)),
@@ -125,12 +125,16 @@ class _PolicyDetailPageState extends State<PolicyDetailPage> {
             _buildSection(
               title: 'Datos del Vehículo',
               icon: Icons.directions_car,
-              rows: [
-                _RowData('Marca', veh?.brand ?? 'N/A'),
-                _RowData('Modelo', veh?.model ?? 'N/A'),
-                _RowData('Año', veh != null ? veh.year.toString() : 'N/A'),
-                _RowData('Placa', veh?.plate ?? 'N/A'),
-              ],
+              rows: veh != null
+                  ? [
+                      _RowData('Marca', veh.brand),
+                      _RowData('Modelo', veh.model),
+                      _RowData('Año', veh.year.toString()),
+                      _RowData('Placa', veh.plate),
+                    ]
+                  : [
+                      _RowData('Estado', 'Sin vehículo asignado'),
+                    ],
             ),
             const SizedBox(height: 16),
             _buildSection(
@@ -264,13 +268,13 @@ class _PolicyDetailPageState extends State<PolicyDetailPage> {
     String badgeText = payment.status.toUpperCase();
 
     if (payment.isPaid) {
-      badgeBg = AppTheme.successColor.withOpacity(0.12);
+      badgeBg = AppTheme.successColor.withValues(alpha: 0.12);
       badgeColor = AppTheme.successColor;
     } else if (payment.isOverdue) {
-      badgeBg = AppTheme.errorColor.withOpacity(0.12);
+      badgeBg = AppTheme.errorColor.withValues(alpha: 0.12);
       badgeColor = AppTheme.errorColor;
     } else {
-      badgeBg = AppTheme.warningColor.withOpacity(0.2);
+      badgeBg = AppTheme.warningColor.withValues(alpha: 0.2);
       badgeColor = Colors.orange.shade800;
     }
 
@@ -334,7 +338,10 @@ class _PolicyDetailPageState extends State<PolicyDetailPage> {
                   const SizedBox(width: 4),
                   Expanded(
                     child: Text(
-                      '${payment.paymentMethod ?? 'Pago'} • Ref: ${payment.receiptRef ?? 'N/A'}',
+                      [
+                        if (payment.paymentMethod != null) payment.paymentMethod!,
+                        if (payment.receiptRef != null) 'Ref: ${payment.receiptRef}',
+                      ].join(' • '),
                       style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
                       overflow: TextOverflow.ellipsis,
                     ),
