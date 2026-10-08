@@ -1,12 +1,16 @@
 """Worker healthcheck service — lightweight HTTP server on port 8001."""
 
 import asyncio
+import logging
+import time
 from typing import Any
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 import uvicorn
 
 from app.services.resilient_pool import resilient_pool
+
+logger = logging.getLogger("sigad.worker.health")
 
 worker_app = FastAPI(
     title="SIGAD Worker Health",
@@ -15,7 +19,7 @@ worker_app = FastAPI(
 )
 
 
-_worker_health_cache = {"status": "unknown", "timestamp": 0.0}
+_worker_health_cache: dict[str, Any] = {"status": "unknown", "timestamp": 0.0}
 _CACHE_TTL = 3.0  # segundos
 
 
@@ -29,9 +33,6 @@ async def get_worker_liveness() -> dict[str, str]:
 @worker_app.get("/health/ready")
 async def get_worker_health() -> dict[str, Any]:
     """Returns worker status ok and validates that ProcessPool is active (poryecto.md §2.5)."""
-    import time
-    global _worker_health_cache
-
     now = time.monotonic()
     if now - _worker_health_cache["timestamp"] < _CACHE_TTL and _worker_health_cache["status"] == "active":
         return {"status": "ok", "worker": "running", "pool": "active"}
@@ -42,12 +43,13 @@ async def get_worker_health() -> dict[str, Any]:
             loop.run_in_executor(resilient_pool.pool, abs, 1),
             timeout=2.0,
         )
-        _worker_health_cache = {"status": "active", "timestamp": now}
+        _worker_health_cache["status"] = "active"
+        _worker_health_cache["timestamp"] = now
         return {"status": "ok", "worker": "running", "pool": "active"}
     except Exception as e:
-        import logging
-        logging.getLogger("sigad.worker.health").error("worker_health_probe_failed: %s", str(e))
-        _worker_health_cache = {"status": "unhealthy", "timestamp": 0.0}
+        logger.error("worker_health_probe_failed: %s", str(e))
+        _worker_health_cache["status"] = "unhealthy"
+        _worker_health_cache["timestamp"] = 0.0
         return JSONResponse(
             status_code=503,
             content={"status": "degraded", "worker": "running", "pool": "unhealthy"},

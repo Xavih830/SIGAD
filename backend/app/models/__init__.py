@@ -1,5 +1,6 @@
 """SQLAlchemy ORM models package."""
 
+from app.db.base import Base
 from app.models.asistencia import Asistencia
 from app.models.cliente import Cliente
 from app.models.codigo_vinculacion import CodigoVinculacion

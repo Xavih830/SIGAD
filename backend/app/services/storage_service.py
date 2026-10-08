@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 import uuid
 
+from PIL import Image
 import pypdfium2 as pdfium
 
 from app.core.config import settings
@@ -117,8 +118,6 @@ class StorageService:
             StorageException: Si la imagen está dañada o no se puede leer.
         """
         try:
-            from PIL import Image
-
             with Image.open(io.BytesIO(content)) as img:
                 w, h = img.size
                 if w > MAX_IMAGE_DIMENSION_PX or h > MAX_IMAGE_DIMENSION_PX:

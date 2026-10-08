@@ -1776,6 +1776,7 @@
             "default": true
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "titulo",
@@ -1835,7 +1836,7 @@
         "properties": {
           "file": {
             "type": "string",
-            "format": "binary",
+            "contentMediaType": "application/octet-stream",
             "title": "File"
           },
           "poliza_id": {
@@ -1861,7 +1862,7 @@
         "properties": {
           "file": {
             "type": "string",
-            "format": "binary",
+            "contentMediaType": "application/octet-stream",
             "title": "File"
           }
         },
@@ -2917,6 +2918,16 @@
             "format": "date-time",
             "title": "Updated At"
           },
+          "vehiculo": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VehiculoResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "deducibles": {
             "items": {
               "$ref": "#/components/schemas/DeducibleResponse"
@@ -3101,6 +3112,7 @@
             "default": true
           }
         },
+        "additionalProperties": false,
         "type": "object",
         "required": [
           "nombre",
@@ -3221,6 +3233,13 @@
           "type": {
             "type": "string",
             "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
           }
         },
         "type": "object",

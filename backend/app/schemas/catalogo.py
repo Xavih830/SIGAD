@@ -6,8 +6,10 @@ from typing import Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.base import StrictBaseSchema
 
-class TallerCreate(BaseModel):
+
+class TallerCreate(StrictBaseSchema):
     """Schema para registrar un nuevo taller mecánico autorizado."""
 
     nombre: str = Field(..., min_length=2, max_length=255)
@@ -31,7 +33,7 @@ class TallerResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class AsistenciaCreate(BaseModel):
+class AsistenciaCreate(StrictBaseSchema):
     """Schema para registrar un nuevo servicio de asistencia."""
 
     titulo: str = Field(..., min_length=2, max_length=255)

@@ -1,3 +1,7 @@
+import asyncio
+import logging
+import time
+
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -8,6 +12,8 @@ from app.api.v1.api import api_router
 from app.core.config import settings
 from app.core.handlers import register_handlers
 from app.api.deps import get_db
+
+logger = logging.getLogger("sigad.health")
 
 
 def create_app() -> FastAPI:
@@ -50,9 +56,6 @@ def create_app() -> FastAPI:
     @application.get("/health/ready", tags=["Infra"])
     async def health(db: AsyncSession = Depends(get_db)) -> dict:
         """Deep readiness probe: validates PostgreSQL with bounded timeout and rate-cache (poryecto.md §2.5)."""
-        import asyncio
-        import time
-
         now = time.monotonic()
         if now - _health_cache["timestamp"] < _CACHE_TTL and _health_cache["status"] == "connected":
             return {"status": "ok", "database": "connected"}
@@ -63,8 +66,7 @@ def create_app() -> FastAPI:
             _health_cache["timestamp"] = now
             return {"status": "ok", "database": "connected"}
         except Exception as e:
-            import logging
-            logging.getLogger("sigad.health").error("health_probe_db_disconnected: %s", str(e))
+            logger.error("health_probe_db_disconnected: %s", str(e))
             _health_cache["status"] = "disconnected"
             _health_cache["timestamp"] = 0.0
             return JSONResponse(

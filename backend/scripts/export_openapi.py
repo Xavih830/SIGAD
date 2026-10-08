@@ -9,10 +9,8 @@ Guarantees 100% offline schema generation:
 
 import contextlib
 import json
-import os
 from pathlib import Path
 import socket
-import sys
 
 # 1. Bloqueo Defensivo de Sockets a nivel de intérprete
 _original_socket_class = socket.socket
@@ -43,10 +41,7 @@ def defensive_socket_blocking():
             socket.create_connection = _original_create_connection
 
 
-# Ensure backend root is on sys.path
 backend_dir = Path(__file__).resolve().parent.parent
-if str(backend_dir) not in sys.path:
-    sys.path.insert(0, str(backend_dir))
 
 # 3. Importar app e inspeccionar OpenAPI
 from app.main import app

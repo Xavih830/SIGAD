@@ -110,6 +110,56 @@ async def login(
     )
 
 
+async def _validar_y_consumir_otp_vinculacion(
+    db: AsyncSession,
+    cliente_id: uuid.UUID,
+    codigo_otp: str,
+    password_plano: str,
+    cedula: str,
+    ip: str,
+) -> CodigoVinculacion:
+    """Valida criptográficamente el OTP activo, penaliza intentos fallidos y lo consume."""
+    stmt_otp = (
+        select(CodigoVinculacion)
+        .where(
+            CodigoVinculacion.cliente_id == cliente_id,
+            CodigoVinculacion.consumido.is_(False),
+        )
+        .order_by(desc(CodigoVinculacion.created_at))
+        .limit(1)
+    )
+    res_otp = await db.execute(stmt_otp)
+    codigo_obj = res_otp.scalar_one_or_none()
+
+    now_utc = datetime.now(timezone.utc)
+
+    if not codigo_obj or codigo_obj.expira_en < now_utc:
+        await verify_dummy(password_plano)
+        rate_limiter.record_failure(identity=cedula, ip=ip)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=_VINCULACION_ERROR,
+        )
+
+    # Validación criptográfica con HMAC-SHA256 (rotación trimestral)
+    is_valid_otp = verify_otp_hmac(codigo_otp, codigo_obj.codigo_hmac)
+
+    if not is_valid_otp:
+        codigo_obj.intentos_fallidos += 1
+        # Al tercer intento fallido consecutivo: invalidar código inmediatamente
+        if codigo_obj.intentos_fallidos >= 3:
+            codigo_obj.consumido = True
+        await db.commit()
+        rate_limiter.record_failure(identity=cedula, ip=ip)
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=_VINCULACION_ERROR,
+        )
+
+    codigo_obj.consumido = True
+    return codigo_obj
+
+
 @router.post("/vinculacion", response_model=TokenResponse)
 async def vincular_cliente(
     body: VinculacionRequest,
@@ -166,46 +216,15 @@ async def vincular_cliente(
         rate_limiter.record_failure(identity=cedula, ip=ip)
         raise EmailDuplicadoException("El correo electrónico ya se encuentra registrado")
 
-    # 4. Verificación de código OTP activo
-    stmt_otp = (
-        select(CodigoVinculacion)
-        .where(
-            CodigoVinculacion.cliente_id == cliente.id,
-            CodigoVinculacion.consumido.is_(False),
-        )
-        .order_by(desc(CodigoVinculacion.created_at))
-        .limit(1)
+    # 4. Verificación y consumo criptográfico de código OTP
+    codigo_obj = await _validar_y_consumir_otp_vinculacion(
+        db=db,
+        cliente_id=cliente.id,
+        codigo_otp=body.codigo_otp,
+        password_plano=body.password,
+        cedula=cedula,
+        ip=ip,
     )
-    res_otp = await db.execute(stmt_otp)
-    codigo_obj = res_otp.scalar_one_or_none()
-
-    now_utc = datetime.now(timezone.utc)
-
-    if not codigo_obj or codigo_obj.expira_en < now_utc:
-        await verify_dummy(body.password)
-        rate_limiter.record_failure(identity=cedula, ip=ip)
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=_VINCULACION_ERROR,
-        )
-
-    # Validación criptográfica con HMAC-SHA256 (rotación trimestral)
-    is_valid_otp = verify_otp_hmac(body.codigo_otp, codigo_obj.codigo_hmac)
-
-    if not is_valid_otp:
-        codigo_obj.intentos_fallidos += 1
-        # Al tercer intento fallido consecutivo: invalidar código inmediatamente
-        if codigo_obj.intentos_fallidos >= 3:
-            codigo_obj.consumido = True
-        await db.commit()
-        rate_limiter.record_failure(identity=cedula, ip=ip)
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=_VINCULACION_ERROR,
-        )
-
-    # 5. Código OTP válido: marcar como consumido y crear usuario
-    codigo_obj.consumido = True
 
     nuevo_usuario = Usuario(
         email=target_email,

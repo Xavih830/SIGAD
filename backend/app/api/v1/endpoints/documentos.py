@@ -1,5 +1,4 @@
-"""Documentos REST API — canonical single ingress, status retrieval, and Anti-IDOR authorized downloads."""
-
+import logging
 import uuid
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
@@ -11,6 +10,7 @@ from sqlalchemy.orm.attributes import flag_modified
 
 from app.api.deps import get_current_user
 from app.db.session import get_db
+from app.models.cliente import Cliente
 from app.models.documento import Documento, EstadoExtraccionEnum
 from app.models.poliza import Poliza
 from app.models.usuario import RolEnum, Usuario
@@ -26,15 +26,15 @@ from app.services.storage_service import (
     ImageDimensionsExceededException,
     InvalidMimeTypeException,
     MaxPagesExceededException,
+    StorageException,
     StorageSecurityException,
     StorageSizeLimitException,
     storage_service,
 )
 
+logger = logging.getLogger("sigad.documentos")
+
 router = APIRouter(prefix="/documentos", tags=["Documentos"])
-
-
-from app.models.cliente import Cliente
 
 
 def _verificar_acceso_documento(doc: Documento | None, poliza: Poliza | None, current_user: Usuario) -> None:
@@ -108,10 +108,14 @@ async def cargar_documento(
         )
     except StorageSizeLimitException as e:
         raise HTTPException(status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE, detail=str(e))
-    except (InvalidMimeTypeException, MaxPagesExceededException, ImageDimensionsExceededException) as e:
+    except (InvalidMimeTypeException, MaxPagesExceededException, ImageDimensionsExceededException, StorageException) as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Error al procesar archivo: {e}")
+        logger.exception("Error inesperado al almacenar archivo: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Error interno al procesar el archivo.",
+        )
 
     documento = Documento(
         id=uuid.uuid4(),

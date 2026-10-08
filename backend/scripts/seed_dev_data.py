@@ -18,18 +18,11 @@ Usage:
 
 import argparse
 import asyncio
-from datetime import date, datetime, timedelta, timezone
+from datetime import date, timedelta
 from decimal import Decimal
 import logging
-import os
-from pathlib import Path
 import sys
 import uuid
-
-# Ensure backend root is on sys.path
-backend_dir = Path(__file__).resolve().parent.parent
-if str(backend_dir) not in sys.path:
-    sys.path.insert(0, str(backend_dir))
 
 from sqlalchemy import delete, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -84,31 +77,8 @@ async def clean_database(session: AsyncSession) -> None:
     logger.info("Database cleaned successfully.")
 
 
-async def seed_data(session: AsyncSession, clean: bool = False) -> None:
-    """Seed production-grade realistic data for local development and testing."""
-    if settings.ENVIRONMENT == "production":
-        logger.critical(
-            "SEED_DATA_ABORTED: PROHIBIDO poblar credenciales y datos de desarrollo en producción."
-        )
-        raise RuntimeError("No se puede ejecutar el seeder de desarrollo en un entorno de producción.")
-
-    db_url_str = str(session.bind.url) if (session.bind and hasattr(session.bind, "url")) else ""
-    if "sigad_test_db" in db_url_str:
-        logger.critical(
-            "SEED_DATA_ABORTED: PROHIBIDO poblar la base de datos de pruebas sigad_test_db."
-        )
-        raise RuntimeError("PROHIBIDO ejecutar el seeder de desarrollo sobre la base de datos de pruebas sigad_test_db.")
-
-    if clean:
-        await clean_database(session)
-
-    today = date.today()
-    now_utc = datetime.now(timezone.utc)
-
-    # ─────────────────────────────────────────────────────────────────────────
-    # 1. USUARIOS (Roles: Admin, Broker RJ Seguros, Agente)
-    # Contraseña unificada para testing local: PasswordSeguro2026*
-    # ─────────────────────────────────────────────────────────────────────────
+async def _seed_base_users(session: AsyncSession) -> None:
+    """Poblar usuarios base del sistema (Admin, Agente, Broker RJ Seguros)."""
     logger.info("Seeding system and broker users (password: %s)...", DEV_DEFAULT_PASSWORD)
     base_users = [
         {
@@ -153,11 +123,10 @@ async def seed_data(session: AsyncSession, clean: bool = False) -> None:
 
     await session.flush()
 
-    # ─────────────────────────────────────────────────────────────────────────
-    # 2. CLIENTES CON CÉDULAS VÁLIDAS (Módulo 10) Y CUENTAS VINCULADAS
-    # ─────────────────────────────────────────────────────────────────────────
-    logger.info("Seeding clients, vehicles, and linked user credentials...")
-    clients_seed = [
+
+def _get_clients_seed(today: date) -> list[dict]:
+    """Retorna la lista de clientes, vehículos y pólizas canónicas para desarrollo."""
+    return [
         {
             "identificacion": "0926687856",
             "nombres": "Carlos Eduardo Pérez Morales",
@@ -385,149 +354,173 @@ async def seed_data(session: AsyncSession, clean: bool = False) -> None:
         },
     ]
 
-    for c_data in clients_seed:
-        # Verificar o crear Usuario del cliente
-        res_u = await session.execute(select(Usuario).where(Usuario.email == c_data["email"]))
-        user = res_u.scalar_one_or_none()
-        if not user:
-            user = Usuario(
-                email=c_data["email"],
-                nombre=c_data["nombres"],
-                password_hash=hash_password(c_data["password"]),
-                rol=RolEnum.CLIENTE,
-                activo=True,
-            )
-            session.add(user)
-            await session.flush()
-            logger.info("  + Usuario cliente creado: %s (Cédula: %s)", c_data["email"], c_data["identificacion"])
 
-        # Verificar o crear Cliente
-        res_c = await session.execute(select(Cliente).where(Cliente.identificacion == c_data["identificacion"]))
-        cliente = res_c.scalar_one_or_none()
-        if not cliente:
-            cliente = Cliente(
-                identificacion=c_data["identificacion"],
-                nombres=c_data["nombres"],
-                email=c_data["email"],
-                telefono=c_data["telefono"],
-                usuario_id=user.id,
-            )
-            session.add(cliente)
-            await session.flush()
-            logger.info("  + Cliente registrado: %s (%s)", c_data["nombres"], c_data["identificacion"])
-        else:
-            if cliente.usuario_id != user.id:
-                cliente.usuario_id = user.id
-                await session.flush()
+async def _seed_vehiculo_poliza(
+    session: AsyncSession,
+    cliente_id: uuid.UUID,
+    v_data: dict,
+    today: date,
+) -> None:
+    """Registra vehículo, inspección técnica, póliza, coberturas, deducibles y cuotas."""
+    res_v = await session.execute(select(Vehiculo).where(Vehiculo.placa == v_data["placa"]))
+    vehiculo = res_v.scalar_one_or_none()
+    if not vehiculo:
+        vehiculo = Vehiculo(
+            placa=v_data["placa"],
+            marca=v_data["marca"],
+            modelo=v_data["modelo"],
+            anio=v_data["anio"],
+            cliente_id=cliente_id,
+        )
+        session.add(vehiculo)
+        await session.flush()
+        logger.info(
+            "    + Vehículo registrado: %s %s %s [Placa: %s]",
+            vehiculo.marca,
+            vehiculo.modelo,
+            vehiculo.anio,
+            vehiculo.placa,
+        )
 
-        # Registrar Vehículos, Inspecciones, Pólizas, Coberturas y Deducibles
-        for v_data in c_data["vehiculos"]:
-            res_v = await session.execute(select(Vehiculo).where(Vehiculo.placa == v_data["placa"]))
-            vehiculo = res_v.scalar_one_or_none()
-            if not vehiculo:
-                vehiculo = Vehiculo(
-                    placa=v_data["placa"],
-                    marca=v_data["marca"],
-                    modelo=v_data["modelo"],
-                    anio=v_data["anio"],
-                    cliente_id=cliente.id,
+    # Inspección técnica con lectura de kilometraje
+    res_insp = await session.execute(
+        select(Inspeccion)
+        .where(Inspeccion.vehiculo_id == vehiculo.id)
+        .order_by(Inspeccion.fecha.desc())
+        .limit(1)
+    )
+    inspeccion = res_insp.scalar_one_or_none()
+    if not inspeccion:
+        inspeccion = Inspeccion(
+            vehiculo_id=vehiculo.id,
+            kilometraje=v_data["km_inspeccion"],
+            observaciones=(
+                "Inspección periódica inicial sin novedades mecánicas. "
+                f"Odómetro verificado en {v_data['km_inspeccion']} km."
+            ),
+        )
+        session.add(inspeccion)
+        await session.flush()
+
+    # Póliza
+    p_info = v_data["poliza"]
+    res_p = await session.execute(select(Poliza).where(Poliza.numero_poliza == p_info["numero"]))
+    poliza = res_p.scalar_one_or_none()
+    if not poliza:
+        poliza = Poliza(
+            numero_poliza=p_info["numero"],
+            cliente_id=cliente_id,
+            vehiculo_id=vehiculo.id,
+            inspeccion_id=inspeccion.id,
+            fecha_inicio=p_info["inicio"],
+            fecha_fin=p_info["fin"],
+            estado=p_info["estado"],
+            valor_asegurado=p_info["valor"],
+            prima_mensual=p_info["prima"],
+            kilometraje_emision=p_info["km"],
+        )
+        session.add(poliza)
+        await session.flush()
+        logger.info(
+            "      + Póliza emitida: %s [%s] ($%s / mes)",
+            poliza.numero_poliza,
+            poliza.estado.value,
+            poliza.prima_mensual,
+        )
+
+        for cob_nom, cob_monto in p_info["coberturas"]:
+            session.add(Cobertura(poliza_id=poliza.id, nombre=cob_nom, monto=cob_monto))
+
+        for t_sin, pct, min_usd in p_info["deducibles"]:
+            session.add(
+                Deducible(
+                    poliza_id=poliza.id,
+                    tipo_siniestro=t_sin,
+                    porcentaje_valor=pct,
+                    monto_minimo_usd=min_usd,
                 )
-                session.add(vehiculo)
-                await session.flush()
-                logger.info("    + Vehículo registrado: %s %s %s [Placa: %s]", vehiculo.marca, vehiculo.modelo, vehiculo.anio, vehiculo.placa)
-
-            # Inspección técnica con lectura de kilometraje
-            res_insp = await session.execute(
-                select(Inspeccion).where(Inspeccion.vehiculo_id == vehiculo.id).order_by(Inspeccion.fecha.desc()).limit(1)
             )
-            inspeccion = res_insp.scalar_one_or_none()
-            if not inspeccion:
-                inspeccion = Inspeccion(
-                    vehiculo_id=vehiculo.id,
-                    kilometraje=v_data["km_inspeccion"],
-                    observaciones=f"Inspección periódica inicial sin novedades mecánicas. Odómetro verificado en {v_data['km_inspeccion']} km.",
-                )
-                session.add(inspeccion)
-                await session.flush()
 
-            # Póliza
-            p_info = v_data["poliza"]
-            res_p = await session.execute(select(Poliza).where(Poliza.numero_poliza == p_info["numero"]))
-            poliza = res_p.scalar_one_or_none()
-            if not poliza:
-                poliza = Poliza(
-                    numero_poliza=p_info["numero"],
-                    cliente_id=cliente.id,
-                    vehiculo_id=vehiculo.id,
-                    inspeccion_id=inspeccion.id,
-                    fecha_inicio=p_info["inicio"],
-                    fecha_fin=p_info["fin"],
-                    estado=p_info["estado"],
-                    valor_asegurado=p_info["valor"],
-                    prima_mensual=p_info["prima"],
-                    kilometraje_emision=p_info["km"],
-                )
-                session.add(poliza)
-                await session.flush()
-                logger.info("      + Póliza emitida: %s [%s] ($%s / mes)", poliza.numero_poliza, poliza.estado.value, poliza.prima_mensual)
+        for cuota_idx in range(1, 13):
+            venc_cuota = poliza.fecha_inicio + timedelta(days=30 * (cuota_idx - 1))
+            if venc_cuota <= poliza.fecha_fin:
+                if venc_cuota < today:
+                    if poliza.estado == EstadoPoliza.CANCELADA or (
+                        poliza.estado == EstadoPoliza.VENCIDA and cuota_idx > 6
+                    ):
+                        est_cuota = "atrasado"
+                        f_pago = None
+                        met_pago = None
+                        comp_ref = None
+                    else:
+                        est_cuota = "pagado"
+                        f_pago = venc_cuota
+                        met_pago = "transferencia"
+                        comp_ref = f"TRF-{uuid.uuid4().hex[:8].upper()}"
+                else:
+                    est_cuota = "pendiente"
+                    f_pago = None
+                    met_pago = None
+                    comp_ref = None
 
-                # Coberturas asociadas
-                for cob_nom, cob_monto in p_info["coberturas"]:
-                    cob = Cobertura(
+                session.add(
+                    Pago(
                         poliza_id=poliza.id,
-                        nombre=cob_nom,
-                        monto=cob_monto,
+                        numero_cuota=cuota_idx,
+                        monto_usd=poliza.prima_mensual,
+                        fecha_vencimiento=venc_cuota,
+                        fecha_pago=f_pago,
+                        estado=est_cuota,
+                        metodo_pago=met_pago,
+                        comprobante_ref=comp_ref,
                     )
-                    session.add(cob)
+                )
 
-                # Deducibles diferenciados (SC-2026-001)
-                for t_sin, pct, min_usd in p_info["deducibles"]:
-                    ded = Deducible(
-                        poliza_id=poliza.id,
-                        tipo_siniestro=t_sin,
-                        porcentaje_valor=pct,
-                        monto_minimo_usd=min_usd,
-                    )
-                    session.add(ded)
 
-                # Cronograma de cuotas y pagos asociados a la póliza
-                for cuota_idx in range(1, 13):
-                    venc_cuota = poliza.fecha_inicio + timedelta(days=30 * (cuota_idx - 1))
-                    if venc_cuota <= poliza.fecha_fin:
-                        if venc_cuota < today:
-                            if poliza.estado == EstadoPoliza.CANCELADA or (poliza.estado == EstadoPoliza.VENCIDA and cuota_idx > 6):
-                                est_cuota = "atrasado"
-                                f_pago = None
-                                met_pago = None
-                                comp_ref = None
-                            else:
-                                est_cuota = "pagado"
-                                f_pago = venc_cuota
-                                met_pago = "transferencia"
-                                comp_ref = f"TRF-{uuid.uuid4().hex[:8].upper()}"
-                        else:
-                            est_cuota = "pendiente"
-                            f_pago = None
-                            met_pago = None
-                            comp_ref = None
+async def _seed_single_client(
+    session: AsyncSession,
+    c_data: dict,
+    today: date,
+) -> None:
+    """Crea o verifica un usuario y cliente, asociando sus vehículos y pólizas."""
+    res_u = await session.execute(select(Usuario).where(Usuario.email == c_data["email"]))
+    user = res_u.scalar_one_or_none()
+    if not user:
+        user = Usuario(
+            email=c_data["email"],
+            nombre=c_data["nombres"],
+            password_hash=hash_password(c_data["password"]),
+            rol=RolEnum.CLIENTE,
+            activo=True,
+        )
+        session.add(user)
+        await session.flush()
+        logger.info("  + Usuario cliente creado: %s (Cédula: %s)", c_data["email"], c_data["identificacion"])
 
-                        pago = Pago(
-                            poliza_id=poliza.id,
-                            numero_cuota=cuota_idx,
-                            monto_usd=poliza.prima_mensual,
-                            fecha_vencimiento=venc_cuota,
-                            fecha_pago=f_pago,
-                            estado=est_cuota,
-                            metodo_pago=met_pago,
-                            comprobante_ref=comp_ref,
-                        )
-                        session.add(pago)
+    res_c = await session.execute(select(Cliente).where(Cliente.identificacion == c_data["identificacion"]))
+    cliente = res_c.scalar_one_or_none()
+    if not cliente:
+        cliente = Cliente(
+            identificacion=c_data["identificacion"],
+            nombres=c_data["nombres"],
+            email=c_data["email"],
+            telefono=c_data["telefono"],
+            usuario_id=user.id,
+        )
+        session.add(cliente)
+        await session.flush()
+        logger.info("  + Cliente registrado: %s (%s)", c_data["nombres"], c_data["identificacion"])
+    else:
+        if cliente.usuario_id != user.id:
+            cliente.usuario_id = user.id
+            await session.flush()
 
-    await session.flush()
+    for v_data in c_data["vehiculos"]:
+        await _seed_vehiculo_poliza(session, cliente.id, v_data, today)
 
-    # ─────────────────────────────────────────────────────────────────────────
-    # 3. TALLERES AUTORIZADOS A NIVEL NACIONAL
-    # ─────────────────────────────────────────────────────────────────────────
+
+async def _seed_talleres(session: AsyncSession) -> None:
+    """Poblar el catálogo de talleres autorizados."""
     logger.info("Seeding authorized workshops catalog...")
     talleres_seed = [
         {
@@ -580,9 +573,9 @@ async def seed_data(session: AsyncSession, clean: bool = False) -> None:
             session.add(taller)
             logger.info("  + Taller creado: %s (%s)", t_data["nombre"], t_data["ciudad"])
 
-    # ─────────────────────────────────────────────────────────────────────────
-    # 4. ASISTENCIAS EN CARRETERA Y NÚMEROS DE EMERGENCIA 24/7
-    # ─────────────────────────────────────────────────────────────────────────
+
+async def _seed_asistencias(session: AsyncSession) -> None:
+    """Poblar asistencias en carretera y números de emergencia."""
     logger.info("Seeding roadside emergency assistance services...")
     asistencias_seed = [
         {
@@ -628,9 +621,9 @@ async def seed_data(session: AsyncSession, clean: bool = False) -> None:
             session.add(asistencia)
             logger.info("  + Asistencia creada: %s (%s)", a_data["titulo"], a_data["telefono_emergencia"])
 
-    # ─────────────────────────────────────────────────────────────────────────
-    # 8. ESQUEMAS DE EXTRACCIÓN OCR (Vehicular activo, Vida, Hogar)
-    # ─────────────────────────────────────────────────────────────────────────
+
+async def _seed_esquemas(session: AsyncSession) -> None:
+    """Poblar esquemas de extracción OCR."""
     logger.info("Seeding dynamic OCR extraction schemas...")
     admin_res = await session.execute(select(Usuario).where(Usuario.email == "admin@sigad.ec"))
     admin_user = admin_res.scalar_one_or_none()
@@ -696,6 +689,45 @@ async def seed_data(session: AsyncSession, clean: bool = False) -> None:
             )
             session.add(esquema)
             logger.info("  + Esquema creado: %s v1 (activo=%s)", e_data["codigo"], e_data["es_activo"])
+
+
+async def seed_data(session: AsyncSession, clean: bool = False) -> None:
+    """Seed production-grade realistic data for local development and testing."""
+    if settings.ENVIRONMENT == "production":
+        logger.critical(
+            "SEED_DATA_ABORTED: PROHIBIDO poblar credenciales y datos de desarrollo en producción."
+        )
+        raise RuntimeError("No se puede ejecutar el seeder de desarrollo en un entorno de producción.")
+
+    db_url_str = str(session.bind.url) if (session.bind and hasattr(session.bind, "url")) else ""
+    if "sigad_test_db" in db_url_str:
+        logger.critical(
+            "SEED_DATA_ABORTED: PROHIBIDO poblar la base de datos de pruebas sigad_test_db."
+        )
+        raise RuntimeError("PROHIBIDO ejecutar el seeder de desarrollo sobre la base de datos de pruebas sigad_test_db.")
+
+    if clean:
+        await clean_database(session)
+
+    today = date.today()
+
+    # 1. Usuarios base del sistema
+    await _seed_base_users(session)
+
+    # 2. Clientes, vehículos, inspecciones y pólizas
+    logger.info("Seeding clients, vehicles, and linked user credentials...")
+    for c_data in _get_clients_seed(today):
+        await _seed_single_client(session, c_data, today)
+    await session.flush()
+
+    # 3. Catálogo de talleres autorizados
+    await _seed_talleres(session)
+
+    # 4. Asistencias en carretera y números de emergencia
+    await _seed_asistencias(session)
+
+    # 5. Esquemas dinámicos de extracción OCR
+    await _seed_esquemas(session)
 
     await session.commit()
     logger.info("Seeding process completed successfully!")

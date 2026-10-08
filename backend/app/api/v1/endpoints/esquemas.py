@@ -181,8 +181,20 @@ async def probar_esquema(
             detail="Archivo demasiado grande para prueba.",
         )
 
-    suffix = Path(file.filename or "test.pdf").suffix or ".pdf"
-    if storage_service.is_image_file(file.filename or "", content):
+    if not file.filename:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El nombre de archivo es obligatorio.",
+        )
+    filename = file.filename.strip()
+    suffix = Path(filename).suffix.lower()
+    if not suffix:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="El archivo debe tener una extensión válida.",
+        )
+
+    if storage_service.is_image_file(filename, content):
         try:
             storage_service.validate_image_dimensions(content)
         except (ImageDimensionsExceededException, StorageException) as e:

@@ -1,5 +1,6 @@
 """Extraction service — two-gate OCR pipeline with 200 DPI sequential memory safety."""
 
+import logging
 from decimal import Decimal
 import gc
 import os
@@ -19,6 +20,8 @@ from app.core.constants import (
     TESSERACT_STANDARD_DPI,
 )
 
+logger = logging.getLogger("sigad.extraccion")
+
 
 def _extraer_compuerta_1_pdfplumber(file_path: str) -> str:
     """Gate 1: Fast native digital text extraction via pdfplumber."""
@@ -29,7 +32,8 @@ def _extraer_compuerta_1_pdfplumber(file_path: str) -> str:
                 txt = page.extract_text()
                 if txt:
                     texto_total.append(txt)
-    except Exception:
+    except Exception as exc:
+        logger.warning("Fallo en compuerta 1 (pdfplumber) para %s: %s", file_path, exc)
         return ""
     return "\n".join(texto_total).strip()
 
@@ -44,12 +48,17 @@ def _extraer_compuerta_2_tesseract_200dpi(file_path: str) -> str:
         try:
             texto = pytesseract.image_to_string(image_buffer, lang="spa")
             full_text.append(texto)
-        except Exception:
+        except Exception as exc_spa:
+            logger.warning(
+                "Fallo OCR en español para imagen %s: %s. Reintentando sin idioma.",
+                file_path,
+                exc_spa,
+            )
             try:
                 texto = pytesseract.image_to_string(image_buffer)
                 full_text.append(texto)
-            except Exception:
-                pass
+            except Exception as exc_fallback:
+                logger.error("Fallo definitivo OCR para imagen %s: %s", file_path, exc_fallback)
         finally:
             del image_buffer
             gc.collect()
@@ -65,11 +74,23 @@ def _extraer_compuerta_2_tesseract_200dpi(file_path: str) -> str:
             try:
                 page_text = pytesseract.image_to_string(image_buffer, lang="spa")
                 full_text.append(page_text)
-            except Exception:
+            except Exception as exc_spa:
+                logger.warning(
+                    "Fallo OCR en español para página %d de %s: %s. Reintentando sin idioma.",
+                    page_idx,
+                    file_path,
+                    exc_spa,
+                )
                 try:
                     page_text = pytesseract.image_to_string(image_buffer)
                     full_text.append(page_text)
-                except Exception:
+                except Exception as exc_fallback:
+                    logger.error(
+                        "Fallo definitivo OCR para página %d de %s: %s",
+                        page_idx,
+                        file_path,
+                        exc_fallback,
+                    )
                     full_text.append("")
             finally:
                 # Liberación explícita e inmediata de búferes de imagen y llamada a recolector

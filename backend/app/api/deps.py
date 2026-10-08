@@ -6,6 +6,7 @@ import jwt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.rate_limit import rate_limiter
 from app.core.security import decode_token
 from app.db.session import get_db
 from app.models.usuario import RolEnum, Usuario
@@ -57,8 +58,6 @@ def get_client_ip(request: Request) -> str:
 
 async def check_catalog_rate_limit(request: Request) -> None:
     """Guardián de rate limiting por IP para catálogos públicos sin autenticación."""
-    from app.core.rate_limit import rate_limiter
-
     ip = get_client_ip(request)
     rate_limiter.check_ip(ip=ip, endpoint="catalogo")
 
