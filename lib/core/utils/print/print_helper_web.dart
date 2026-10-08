@@ -1,5 +1,5 @@
-import 'dart:html' as html;
+import 'package:web/web.dart' as web;
 
 void triggerBrowserPrint() {
-  html.window.print();
+  web.window.print();
 }

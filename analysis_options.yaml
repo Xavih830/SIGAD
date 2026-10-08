@@ -14,7 +14,6 @@ analyzer:
     - ios/**
     - web/**
   errors:
-    deprecated_member_use: ignore
     depend_on_referenced_packages: ignore
     avoid_web_libraries_in_flutter: ignore
 include: package:flutter_lints/flutter.yaml
