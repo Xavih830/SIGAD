@@ -11,6 +11,8 @@ abstract class AuthorizationPolicy {
       AppCapability.viewClients,
       AppCapability.createClient,
       AppCapability.scanOcr,
+      AppCapability.manageOcrSchemas,
+      AppCapability.manageCatalogs,
       AppCapability.viewReports,
       AppCapability.viewAlerts,
       AppCapability.accessWebDashboard,

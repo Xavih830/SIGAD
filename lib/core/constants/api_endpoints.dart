@@ -32,9 +32,17 @@ abstract class ApiEndpoints {
   static String documentoDescarga(String documentId) =>
       '/api/v1/documentos/$documentId/descargar';
 
+  // Esquemas de Extracción OCR
+  static const String esquemas = '/api/v1/esquemas';
+  static String esquema(String id) => '/api/v1/esquemas/$id';
+  static String esquemaActivar(String id) => '/api/v1/esquemas/$id/activar';
+  static String esquemaProbar(String id) => '/api/v1/esquemas/$id/probar';
+
   // Catálogos
   static const String talleres = '/api/v1/talleres';
+  static String taller(String id) => '/api/v1/talleres/$id';
   static const String asistencias = '/api/v1/asistencias';
+  static String asistencia(String id) => '/api/v1/asistencias/$id';
 
   // Monitoreo y Salud
   static const String healthLive = '/health/live';

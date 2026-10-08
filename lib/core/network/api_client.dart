@@ -243,7 +243,7 @@ class ApiClient {
       contentType: mediaType,
     ));
 
-    final streamResponse = await request.send().timeout(timeout);
+    final streamResponse = await _client.send(request).timeout(timeout);
     final responseBody = await streamResponse.stream.bytesToString();
 
     if (streamResponse.statusCode >= 200 && streamResponse.statusCode < 300) {

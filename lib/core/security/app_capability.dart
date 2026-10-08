@@ -6,6 +6,8 @@ enum AppCapability {
   viewClients,
   createClient,
   scanOcr,
+  manageOcrSchemas,
+  manageCatalogs,
   viewReports,
   viewAlerts,
   accessWebDashboard,

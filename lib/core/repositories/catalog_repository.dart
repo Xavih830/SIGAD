@@ -43,4 +43,34 @@ class CatalogRepository {
     _assistancesCache.set(assistances);
     return assistances;
   }
+
+  Future<WorkshopModel> createWorkshop(CreateWorkshopRequest request, {String? token}) async {
+    final json = await _client.post(
+      ApiEndpoints.talleres,
+      body: request.toJson(),
+      token: token,
+    );
+    _workshopsCache.invalidate();
+    return WorkshopModel.fromJson(json);
+  }
+
+  Future<WorkshopModel> getWorkshopById(String id, {String? token}) async {
+    final json = await _client.getMap(ApiEndpoints.taller(id), token: token);
+    return WorkshopModel.fromJson(json);
+  }
+
+  Future<AssistanceModel> createAssistance(CreateAssistanceRequest request, {String? token}) async {
+    final json = await _client.post(
+      ApiEndpoints.asistencias,
+      body: request.toJson(),
+      token: token,
+    );
+    _assistancesCache.invalidate();
+    return AssistanceModel.fromJson(json);
+  }
+
+  Future<AssistanceModel> getAssistanceById(String id, {String? token}) async {
+    final json = await _client.getMap(ApiEndpoints.asistencia(id), token: token);
+    return AssistanceModel.fromJson(json);
+  }
 }

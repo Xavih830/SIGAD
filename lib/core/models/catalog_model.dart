@@ -103,3 +103,53 @@ class AssistanceModel {
     'activo': active,
   };
 }
+
+/// DTO para la creación administrativa de un nuevo taller mecánico autorizado.
+class CreateWorkshopRequest {
+  final String nombre;
+  final String direccion;
+  final String telefono;
+  final String ciudad;
+  final bool activo;
+
+  const CreateWorkshopRequest({
+    required this.nombre,
+    required this.direccion,
+    required this.telefono,
+    required this.ciudad,
+    this.activo = true,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'nombre': nombre,
+    'direccion': direccion,
+    'telefono': telefono,
+    'ciudad': ciudad,
+    'activo': activo,
+  };
+}
+
+/// DTO para la creación administrativa de un nuevo servicio de asistencia.
+class CreateAssistanceRequest {
+  final String titulo;
+  final String descripcion;
+  final String telefonoEmergencia;
+  final String icono;
+  final bool activo;
+
+  const CreateAssistanceRequest({
+    required this.titulo,
+    required this.descripcion,
+    required this.telefonoEmergencia,
+    this.icono = 'phone',
+    this.activo = true,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'titulo': titulo,
+    'descripcion': descripcion,
+    'telefono_emergencia': telefonoEmergencia,
+    'icono': icono,
+    'activo': activo,
+  };
+}
