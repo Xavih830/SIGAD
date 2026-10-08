@@ -56,13 +56,15 @@ void main() {
       final adminTabs = DashboardTabRegistry.getPermittedTabs(admin);
       final agentTabs = DashboardTabRegistry.getPermittedTabs(agente);
 
-      // Admin debe tener las 5 pestañas
-      expect(adminTabs.length, equals(5));
+      // Admin debe tener las 6 pestañas (incluyendo esquemas OCR)
+      expect(adminTabs.length, equals(6));
       expect(adminTabs.any((t) => t.id == 'reports'), isTrue);
+      expect(adminTabs.any((t) => t.id == 'schemas'), isTrue);
 
-      // Agente no debe tener acceso a reports
+      // Agente no debe tener acceso a reports ni schemas
       expect(agentTabs.length, equals(4));
       expect(agentTabs.any((t) => t.id == 'reports'), isFalse);
+      expect(agentTabs.any((t) => t.id == 'schemas'), isFalse);
     });
 
     test('findTabById retorna la pestaña correcta o null si no existe', () {

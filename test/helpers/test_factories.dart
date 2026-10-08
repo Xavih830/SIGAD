@@ -3,6 +3,7 @@ import 'package:sigad/core/models/catalog_model.dart';
 import 'package:sigad/core/models/client_model.dart';
 import 'package:sigad/core/models/deductible_model.dart';
 import 'package:sigad/core/models/document_model.dart';
+import 'package:sigad/core/models/extraction_schema_model.dart';
 import 'package:sigad/core/models/payment_model.dart';
 import 'package:sigad/core/models/policy_model.dart';
 import 'package:sigad/core/models/user_model.dart';
@@ -539,5 +540,162 @@ class TestFactories {
         'campos_extraidos': camposExtraidos ?? {'numero_poliza': 'POL-$seq'},
       },
     };
+  }
+
+  // --- EXTRACTION SCHEMA FACTORIES ---
+
+  static ExtractionFieldModel createExtractionField({
+    String? nombre,
+    String? regex,
+    String? tipo,
+    int? grupoCaptura,
+    String? formatoFecha,
+    bool? esObligatorio,
+    int? orden,
+  }) {
+    final seq = nextSequence;
+    return ExtractionFieldModel(
+      nombre: nombre ?? 'campo_$seq',
+      regex: regex ?? r'([A-Z0-9]+)',
+      tipo: tipo ?? 'texto',
+      grupoCaptura: grupoCaptura ?? 1,
+      formatoFecha: formatoFecha,
+      esObligatorio: esObligatorio ?? false,
+      orden: orden ?? seq,
+    );
+  }
+
+  static Map<String, dynamic> createExtractionFieldJson({
+    String? nombre,
+    String? regex,
+    String? tipo,
+    int? grupoCaptura,
+    String? formatoFecha,
+    bool? esObligatorio,
+    int? orden,
+  }) {
+    return createExtractionField(
+      nombre: nombre,
+      regex: regex,
+      tipo: tipo,
+      grupoCaptura: grupoCaptura,
+      formatoFecha: formatoFecha,
+      esObligatorio: esObligatorio,
+      orden: orden,
+    ).toJson();
+  }
+
+  static ExtractionSchemaListItemModel createExtractionSchemaListItem({
+    String? id,
+    String? codigo,
+    String? nombre,
+    int? version,
+    bool? esActivo,
+    DateTime? createdAt,
+  }) {
+    final seq = nextSequence;
+    return ExtractionSchemaListItemModel(
+      id: id ?? 'sch-$seq',
+      codigo: codigo ?? 'ESQUEMA_$seq',
+      nombre: nombre ?? 'Esquema de Prueba $seq',
+      version: version ?? 1,
+      esActivo: esActivo ?? true,
+      createdAt: createdAt ?? DateTime.parse('2026-01-01T10:00:00Z'),
+    );
+  }
+
+  static Map<String, dynamic> createExtractionSchemaListItemJson({
+    String? id,
+    String? codigo,
+    String? nombre,
+    int? version,
+    bool? esActivo,
+    DateTime? createdAt,
+  }) {
+    return createExtractionSchemaListItem(
+      id: id,
+      codigo: codigo,
+      nombre: nombre,
+      version: version,
+      esActivo: esActivo,
+      createdAt: createdAt,
+    ).toJson();
+  }
+
+  static ExtractionSchemaModel createExtractionSchema({
+    String? id,
+    String? codigo,
+    String? nombre,
+    String? descripcion,
+    int? version,
+    bool? esActivo,
+    String? creadoPor,
+    DateTime? createdAt,
+    List<ExtractionFieldModel>? campos,
+  }) {
+    final seq = nextSequence;
+    return ExtractionSchemaModel(
+      id: id ?? 'sch-$seq',
+      codigo: codigo ?? 'ESQUEMA_$seq',
+      nombre: nombre ?? 'Esquema de Prueba $seq',
+      descripcion: descripcion ?? 'Descripción del esquema $seq',
+      version: version ?? 1,
+      esActivo: esActivo ?? true,
+      creadoPor: creadoPor ?? 'usr-admin-1',
+      createdAt: createdAt ?? DateTime.parse('2026-01-01T10:00:00Z'),
+      campos: campos ?? [createExtractionField(nombre: 'numero_poliza', regex: r'POL-(\d+)')],
+    );
+  }
+
+  static Map<String, dynamic> createExtractionSchemaJson({
+    String? id,
+    String? codigo,
+    String? nombre,
+    String? descripcion,
+    int? version,
+    bool? esActivo,
+    String? creadoPor,
+    DateTime? createdAt,
+    List<ExtractionFieldModel>? campos,
+  }) {
+    return createExtractionSchema(
+      id: id,
+      codigo: codigo,
+      nombre: nombre,
+      descripcion: descripcion,
+      version: version,
+      esActivo: esActivo,
+      creadoPor: creadoPor,
+      createdAt: createdAt,
+      campos: campos,
+    ).toJson();
+  }
+
+  static TestSchemaResultModel createTestSchemaResult({
+    String? metodo,
+    double? confianza,
+    Map<String, dynamic>? camposExtraidos,
+    String? textoCompleto,
+  }) {
+    return TestSchemaResultModel(
+      metodo: metodo ?? 'tesseract_200dpi',
+      confianza: confianza ?? 92.5,
+      camposExtraidos: camposExtraidos ?? {'numero_poliza': 'POL-12345'},
+      textoCompleto: textoCompleto ?? 'TEXTO OCR RECONOCIDO POL-12345',
+    );
+  }
+
+  static Map<String, dynamic> createTestSchemaResultJson({
+    String? metodo,
+    double? confianza,
+    Map<String, dynamic>? camposExtraidos,
+    String? textoCompleto,
+  }) {
+    return createTestSchemaResult(
+      metodo: metodo,
+      confianza: confianza,
+      camposExtraidos: camposExtraidos,
+      textoCompleto: textoCompleto,
+    ).toJson();
   }
 }
