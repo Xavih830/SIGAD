@@ -1,5 +1,4 @@
 /// Constantes globales de validación, límites y negocio para SIGAD.
-/// Erradica valores mágicos numéricos y configuraciones dispersas.
 abstract class AppConstants {
   // Autenticación y Seguridad
   static const int otpLength = 6;

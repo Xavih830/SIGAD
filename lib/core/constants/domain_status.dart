@@ -1,5 +1,4 @@
 /// Estados canónicos de dominio del sistema SIGAD.
-/// Erradica cadenas mágicas en la lógica de estados de OCR, pólizas y pagos.
 library;
 
 enum ExtractionStatus {

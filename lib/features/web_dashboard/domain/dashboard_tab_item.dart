@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:sigad/core/security/app_capability.dart';
 
 /// Modelo de definición de una pestaña del dashboard administrativo.
-/// Erradica el 'Scattering' entre el sidebar, el header y el contenedor de páginas.
 class DashboardTabItem {
   final String id;
   final String title;

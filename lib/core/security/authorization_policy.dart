@@ -2,8 +2,7 @@ import 'package:sigad/core/models/user_model.dart';
 import 'package:sigad/core/security/app_capability.dart';
 
 /// Fuente única canónica de autorización para el sistema SIGAD.
-/// Erradica el 'Scattering' de comprobaciones de roles ('if (user.role == ...)')
-/// centralizando la asignación de permisos según el modelo de capacidades (CBAC).
+/// Centraliza la asignación de permisos según el modelo de capacidades (CBAC).
 abstract class AuthorizationPolicy {
   static const Map<UserRole, Set<AppCapability>> _roleCapabilities = {
     UserRole.admin: {

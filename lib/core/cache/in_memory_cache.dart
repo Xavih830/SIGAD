@@ -1,5 +1,6 @@
 /// Gestor de caché en memoria genérico con TTL (Time-To-Live).
-/// Erradica el 'Tangling' de timestamps y lógica de expiración dentro de repositorios de datos.
+/// Encapsula la marca temporal de actualización y la política de caducidad
+/// de instancias de tipo [T].
 class InMemoryCache<T> {
   final Duration ttl;
   T? _data;

@@ -82,6 +82,8 @@ scratch/
 # ==============================================================================
 .agents/
 .gemini/
+.desloppify/
+scorecard.png
 plan/
 AGENTS.md
 

@@ -2,7 +2,6 @@ import 'dart:typed_data';
 import 'package:sigad/core/constants/app_constants.dart';
 
 /// Servicio de dominio para validación de seguridad de archivos pre-vuelo.
-/// Erradica el 'Tangling' de validación de bytes dentro de repositorios HTTP.
 abstract class FileSecurityValidator {
   /// Valida la integridad, tamaño y firmas binarias (Magic Bytes) de un archivo
   /// antes de iniciar el envío multipart a la red.

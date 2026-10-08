@@ -4,7 +4,6 @@ import 'package:sigad/core/security/app_capability.dart';
 import 'package:sigad/core/security/authorization_policy.dart';
 
 /// Guardia declarativa de interfaz de usuario basada en capacidades.
-/// Erradica el 'Tangling' de lógica de seguridad dentro de métodos build().
 ///
 /// Si el [user] tiene la [capability], renderiza [child].
 /// De lo contrario, renderiza [fallback] (por defecto un widget invisible).

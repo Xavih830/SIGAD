@@ -1,6 +1,5 @@
 /// Capacidades granulares de autorización en SIGAD (Capability-Based Access Control).
-/// Erradica el anti-patrón de 'Role Checking' disperso con 'if (user.role == ...)'
-/// permitiendo verificar permisos específicos por acción o vista.
+/// Permite verificar permisos específicos por acción o vista de forma declarativa.
 enum AppCapability {
   viewPolicies,
   createPolicy,
