@@ -29,17 +29,14 @@ def validar_cedula_ecuatoriana(cedula: str) -> bool:
     if len(clean_id) != 10 or not clean_id.isdigit():
         return False
 
-    # 1. Validar provincia
     provincia = int(clean_id[0:2])
     if (provincia < 1 or provincia > 24) and provincia != 30:
         return False
 
-    # 2. Validar persona natural (tercer dígito 0 a 5)
     tercer_digito = int(clean_id[2])
     if tercer_digito < 0 or tercer_digito > 5:
         return False
 
-    # 3. Módulo 10 con coeficientes alternados
     coeficientes = [2, 1, 2, 1, 2, 1, 2, 1, 2]
     suma = 0
     for i in range(9):

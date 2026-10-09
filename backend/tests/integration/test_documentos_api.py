@@ -1,11 +1,4 @@
-"""Integration tests for Documentos API: Anti-IDOR security controls and upload validation.
-
-Verification Gate:
-  1. test_idor_documentos: Strict prevention of horizontal privilege escalation (Anti-IDOR).
-  2. test_subida_documento_tamano_excedido_413: HTTP 413 for payloads > 15MB.
-  3. test_subida_documento_maximo_paginas_400: HTTP 400 for PDFs > 10 pages.
-  4. test_subida_y_consulta_documento: Valid creation and status query.
-"""
+"""Pruebas de integración para API de documentos y controles de seguridad."""
 
 import io
 import os
@@ -41,7 +34,6 @@ async def test_idor_documentos(base_scenario: ScenarioBundle, db_session):
     token_b = base_scenario.token_b
     poliza_a = base_scenario.poliza_a
 
-    # 1. Crear archivo físico temporal y registro de documento asociado a poliza_a
     from app.services.storage_service import storage_service
     pdf_content = _generar_pdf_bytes(1)
     ruta_fisica, sha_hash, tamano, _ = storage_service.save_file(
@@ -73,24 +65,20 @@ async def test_idor_documentos(base_scenario: ScenarioBundle, db_session):
     )
     await db_session.commit()
 
-    # 2. Intento de descarga por CLIENTE B (No autorizado -> Debe retornar 404 Not Found anti-IDOR o 403)
     async with make_client(token_b) as client_b:
         res_b = await client_b.get(f"/api/v1/documentos/{doc_id}/descargar")
         assert res_b.status_code in (403, 404), f"Se esperaba 403 o 404 pero se obtuvo {res_b.status_code}: {res_b.text}"
 
-    # 3. Descarga por CLIENTE A (Dueño legítimo de poliza_a -> HTTP 200)
     async with make_client(token_a) as client_a:
         res_a = await client_a.get(f"/api/v1/documentos/{doc_id}/descargar")
         assert res_a.status_code == 200
         assert len(res_a.content) == tamano
 
-    # 4. Descarga por ADMIN (Acceso global -> HTTP 200)
     async with make_client(admin_token) as client_admin:
         res_admin = await client_admin.get(f"/api/v1/documentos/{doc_id}/descargar")
         assert res_admin.status_code == 200
         assert len(res_admin.content) == tamano
 
-    # 5. Descarga anónima sin token -> HTTP 401 o 403 No autorizado
     async with make_client(None) as client_anon:
         res_anon = await client_anon.get(f"/api/v1/documentos/{doc_id}/descargar")
         assert res_anon.status_code in (401, 403)
@@ -100,7 +88,6 @@ async def test_idor_documentos(base_scenario: ScenarioBundle, db_session):
 async def test_subida_documento_tamano_excedido_413(base_scenario: ScenarioBundle):
     """Archivos mayores a 15 MB deben ser rechazados con HTTP 413 Payload Too Large."""
     admin_token = base_scenario.admin_token
-    # 15.5 MB payload
     contenido_gigante = b"X" * (15 * 1024 * 1024 + 500 * 1024)
 
     async with make_client(admin_token) as client:
@@ -142,14 +129,13 @@ async def test_subida_y_consulta_documento_valido(base_scenario: ScenarioBundle)
         assert doc_data["paginas"] == 2
         doc_id = doc_data["id"]
 
-        # Consultar documento por ID
         res_get = await client.get(f"/api/v1/documentos/{doc_id}")
         assert res_get.status_code == 200
         assert res_get.json()["estado_extraccion"] == "pendiente"
 
 
 async def test_revisar_campos_documento_exitoso(base_scenario: ScenarioBundle, db_session):
-    """Admin o Agente puede revisar y corregir campos extraídos OCR (HU-06)."""
+    """Admin o Agente puede revisar y corregir campos extraídos OCR."""
     admin_token = base_scenario.admin_token
     doc_id = uuid.uuid4()
     res_id = uuid.uuid4()
@@ -182,7 +168,6 @@ async def test_revisar_campos_documento_exitoso(base_scenario: ScenarioBundle, d
     )
     await db_session.commit()
 
-    # 1. Ejecutar PATCH /revision con nuevos campos corregidos
     async with make_client(admin_token) as client:
         payload = revision_documento_payload()
         res = await client.patch(f"/api/v1/documentos/{doc_id}/revision", json=payload)
@@ -193,7 +178,6 @@ async def test_revisar_campos_documento_exitoso(base_scenario: ScenarioBundle, d
         assert data["campos_extraidos"]["placa"] == DEFAULT_CAMPOS_EXTRAIDOS["placa"]
         assert data["campos_extraidos"]["valor_asegurado"] == DEFAULT_CAMPOS_EXTRAIDOS["valor_asegurado"]
 
-        # 2. Consultar GET /documentos/{id} para confirmar persistencia en BD
         res_get = await client.get(f"/api/v1/documentos/{doc_id}")
         assert res_get.status_code == 200
         get_data = res_get.json()
@@ -306,7 +290,6 @@ async def test_subida_imagen_dimensiones_excedidas_400(base_scenario: ScenarioBu
     from PIL import Image
     admin_token = base_scenario.admin_token
 
-    # Generar imagen sintética de 5000 x 50 px en memoria
     img = Image.new("RGB", (5000, 50), color="white")
     buf = io.BytesIO()
     img.save(buf, format="PNG")

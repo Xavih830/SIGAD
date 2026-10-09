@@ -44,17 +44,7 @@ class ScenarioBundle:
 
 
 async def create_base_scenario(session: AsyncSession) -> ScenarioBundle:
-    """Create a complete, fully linked, valid test scenario on demand.
-    
-    Creates:
-    1. Admin user with access token.
-    2. Broker user with access token.
-    3. Cliente A (with valid Módulo 10 Cédula, linked user account, ANT vehicle, and active policy).
-    4. Cliente B (distinct tenant, with valid Cédula, linked user, ANT vehicle, and active policy).
-    
-    Executed within the caller's AsyncSession (typically with Savepoint isolation).
-    """
-    # 1. Admin
+    """Crea un escenario de prueba completo y vinculado."""
     admin_user = await create_user(
         session,
         email="admin@test.sigad.ec",
@@ -63,7 +53,6 @@ async def create_base_scenario(session: AsyncSession) -> ScenarioBundle:
     )
     admin_token = create_access_token({"sub": str(admin_user.id)})
 
-    # 2. Broker
     broker_user = await create_user(
         session,
         email="broker@test.sigad.ec",
@@ -72,7 +61,6 @@ async def create_base_scenario(session: AsyncSession) -> ScenarioBundle:
     )
     broker_token = create_access_token({"sub": str(broker_user.id)})
 
-    # 3. Cliente A (Guayas - 0926687856)
     user_a = await create_user(
         session,
         email="cliente.a@test.sigad.ec",
@@ -104,7 +92,6 @@ async def create_base_scenario(session: AsyncSession) -> ScenarioBundle:
     )
     token_a = create_access_token({"sub": str(user_a.id)})
 
-    # 4. Cliente B (Pichincha - 1710034065)
     user_b = await create_user(
         session,
         email="cliente.b@test.sigad.ec",

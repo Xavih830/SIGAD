@@ -41,10 +41,8 @@ load_dotenv(_CANONICAL_ROOT_ENV)
 
 TEST_DATABASE_URL = os.environ["TEST_DATABASE_URL"]
 
-# Conectar smtp_service de pruebas al host local de Mailpit
 smtp_service.smtp_host = TEST_MAILPIT_HOST
 
-# Engine configured with NullPool to prevent connection reuse and event-loop leakage
 test_engine = create_async_engine(
     TEST_DATABASE_URL,
     poolclass=NullPool,
@@ -87,9 +85,6 @@ async def base_scenario(db_session: AsyncSession) -> ScenarioBundle:
 
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Factory-as-Fixture Helpers (Eliminates test data scattering)
-# ─────────────────────────────────────────────────────────────────────────────
 
 @pytest.fixture
 def user_factory(db_session: AsyncSession) -> Callable:

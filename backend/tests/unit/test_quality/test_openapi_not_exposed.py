@@ -22,15 +22,12 @@ async def test_openapi_and_swagger_blocked_in_production(monkeypatch):
     transport = ASGITransport(app=prod_app)
 
     async with AsyncClient(transport=transport, base_url="http://testserver") as client:
-        # 1. /docs must return 404
         resp_docs = await client.get("/docs")
         assert resp_docs.status_code == 404, f"Expected 404 for /docs in production, got {resp_docs.status_code}"
 
-        # 2. /redoc must return 404
         resp_redoc = await client.get("/redoc")
         assert resp_redoc.status_code == 404, f"Expected 404 for /redoc in production, got {resp_redoc.status_code}"
 
-        # 3. /openapi.json must return 404
         resp_openapi = await client.get("/openapi.json")
         assert resp_openapi.status_code == 404, f"Expected 404 for /openapi.json in production, got {resp_openapi.status_code}"
 

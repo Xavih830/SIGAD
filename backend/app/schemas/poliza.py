@@ -54,10 +54,7 @@ class PolizaCreate(StrictBaseSchema):
 
     @model_validator(mode="after")
     def validar_fechas_y_vigencia(self) -> "PolizaCreate":
-        # 1. Coherencia cronológica (Nodo 4: FechaInvalidaException si fin <= inicio)
         validar_y_calcular_estado_inicial(self.fecha_inicio, self.fecha_fin, date.today())
-        
-        # 2. Límite máximo de 5 años (Sección 11.3 -> 422 VigenciaExcedidaException)
         validar_limite_vigencia_maxima(self.fecha_inicio, self.fecha_fin)
         return self
 

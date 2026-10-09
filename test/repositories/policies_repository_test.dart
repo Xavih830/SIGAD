@@ -9,7 +9,7 @@ import '../helpers/test_factories.dart';
 import '../helpers/test_fixtures.dart';
 
 void main() {
-  group('PoliciesRepository Unit Tests (Zero Shotgun Surgery)', () {
+  group('PoliciesRepository Unit Tests', () {
     final mockPolicy = TestFixtures.activePolicy;
     final mockPolicyJson = TestFixtures.activePolicyJson;
     final mockVehicle = TestFixtures.standardVehicle;
@@ -79,7 +79,7 @@ void main() {
       );
     });
 
-    test('getPolicy propaga ApiForbiddenException ante HTTP 403 (Anti-BOLA)', () async {
+    test('getPolicy propaga ApiForbiddenException ante HTTP 403', () async {
       final mockHttpClient = MockClient((request) async {
         return http.Response(
           TestFixtures.errorDetailBody('Acceso no autorizado a póliza ajena.'),

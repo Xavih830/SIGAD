@@ -1,8 +1,4 @@
-"""TEST: Client Generation & Dart Model Contract Drift Detection.
-
-Verifies that Flutter client models in `lib/core/models/` remain strictly
-synchronized with the backend OpenAPI schema definitions.
-"""
+"""Validación de alineación de modelos de cliente Dart con el contrato OpenAPI."""
 
 import json
 from pathlib import Path
@@ -25,7 +21,6 @@ def test_dart_models_align_with_openapi_schemas():
 
     schemas = schema.get("components", {}).get("schemas", {})
 
-    # ── 1. Check Vehiculo contract alignment ──
     assert "VehiculoResponse" in schemas
     vehiculo_props = set(schemas["VehiculoResponse"].get("properties", {}).keys())
     assert {"placa", "marca", "modelo", "anio"}.issubset(vehiculo_props)
@@ -36,7 +31,6 @@ def test_dart_models_align_with_openapi_schemas():
             f"vehicle_model.dart does not deserialize OpenAPI field '{field}'"
         )
 
-    # ── 2. Check Poliza contract alignment ──
     assert "PolizaResponse" in schemas
     poliza_props = set(schemas["PolizaResponse"].get("properties", {}).keys())
     assert {"numero_poliza", "estado", "fecha_inicio", "fecha_fin", "prima_mensual", "valor_asegurado"}.issubset(
@@ -49,7 +43,6 @@ def test_dart_models_align_with_openapi_schemas():
             f"policy_model.dart does not reference OpenAPI field '{field}'"
         )
 
-    # ── 3. Check Auth schemas alignment ──
     assert "LoginRequest" in schemas
     assert "TokenResponse" in schemas
     token_props = set(schemas["TokenResponse"].get("properties", {}).keys())

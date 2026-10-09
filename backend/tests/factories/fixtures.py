@@ -1,8 +1,5 @@
-"""Canonical test fixtures and mock entity builders for the backend test suite.
+"""Fixtures canónicas y generadores de entidades mock para pruebas."""
 
-Centralizes mock actors, credentials, and domain entity mocks to eliminate
-boilerplate and manual attribute assignment in unit tests.
-"""
 
 from unittest.mock import MagicMock
 import uuid
@@ -18,7 +15,6 @@ from app.models.cliente import Cliente
 from app.models.poliza import Poliza
 from app.models.usuario import RolEnum, Usuario
 
-# ── Canonical Constants ───────────────────────────────────────────────────────
 ADMIN_EMAIL = "admin@sigad.ec"
 ADMIN_PASSWORD = "Admin#SIGAD24"
 ADMIN_NAME = "Administrador del Sistema"
@@ -34,7 +30,6 @@ CLIENTE_PASSWORD = "PasswordSeguro2026*"
 
 DEFAULT_OTP = "123456"
 
-# ── Infraestructura de Pruebas ────────────────────────────────────────────────
 TEST_MAILPIT_HOST = "localhost"
 TEST_MAILPIT_HTTP_PORT = 8025
 
@@ -48,7 +43,6 @@ DEFAULT_CAMPOS_EXTRAIDOS = {
     "kilometraje": OCR_DEFAULT_KILOMETRAJE,
 }
 
-# ── Catálogos Globales ────────────────────────────────────────────────────────
 TALLER_NOMBRE = "Taller Central Guayaquil"
 TALLER_CIUDAD = "Guayaquil"
 TALLER_DIRECCION = "Av. Juan Tanca Marengo Km 4.5"
@@ -59,8 +53,6 @@ ASISTENCIA_DESCRIPCION = "Remolque y asistencia mecánica ligera en todo el paí
 ASISTENCIA_TELEFONO = "1800-ASISTE"
 ASISTENCIA_ICONO = "tow-truck"
 
-# ── Esquemas de Extracción Canónicos (3 Tipos de Póliza Diferentes) ───────────
-# 1. Esquema Vehicular
 ESQUEMA_CODIGO_VEHICULAR = "EQUINOCCIAL_VEHICULAR"
 ESQUEMA_NOMBRE_VEHICULAR = "Póliza Vehicular Equinoccial"
 ESQUEMA_DESCRIPCION_VEHICULAR = "Esquema para pólizas vehiculares de Seguros Equinoccial"
@@ -112,7 +104,6 @@ CAMPOS_ESQUEMA_VEHICULAR = [
     },
 ]
 
-# 2. Esquema Vida Colectiva
 ESQUEMA_CODIGO_VIDA = "CHUBB_VIDA_COLECTIVA"
 ESQUEMA_NOMBRE_VIDA = "Póliza Colectiva de Vida Chubb"
 ESQUEMA_DESCRIPCION_VIDA = "Extracción de certificados de vida y accidentes personales"
@@ -164,7 +155,6 @@ CAMPOS_ESQUEMA_VIDA = [
     },
 ]
 
-# 3. Esquema Hogar / Estructura
 ESQUEMA_CODIGO_HOGAR = "MAPFRE_HOGAR_ESTRUCTURA"
 ESQUEMA_NOMBRE_HOGAR = "Seguro Multirriesgo Hogar Mapfre"
 ESQUEMA_DESCRIPCION_HOGAR = "Extracción de contratos de cobertura de incendios y terremotos"
@@ -208,7 +198,6 @@ CAMPOS_ESQUEMA_HOGAR = [
     },
 ]
 
-# Textos OCR canónicos de prueba correspondientes a cada esquema
 TEXTO_OCR_VEHICULAR = (
     "COMPAÑIA DE SEGUROS EQUINOCCIAL S.A.\n"
     "EMISION: 2026-03-15\n"
@@ -237,7 +226,6 @@ TEXTO_OCR_HOGAR = (
     "POLIZA DE HOGAR VIGENTE"
 )
 
-# Aliases retrocompatibles para default
 ESQUEMA_CODIGO_CANONICO = ESQUEMA_CODIGO_VEHICULAR
 ESQUEMA_NOMBRE_CANONICO = ESQUEMA_NOMBRE_VEHICULAR
 ESQUEMA_DESCRIPCION_CANONICA = ESQUEMA_DESCRIPCION_VEHICULAR
@@ -248,7 +236,6 @@ CAMPO_PLACA_NOMBRE = "placa"
 CAMPO_CHASIS_NOMBRE = "chasis"
 
 
-# ── Validation Messages & Error Strings ───────────────────────────────────────
 MSG_PASSWORD_MIN_LENGTH = "al menos 12 caracteres"
 MSG_PASSWORD_REQUIRES_UPPER = "letra mayúscula"
 MSG_PASSWORD_REQUIRES_LOWER = "letra minúscula"

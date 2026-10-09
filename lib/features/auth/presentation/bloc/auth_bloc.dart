@@ -64,7 +64,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         final token = data['access_token'] as String;
         final userMap = data['user'] as Map<String, dynamic>;
 
-        // Enriquecer el mapa con tokens para que UserModel.fromJson los tome
         final enriched = {
           ...userMap,
           'access_token': token,

@@ -37,7 +37,6 @@ async def ejecutar_transiciones_polizas(
     limite_por_vencer = hoy + timedelta(days=30)
     resultados = {"activadas": 0, "por_vencer": 0, "vencidas": 0}
 
-    # 1. pendiente -> activa
     q_activar = (
         select(Poliza)
         .where(
@@ -53,7 +52,6 @@ async def ejecutar_transiciones_polizas(
         poliza.estado = EstadoPoliza.ACTIVA
         resultados["activadas"] += 1
 
-    # 2. activa -> por_vencer
     q_por_vencer = (
         select(Poliza)
         .where(
@@ -69,7 +67,6 @@ async def ejecutar_transiciones_polizas(
         poliza.estado = EstadoPoliza.POR_VENCER
         resultados["por_vencer"] += 1
 
-    # 3. activa o por_vencer -> vencida
     q_vencer = (
         select(Poliza)
         .where(

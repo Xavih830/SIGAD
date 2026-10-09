@@ -1,7 +1,3 @@
-/// Modelo canónico fuertemente tipado para Documentos y Extracción OCR en SIGAD.
-/// 
-/// Contrato OpenAPI estricto: id, poliza_id, nombre_archivo, tipo_mime,
-/// tamano_bytes, estado_extraccion, created_at, campos_extraidos.
 class DocumentModel {
   final String id;
   final String? polizaId;

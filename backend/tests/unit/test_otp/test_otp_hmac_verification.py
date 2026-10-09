@@ -1,4 +1,4 @@
-"""TEST 18: Verificación de OTP vía HMAC-SHA256 con soporte para clave actual y anterior."""
+"""Verificación de OTP vía HMAC-SHA256 con soporte para clave actual y anterior."""
 
 from app.core.config import settings
 from app.core.security import compute_otp_hmac, verify_otp_hmac
@@ -9,7 +9,6 @@ def test_otp_hmac_verification_with_actual_key():
     codigo = "849201"
     hmac_actual = compute_otp_hmac(codigo, settings.OTP_SECRET_KEY_ACTUAL)
 
-    # Must verify as True
     assert verify_otp_hmac(codigo, hmac_actual) is True
 
 
@@ -18,7 +17,6 @@ def test_otp_hmac_verification_with_anterior_key():
     codigo = "392018"
     hmac_anterior = compute_otp_hmac(codigo, settings.OTP_SECRET_KEY_ANTERIOR)
 
-    # Must verify as True (rotation grace window)
     assert verify_otp_hmac(codigo, hmac_anterior) is True
 
 

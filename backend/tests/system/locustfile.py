@@ -1,18 +1,4 @@
-"""Locust stochastic load test file for Nelson Reliability Model verification.
-
-Operational Profile:
-- 35%: Consulta de pólizas y detalle (GET /api/v1/polizas, GET /api/v1/polizas/{id})
-- 25%: Login polimórfico (POST /api/v1/auth/login)
-- 20%: Búsqueda de vehículos y validación de placas (GET /api/v1/vehiculos)
-- 10%: Consulta de talleres mecánicos afiliados (GET /api/v1/talleres)
-- 10%: Descarga segura de documentos adjuntos (GET /api/v1/documentos/{id}/descargar)
-
-Nelson Reliability Model (SOFG1008):
-- R = 1 - (f / n)
-- n: Total transactions executed
-- f: Total fatal technical failures (HTTP 5xx, connection timeouts, socket errors)
-- Objective: R >= 0.995 (99.50% reliability under concurrency).
-"""
+"""Pruebas de carga estocástica con Locust y modelo de confiabilidad de Nelson."""
 
 import json
 import logging
@@ -37,7 +23,6 @@ class SIGADOperationalUser(HttpUser):
 
     def on_start(self):
         """Seed initial token or perform polymorphic login with canonical schema."""
-        # Simulated agent, admin or client credentials using exact API schema
         creds = random.choice([
             {"identificador": "admin@sigad.ec", "password": "PasswordSeguro2026*"},
             {"identificador": "agente@sigad.ec", "password": "PasswordSeguro2026*"},
@@ -51,7 +36,6 @@ class SIGADOperationalUser(HttpUser):
                 self.token = data.get("access_token", "")
                 resp.success()
             elif resp.status_code in [401, 403, 404, 422, 429]:
-                # Business exception: handled correctly by security layers
                 resp.success()
             else:
                 resp.failure(f"Fatal HTTP failure on login: {resp.status_code}")

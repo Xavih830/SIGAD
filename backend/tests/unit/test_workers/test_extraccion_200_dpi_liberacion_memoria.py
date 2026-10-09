@@ -1,4 +1,4 @@
-"""Test 7: Liberación explícita de búferes de página con Tesseract a 200 DPI sin fugas."""
+"""Liberación explícita de búferes de página con Tesseract a 200 DPI sin fugas."""
 
 import gc
 import os
@@ -38,23 +38,18 @@ def test_extraccion_200_dpi_liberacion_memoria():
 
         with patch("pytesseract.image_to_string", return_value="PLACA: PBM-5678 TOYOTA COROLLA"):
             with patch("gc.collect", side_effect=mock_gc_collect):
-                # Medir memoria antes
                 gc.collect()
                 snapshot1 = tracemalloc.take_snapshot()
 
                 resultado = _extraer_compuerta_2_tesseract_200dpi(pdf_path)
 
-                # Medir memoria después
                 snapshot2 = tracemalloc.take_snapshot()
 
-        # Debe haber procesado las 4 páginas y llamado a gc.collect() al menos una vez por página
         assert gc_collect_calls >= 4, f"Se esperaban al menos 4 llamadas a gc.collect(), pero hubo {gc_collect_calls}"
         assert "PLACA: PBM-5678" in resultado
 
-        # Comprobar que no hay fuga acumulativa de memoria
         top_stats = snapshot2.compare_to(snapshot1, "lineno")
         total_diff_kb = sum(stat.size_diff for stat in top_stats) / 1024.0
-        # La diferencia residual debe ser mínima (< 15 MB) tras liberar los búferes
         assert total_diff_kb < 15360, f"Posible fuga de memoria detectada: {total_diff_kb} KB retenidos"
 
     finally:
@@ -74,7 +69,6 @@ def test_extraer_documento_sync_con_esquemas_personalizados():
             TEXTO_OCR_VIDA,
         )
 
-        # 1. Extracción con esquema vehicular
         with patch("app.services.extraccion_service._extraer_compuerta_1_pdfplumber", return_value=TEXTO_OCR_VEHICULAR):
             res_veh = extraer_documento_sync(pdf_path, campos_esquema=CAMPOS_ESQUEMA_VEHICULAR)
             assert res_veh["metodo"] == "pdfplumber"
@@ -82,7 +76,6 @@ def test_extraer_documento_sync_con_esquemas_personalizados():
             assert res_veh["campos_extraidos"]["numero_poliza"] == "POL-2026-004521"
             assert res_veh["confianza"] == 100.0
 
-        # 2. Extracción con esquema de vida colectiva
         with patch("app.services.extraccion_service._extraer_compuerta_1_pdfplumber", return_value=TEXTO_OCR_VIDA):
             res_vida = extraer_documento_sync(pdf_path, campos_esquema=CAMPOS_ESQUEMA_VIDA)
             assert res_vida["campos_extraidos"]["numero_certificado"] == "849201"

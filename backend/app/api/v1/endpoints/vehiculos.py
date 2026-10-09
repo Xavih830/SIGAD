@@ -1,4 +1,4 @@
-"""Vehiculos REST endpoints with SQL-level Anti-BOLA guards."""
+"""Endpoints REST para administración de vehículos asociados a pólizas."""
 
 import uuid
 from typing import Sequence
@@ -24,12 +24,8 @@ async def crear_vehiculo(
     current_user: Usuario = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> Vehiculo:
-    """Registrar un nuevo vehículo con validación de placa ANT.
-    
-    Anti-BOLA: Clientes solo pueden registrar vehículos asociados a su propia ficha de cliente.
-    """
+    """Registrar un nuevo vehículo con validación de placa ANT."""
     if current_user.rol == RolEnum.CLIENTE:
-        # Validar que el cliente_id pertenezca al usuario autenticado
         cliente_res = await db.execute(
             select(Cliente).where(Cliente.id == payload.cliente_id, Cliente.usuario_id == current_user.id)
         )
@@ -39,7 +35,6 @@ async def crear_vehiculo(
                 detail="No está autorizado para registrar un vehículo para este cliente.",
             )
     else:
-        # Validar que el cliente exista en la base de datos
         cliente_res = await db.execute(select(Cliente).where(Cliente.id == payload.cliente_id))
         if not cliente_res.scalar_one_or_none():
             raise HTTPException(
@@ -47,7 +42,6 @@ async def crear_vehiculo(
                 detail=f"Cliente con ID {payload.cliente_id} no existe.",
             )
 
-    # Verificar unicidad de placa
     existe = await db.execute(select(Vehiculo).where(Vehiculo.placa == payload.placa))
     if existe.scalar_one_or_none():
         raise HTTPException(
@@ -80,7 +74,7 @@ async def listar_vehiculos(
     current_user: Usuario = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> Sequence[Vehiculo]:
-    """Listar vehículos con paginación y protección Anti-BOLA estricta."""
+    """Listar vehículos con paginación."""
     stmt = select(Vehiculo)
     if current_user.rol == RolEnum.CLIENTE:
         stmt = stmt.join(Cliente, Vehiculo.cliente_id == Cliente.id).where(
@@ -98,7 +92,7 @@ async def obtener_vehiculo(
     current_user: Usuario = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> Vehiculo:
-    """Obtener detalle de vehículo por ID con protección Anti-BOLA."""
+    """Obtener detalle de vehículo por ID."""
     stmt = select(Vehiculo).where(Vehiculo.id == id)
     if current_user.rol == RolEnum.CLIENTE:
         stmt = stmt.join(Cliente, Vehiculo.cliente_id == Cliente.id).where(

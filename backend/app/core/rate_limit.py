@@ -61,31 +61,26 @@ class RateLimiter:
         self.MAX_CACHE_SIZE = maxsize
         self.cache: LRUCache = LRUCache(maxsize=maxsize)
 
-        # Layer 1: IP limits (max_requests, window_seconds)
         self.ip_limits: Dict[str, Tuple[int, int]] = {
             "login": (RATE_LIMIT_LOGIN_MAX_REQUESTS, RATE_LIMIT_LOGIN_WINDOW_SECONDS),
             "vinculacion": (RATE_LIMIT_VINCULACION_MAX_REQUESTS, RATE_LIMIT_VINCULACION_WINDOW_SECONDS),
             "catalogo": (RATE_LIMIT_CATALOGO_MAX_REQUESTS, RATE_LIMIT_CATALOGO_WINDOW_SECONDS),
         }
 
-        # Layer 2: Identity limits (max_requests, window_seconds)
         self.identity_limits: Dict[str, Tuple[int, int]] = {
             "login": (RATE_LIMIT_LOGIN_MAX_REQUESTS, RATE_LIMIT_LOGIN_WINDOW_SECONDS),
             "vinculacion": (RATE_LIMIT_VINCULACION_MAX_REQUESTS, RATE_LIMIT_VINCULACION_IDENTITY_WINDOW_SECONDS),
         }
 
-        # Layer 3: Tarpitting thresholds
         self.tarpit_burst_threshold: int = RATE_LIMIT_TARPIT_BURST_THRESHOLD
         self.tarpit_burst_window: float = RATE_LIMIT_TARPIT_BURST_WINDOW_SECONDS
         self.tarpit_base_delay: float = RATE_LIMIT_TARPIT_BASE_DELAY_SECONDS
         self.tarpit_max_delay: float = RATE_LIMIT_TARPIT_MAX_DELAY_SECONDS
 
-        # Layer 4: Account lockout
         self.lockout_threshold: int = RATE_LIMIT_LOCKOUT_MAX_FAILS
         self.lockout_window: int = RATE_LIMIT_LOCKOUT_WINDOW_SECONDS
         self.lockout_duration: int = RATE_LIMIT_LOCKOUT_DURATION_SECONDS
 
-    # ── Internal Cache Access ────────────────────────────────────────
 
     def _get_history(self, key: str) -> List[float]:
         """Retrieve timestamp list from LRU cache, filtering out older records."""
@@ -96,7 +91,6 @@ class RateLimiter:
         history.append(timestamp)
         self.cache[key] = history
 
-    # ── Layer 1: IP Limiting ─────────────────────────────────────────
 
     def check_ip(self, ip: str, endpoint: str = "login", now: Optional[float] = None) -> None:
         """Check Layer 1 IP rate limit. Raises KeyError si el endpoint no tiene política registrada."""
@@ -128,7 +122,6 @@ class RateLimiter:
         cache_key = f"ip:{endpoint_key}:{ip}"
         self._append_history(cache_key, now)
 
-    # ── Layer 2: Identity Limiting ───────────────────────────────────
 
     def check_identity(self, identity: str, endpoint: str = "login", now: Optional[float] = None) -> None:
         """Check Layer 2 Identity rate limit (cédula or email). Raises KeyError si el endpoint no tiene política registrada."""
@@ -160,14 +153,12 @@ class RateLimiter:
         cache_key = f"id:{endpoint_key}:{clean_id}"
         self._append_history(cache_key, now)
 
-    # ── Layer 3: Selective Tarpitting ────────────────────────────────
 
     def calculate_tarpit_delay(self, ip: str, now: Optional[float] = None) -> float:
         """Calculate progressive async delay for bursty IPs without globally blocking."""
         if not ip:
             return 0.0
         now = now if now is not None else time.time()
-        # Track attempts in the burst window for burst detection
         burst_key = f"burst:{ip}"
         history = [t for t in self._get_history(burst_key) if t > now - self.tarpit_burst_window]
 
@@ -191,7 +182,6 @@ class RateLimiter:
             await asyncio.sleep(delay)
         return delay
 
-    # ── Layer 4: Account Lockout ─────────────────────────────────────
 
     def is_account_locked(self, identity: str, now: Optional[float] = None) -> bool:
         """Check if an account is currently in locked state."""
@@ -218,7 +208,6 @@ class RateLimiter:
         self.cache[fail_key] = history
 
         if len(history) >= self.lockout_threshold:
-            # Lock account for lockout_duration (30 minutes)
             self.cache[f"lockout:{clean_id}"] = now + self.lockout_duration
 
     def record_success(self, identity: str, ip: Optional[str] = None) -> None:
@@ -229,7 +218,6 @@ class RateLimiter:
         self.cache.pop(f"failures:{clean_id}", None)
         self.cache.pop(f"lockout:{clean_id}", None)
 
-    # ── Consolidated 4-Layer Check ───────────────────────────────────
 
     async def check_all(
         self,
@@ -250,23 +238,18 @@ class RateLimiter:
 
         now = now if now is not None else time.time()
 
-        # Layer 4: Account Lockout
         if identity and self.is_account_locked(identity, now=now):
             raise AccountLockedOut()
 
-        # Layer 2: By Identity
         if identity:
             self.check_identity(identity, endpoint=endpoint, now=now)
 
-        # Layer 1: By IP
         if ip:
             self.check_ip(ip, endpoint=endpoint, now=now)
 
-        # Layer 3: Tarpitting
         if ip:
             await self.apply_tarpitting(ip, now=now)
 
-        # Record this attempt
         if ip:
             self.record_ip(ip, endpoint=endpoint, now=now)
         if identity:
@@ -277,5 +260,4 @@ class RateLimiter:
         self.cache.clear()
 
 
-# Global Singleton instance
 rate_limiter = RateLimiter(maxsize=RATE_LIMIT_LRU_MAXSIZE)

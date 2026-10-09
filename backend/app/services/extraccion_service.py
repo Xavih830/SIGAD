@@ -3,7 +3,6 @@
 import logging
 from decimal import Decimal
 import gc
-import os
 from pathlib import Path
 import re
 from typing import Any
@@ -66,7 +65,7 @@ def _extraer_compuerta_2_tesseract_200dpi(file_path: str) -> str:
     elif ext == ".pdf":
         pdf = pdfium.PdfDocument(file_path)
         total_pages = min(len(pdf), MAX_PDF_PAGES_PERMITTED)
-        scale = float(TESSERACT_STANDARD_DPI) / 72.0  # Exact 200 DPI scale factor (PDF base is 72 pt)
+        scale = float(TESSERACT_STANDARD_DPI) / 72.0
 
         for page_idx in range(total_pages):
             page = pdf[page_idx]
@@ -93,7 +92,6 @@ def _extraer_compuerta_2_tesseract_200dpi(file_path: str) -> str:
                     )
                     full_text.append("")
             finally:
-                # Liberación explícita e inmediata de búferes de imagen y llamada a recolector
                 del image_buffer
                 del page
                 gc.collect()
@@ -122,7 +120,6 @@ def extraer_documento_sync(
     ext = Path(file_path).suffix.lower()
     reglas = campos_esquema or []
 
-    # Compuerta 1: Solo aplica para PDFs
     if ext == ".pdf":
         texto_digital = _extraer_compuerta_1_pdfplumber(file_path)
         if len(texto_digital.strip()) > GATE1_TEXT_LENGTH_THRESHOLD:
@@ -134,7 +131,6 @@ def extraer_documento_sync(
                 "campos_extraidos": campos,
             }
 
-    # Compuerta 2: Documentos escaneados, imágenes o PDFs sin texto embebido
     texto_ocr = _extraer_compuerta_2_tesseract_200dpi(file_path)
     campos, confianza = aplicar_esquema(texto_ocr, reglas)
     return {
@@ -179,10 +175,6 @@ def evaluar_decision_extraccion(
 def aplicar_esquema(texto: str, campos: list[dict]) -> tuple[dict, float]:
     """Aplica las reglas JSONB de un EsquemaExtraccion al texto OCR extraído.
 
-    Reemplaza extraer_campos_regex() para esquemas configurados en BD.
-    Las compuertas OCR (_extraer_compuerta_1_pdfplumber, _extraer_compuerta_2_tesseract_200dpi)
-    NO se modifican.
-
     Args:
         texto: Texto plano devuelto por extraer_documento_sync().
         campos: Lista de dicts del campo JSONB del modelo EsquemaExtraccion.
@@ -200,8 +192,8 @@ def aplicar_esquema(texto: str, campos: list[dict]) -> tuple[dict, float]:
     aciertos = 0
 
     for regla in sorted(campos, key=lambda r: int(r.get("orden", 0))):
-        nombre = regla["nombre"]  # Fail-Fast: KeyError si BD está corrompida
-        patron = regla["regex"]  # Fail-Fast: KeyError si BD está corrompida
+        nombre = regla["nombre"]
+        patron = regla["regex"]
         grupo = int(regla.get("grupo_captura", 1))
 
         match = re.search(patron, texto, re.IGNORECASE)

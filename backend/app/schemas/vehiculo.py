@@ -8,15 +8,11 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.schemas.base import StrictBaseSchema
 
-# ANT Ecuador License Plate Formats (Section 11.2):
-# 1. Particular & Público: 3 Letters + 4 Digits (e.g. PBA-1234, PTA-1234)
-# 2. Moto antigua / estándar: 2 Letters + 4 Digits (e.g. AB-1234)
-# 3. Moto alfanumérica ANT actual: 2 Letters + 3 Digits + 1 Letter (e.g. AB-123C)
 ANT_PLATE_REGEX = re.compile(r"^(?:[A-Z]{3}-\d{4}|[A-Z]{2}-\d{4}|[A-Z]{2}-\d{3}[A-Z])$")
 
 
 def validar_placa_ecuador(placa: str) -> bool:
-    """Validate Ecuadorian vehicle license plate against official ANT formats (Section 11.2)."""
+    """Valida placas vehiculares de Ecuador conforme a los formatos oficiales de la ANT."""
     if not placa or not isinstance(placa, str):
         return False
     return bool(ANT_PLATE_REGEX.match(placa.strip()))

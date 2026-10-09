@@ -1,13 +1,4 @@
-"""Integration test for historical deductible migration (SC-2026-001, Section 12.4).
-
-Obligatory Test #14 / #36 (Section 21 of poryecto.md).
-Verifies:
-  1. Legacy policies without deductibles receive the standard default deductible:
-     - tipo_siniestro: 'general'
-     - porcentaje_valor: 10.0%
-     - monto_minimo_usd: $200.00
-  2. Policies that already possess deductibles are not duplicated (idempotence).
-"""
+"""Prueba de integración para la migración de deducibles históricos e idempotencia."""
 
 from datetime import date, timedelta
 from decimal import Decimal
@@ -27,11 +18,10 @@ pytestmark = pytest.mark.asyncio(loop_scope="session")
 
 
 async def test_migracion_deducibles_historicos_idempotente(db_session: AsyncSession, base_scenario: ScenarioBundle):
-    """Verify Section 12.4 migration SQL successfully backfills legacy policies."""
+    """Verifica que la migración SQL de deducibles aplica correctamente sobre pólizas históricas."""
     cliente_a = base_scenario.cliente_a
     vehiculo_a = base_scenario.vehiculo_a
 
-    # 1. Crear una póliza "histórica" sin ningún deducible asociado
     poliza_historica = await create_poliza(
         db_session,
         cliente_id=cliente_a.id,
@@ -47,7 +37,6 @@ async def test_migracion_deducibles_historicos_idempotente(db_session: AsyncSess
     )
     await db_session.commit()
 
-    # Verificar que no tiene deducibles
     deducibles_prev = (
         await db_session.execute(
             select(Deducible).where(Deducible.poliza_id == poliza_historica.id)
@@ -55,7 +44,6 @@ async def test_migracion_deducibles_historicos_idempotente(db_session: AsyncSess
     ).scalars().all()
     assert len(deducibles_prev) == 0, "La póliza histórica inicial no debe tener deducibles."
 
-    # 2. Ejecutar la sentencia SQL de migración histórica de la Sección 12.4
     sql_migracion = text(
         """
         INSERT INTO deducibles (id, poliza_id, tipo_siniestro, porcentaje_valor, monto_minimo_usd, created_at)
@@ -75,7 +63,6 @@ async def test_migracion_deducibles_historicos_idempotente(db_session: AsyncSess
     await db_session.execute(sql_migracion)
     await db_session.commit()
 
-    # 3. Comprobar que se generó exactamente el deducible por defecto
     deducibles_post = (
         await db_session.execute(
             select(Deducible).where(Deducible.poliza_id == poliza_historica.id)
@@ -88,7 +75,6 @@ async def test_migracion_deducibles_historicos_idempotente(db_session: AsyncSess
     assert d.porcentaje_valor == Decimal("10.00")
     assert d.monto_minimo_usd == Decimal("200.00")
 
-    # 4. Probar idempotencia: volver a ejecutar la sentencia no debe insertar duplicados
     await db_session.execute(sql_migracion)
     await db_session.commit()
 

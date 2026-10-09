@@ -36,5 +36,4 @@ class CodigoVinculacion(Base):
         nullable=False,
     )
 
-    # Relationships
     cliente = relationship("Cliente", backref="codigos_vinculacion")

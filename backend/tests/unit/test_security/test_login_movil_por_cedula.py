@@ -1,4 +1,4 @@
-"""TEST 3: Mobile login by cédula — polymorphic path via clientes JOIN.
+"""Mobile login by cédula — polymorphic path via clientes JOIN.
 
 Verifies that numeric identifiers trigger a JOIN through clientes
 to find the associated usuario.

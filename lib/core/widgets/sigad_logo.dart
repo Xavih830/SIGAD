@@ -62,31 +62,26 @@ class _LogoPainter extends CustomPainter {
       ..style = PaintingStyle.fill
       ..isAntiAlias = true;
 
-    // 1. Draw the white shield
     paint.color = Colors.white;
     final path = Path();
     
-    // Shield coordinates relative to size
     double w = size.width;
     double h = size.height;
     
-    path.moveTo(w * 0.5, 0); // Top center
-    path.lineTo(w * 0.9, h * 0.15); // Top right
-    path.quadraticBezierTo(w * 0.9, h * 0.6, w * 0.5, h * 0.95); // Right side curve to pointed bottom
-    path.quadraticBezierTo(w * 0.1, h * 0.6, w * 0.1, h * 0.15); // Pointed bottom to left curve
+    path.moveTo(w * 0.5, 0);
+    path.lineTo(w * 0.9, h * 0.15);
+    path.quadraticBezierTo(w * 0.9, h * 0.6, w * 0.5, h * 0.95);
+    path.quadraticBezierTo(w * 0.1, h * 0.6, w * 0.1, h * 0.15);
     path.close();
     
     canvas.drawPath(path, paint);
 
-    // 2. Draw the car in corporate blue (#1971C2)
     paint.color = const Color(0xFF1971C2);
     
-    // Draw car body
     final carBody = Rect.fromLTWH(w * 0.25, h * 0.38, w * 0.5, h * 0.12);
     final rrectBody = RRect.fromRectAndRadius(carBody, Radius.circular(w * 0.035));
     canvas.drawRRect(rrectBody, paint);
     
-    // Draw car roof (cabin)
     final cabinPath = Path();
     cabinPath.moveTo(w * 0.32, h * 0.38);
     cabinPath.lineTo(w * 0.40, h * 0.26);
@@ -95,11 +90,9 @@ class _LogoPainter extends CustomPainter {
     cabinPath.close();
     canvas.drawPath(cabinPath, paint);
 
-    // Draw wheels
     canvas.drawCircle(Offset(w * 0.36, h * 0.52), w * 0.075, paint);
     canvas.drawCircle(Offset(w * 0.64, h * 0.52), w * 0.075, paint);
 
-    // Inner wheel hubs (white)
     paint.color = Colors.white;
     canvas.drawCircle(Offset(w * 0.36, h * 0.52), w * 0.03, paint);
     canvas.drawCircle(Offset(w * 0.64, h * 0.52), w * 0.03, paint);

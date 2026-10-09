@@ -1,4 +1,4 @@
-"""TEST 5: Uniform error responses on login failure.
+"""Uniform error responses on login failure.
 
 Verifies that the error message returned is exactly the same whether:
 - The user does not exist at all
@@ -23,7 +23,6 @@ from tests.factories import (
 @pytest.mark.asyncio
 async def test_uniform_error_responses():
     """Error responses must be identical for non-existent user vs wrong password."""
-    # ── Scenario A: User does NOT exist ──────────────────────────
     mock_result_none = MagicMock()
     mock_result_none.scalar_one_or_none.return_value = None
 
@@ -43,7 +42,6 @@ async def test_uniform_error_responses():
             json=login_payload("nonexistent@example.com", "anything"),
         )
 
-    # ── Scenario B: User exists but password is wrong ────────────
     fake_user = create_mock_admin_user(password="CorrectPassword")
 
     mock_result_found = MagicMock()
@@ -66,11 +64,9 @@ async def test_uniform_error_responses():
 
     app.dependency_overrides.clear()
 
-    # ── Assertions ───────────────────────────────────────────────
     assert resp_no_user.status_code == 401, f"Non-existent user should return 401, got {resp_no_user.status_code}"
     assert resp_wrong_pw.status_code == 401, f"Wrong password should return 401, got {resp_wrong_pw.status_code}"
 
-    # The critical check: both responses have identical error messages
     msg_no_user = resp_no_user.json()["detail"]
     msg_wrong_pw = resp_wrong_pw.json()["detail"]
     assert msg_no_user == msg_wrong_pw, (

@@ -26,7 +26,6 @@ def test_openapi_contract_no_drift():
 
     live_schema = app.openapi()
 
-    # 1. Compare Paths
     committed_paths = set(committed_schema.get("paths", {}).keys())
     live_paths = set(live_schema.get("paths", {}).keys())
 
@@ -42,7 +41,6 @@ def test_openapi_contract_no_drift():
         f"Run `python backend/scripts/export_openapi.py` to synchronize."
     )
 
-    # 2. Compare Methods per Path
     for path in live_paths:
         live_methods = set(live_schema["paths"][path].keys())
         committed_methods = set(committed_schema["paths"][path].keys())
@@ -50,7 +48,6 @@ def test_openapi_contract_no_drift():
             f"Method drift for path {path}: live={live_methods}, committed={committed_methods}"
         )
 
-    # 3. Compare Component Schemas
     committed_components = set(committed_schema.get("components", {}).get("schemas", {}).keys())
     live_components = set(live_schema.get("components", {}).get("schemas", {}).keys())
     assert committed_components == live_components, (

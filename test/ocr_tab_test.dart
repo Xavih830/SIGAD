@@ -36,19 +36,16 @@ void main() {
         ),
       );
 
-      // Verificar que se renderiza el nombre del archivo y badges
       expect(find.text(TestFixtures.ocrSampleFilename), findsOneWidget);
       expect(find.text('REQUIERE_REVISION_MANUAL'), findsOneWidget);
       expect(find.textContaining('CONFIANZA MEDIA (78.5%)'), findsOneWidget);
 
-      // Verificar que los campos aparecen como inputs editables
       final campos = sampleDocument.camposExtraidos!;
       expect(find.text(campos['placa'] as String), findsOneWidget);
       expect(find.text(campos['valor_asegurado'] as String), findsOneWidget);
       expect(find.text(campos['prima_mensual'] as String), findsOneWidget);
       expect(find.text(campos['numero_poliza'] as String), findsOneWidget);
 
-      // Verificar botones de acción
       expect(find.text('Confirmar Correcciones'), findsOneWidget);
       expect(find.text('Vincular a Póliza'), findsOneWidget);
     });
@@ -80,19 +77,16 @@ void main() {
       );
 
       final campos = sampleDocument.camposExtraidos!;
-      // Localizar el campo de texto de la placa y modificarlo
       final placaField = find.widgetWithText(TextFormField, campos['placa'] as String);
       expect(placaField, findsOneWidget);
 
       await tester.enterText(placaField, 'GYE-9999');
       await tester.pump();
 
-      // Pulsar el botón 'Vincular a Póliza'
       final vincularBtn = find.text('Vincular a Póliza');
       await tester.tap(vincularBtn);
       await tester.pump();
 
-      // Validar que el callback recibió el valor corregido
       expect(capturedFields, isNotNull);
       expect(capturedFields!['placa'], equals('GYE-9999'));
       expect(capturedFields!['valor_asegurado'], equals(campos['valor_asegurado']));

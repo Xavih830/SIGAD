@@ -1,16 +1,4 @@
-"""Integration tests for Esquemas de Extracción REST API.
-
-Covers:
-1. Multi-Domain & Multi-Version Lifecycle:
-   - Independent append-only version streams for Vehicular, Vida, and Hogar schemas.
-   - Atomic active-version switching across 3 versions with idempotency.
-2. Adversarial & Security Testing:
-   - Immobility: PUT and DELETE requests are rejected with 405 Method Not Allowed.
-   - Anti-BFLA: Client gets 403 on all routes; Agent cannot create or activate.
-   - Input sanitization: ReDoS, null bytes, duplicate fields, and type mismatch return 422.
-   - Empty file uploads return 400.
-   - Exception in OCR extraction returns 422 and guarantees temp file cleanup (no disk leak).
-"""
+"""Pruebas de integración para la API de esquemas de extracción."""
 
 import io
 from unittest.mock import patch
@@ -41,7 +29,6 @@ from tests.integration.conftest import make_client
 pytestmark = pytest.mark.asyncio(loop_scope="session")
 
 
-# ── 1. Ciclo de Vida Multi-Dominio y Versiones Append-Only ─────────────────────
 
 async def test_creacion_independiente_tres_dominios(base_scenario: ScenarioBundle):
     """Admin creates 3 distinct domain schemas (Vehicular, Vida, Hogar).
@@ -54,7 +41,6 @@ async def test_creacion_independiente_tres_dominios(base_scenario: ScenarioBundl
     payload_hogar = esquema_hogar_payload()
 
     async with make_client(token_admin) as client:
-        # Crear Vehicular (v1)
         res_veh = await client.post("/api/v1/esquemas", json=payload_vehicular)
         assert res_veh.status_code == 201, res_veh.text
         data_veh = res_veh.json()
@@ -62,7 +48,6 @@ async def test_creacion_independiente_tres_dominios(base_scenario: ScenarioBundl
         assert data_veh["version"] == 1
         assert data_veh["es_activo"] is False
 
-        # Crear Vida (v1)
         res_vid = await client.post("/api/v1/esquemas", json=payload_vida)
         assert res_vid.status_code == 201, res_vid.text
         data_vid = res_vid.json()
@@ -70,7 +55,6 @@ async def test_creacion_independiente_tres_dominios(base_scenario: ScenarioBundl
         assert data_vid["version"] == 1
         assert data_vid["es_activo"] is False
 
-        # Crear Hogar (v1)
         res_hog = await client.post("/api/v1/esquemas", json=payload_hogar)
         assert res_hog.status_code == 201, res_hog.text
         data_hog = res_hog.json()
@@ -91,7 +75,6 @@ async def test_transiciones_atomicas_y_conmutacion_versiones(base_scenario: Scen
     p3 = esquema_payload(codigo=codigo, nombre="Serie V3")
 
     async with make_client(token_admin) as client:
-        # Publicar v1, v2 y v3
         r1 = await client.post("/api/v1/esquemas", json=p1)
         id_1 = r1.json()["id"]
         r2 = await client.post("/api/v1/esquemas", json=p2)
@@ -103,9 +86,7 @@ async def test_transiciones_atomicas_y_conmutacion_versiones(base_scenario: Scen
         assert r2.json()["version"] == 2
         assert r3.json()["version"] == 3
 
-        # Activar v1
         await client.patch(f"/api/v1/esquemas/{id_1}/activar")
-        # Activar v2 (debe desactivar v1)
         await client.patch(f"/api/v1/esquemas/{id_2}/activar")
 
         check_1 = (await client.get(f"/api/v1/esquemas/{id_1}")).json()
@@ -116,13 +97,11 @@ async def test_transiciones_atomicas_y_conmutacion_versiones(base_scenario: Scen
         assert check_2["es_activo"] is True
         assert check_3["es_activo"] is False
 
-        # Activar v2 nuevamente (idempotencia)
         res_idemp = await client.patch(f"/api/v1/esquemas/{id_2}/activar")
         assert res_idemp.status_code == 200
         assert res_idemp.json()["es_activo"] is True
 
 
-# ── 2. Inmutabilidad y Protección contra Ataques (No-Happy-Path) ───────────────
 
 async def test_inmutabilidad_put_y_delete_prohibidos(base_scenario: ScenarioBundle, db_session: AsyncSession):
     """Append-only estricto: PUT y DELETE no están implementados (405 Method Not Allowed)."""
@@ -173,7 +152,6 @@ async def test_ataque_campos_duplicados_por_api_rechazado_con_422(base_scenario:
         assert "duplicados" in res.text
 
 
-# ── 3. Robustez en Endpoint de Prueba (/probar) ───────────────────────────────
 
 async def test_probar_esquema_archivo_vacio_retorna_400(
     base_scenario: ScenarioBundle,
@@ -239,7 +217,6 @@ async def test_probar_esquema_exitoso_multi_dominio(
     token_admin = base_scenario.admin_token
     payload_vida = esquema_vida_payload()
 
-    # Crear esquema de vida
     async with make_client(token_admin) as client:
         res_create = await client.post("/api/v1/esquemas", json=payload_vida)
         assert res_create.status_code == 201
@@ -257,7 +234,6 @@ async def test_probar_esquema_exitoso_multi_dominio(
             assert data["confianza"] == 100.0
 
 
-# ── 4. Control de Acceso RBAC Estricto (BFLA) ─────────────────────────────────
 
 async def test_rbac_cliente_bloqueado_completamente(base_scenario: ScenarioBundle):
     """Cliente no tiene acceso a ninguna operación de esquemas (HTTP 403 en todas)."""
@@ -293,10 +269,8 @@ async def test_rbac_agente_lectura_y_prueba_si_escritura_no(
     esquema = await create_esquema(db_session)
 
     async with make_client(token_agente) as client:
-        # Lectura permitida
         assert (await client.get("/api/v1/esquemas")).status_code == 200
         assert (await client.get(f"/api/v1/esquemas/{esquema.id}")).status_code == 200
 
-        # Escritura denegada (solo ADMIN)
         assert (await client.post("/api/v1/esquemas", json=esquema_payload())).status_code == 403
         assert (await client.patch(f"/api/v1/esquemas/{esquema.id}/activar")).status_code == 403

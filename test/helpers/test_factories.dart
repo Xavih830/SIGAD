@@ -9,16 +9,10 @@ import 'package:sigad/core/models/policy_model.dart';
 import 'package:sigad/core/models/user_model.dart';
 import 'package:sigad/core/models/vehicle_model.dart';
 
-/// Test Data Builder y Object Mother centralizado para pruebas unitarias y de widgets.
-///
-/// Previene la fragilidad de pruebas ("Shotgun Surgery") al desacoplar las definiciones
-/// de esquemas de cada prueba individual.
 class TestFactories {
   static int _sequence = 1;
 
   static int get nextSequence => _sequence++;
-
-  // --- VEHICLE FACTORIES ---
 
   static VehicleModel createVehicle({
     String? id,
@@ -69,8 +63,6 @@ class TestFactories {
     ).toJson();
   }
 
-  // --- DEDUCTIBLE FACTORIES ---
-
   static DeductibleModel createDeductible({
     String? id,
     String? tipoSiniestro,
@@ -100,8 +92,6 @@ class TestFactories {
     ).toJson();
   }
 
-  // --- COVERAGE FACTORIES ---
-
   static CoverageModel createCoverage({
     String? id,
     String? nombre,
@@ -126,8 +116,6 @@ class TestFactories {
       monto: monto,
     ).toJson();
   }
-
-  // --- POLICY FACTORIES ---
 
   static PolicyModel createPolicy({
     String? id,
@@ -272,8 +260,6 @@ class TestFactories {
     );
   }
 
-  // --- PAYMENT FACTORIES ---
-
   static PaymentModel createPayment({
     String? id,
     String? policyId,
@@ -333,8 +319,6 @@ class TestFactories {
     };
   }
 
-  // --- USER FACTORIES ---
-
   static UserModel createUser({
     String? id,
     String? email,
@@ -385,8 +369,6 @@ class TestFactories {
     };
   }
 
-  // --- CLIENT FACTORIES ---
-
   static ClientModel createClient({
     String? id,
     String? identificacion,
@@ -431,8 +413,6 @@ class TestFactories {
       createdAt: createdAt,
     ).toJson();
   }
-
-  // --- WORKSHOP & ASSISTANCE FACTORIES ---
 
   static WorkshopModel createWorkshop({
     String? id,
@@ -508,8 +488,6 @@ class TestFactories {
     ).toJson();
   }
 
-  // --- DOCUMENT FACTORIES ---
-
   static DocumentModel createDocument({
     String? id,
     String? polizaId,
@@ -572,8 +550,6 @@ class TestFactories {
       },
     };
   }
-
-  // --- EXTRACTION SCHEMA FACTORIES ---
 
   static ExtractionFieldModel createExtractionField({
     String? nombre,

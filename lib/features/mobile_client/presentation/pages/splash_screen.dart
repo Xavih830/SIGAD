@@ -25,7 +25,6 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    // Fade in animation
     Future.delayed(const Duration(milliseconds: 100), () {
       if (mounted) {
         setState(() {
@@ -34,7 +33,6 @@ class _SplashScreenState extends State<SplashScreen> {
       }
     });
 
-    // Check session after at least 2 seconds (minimum visibility)
     Future.delayed(const Duration(milliseconds: 2000), () {
       if (mounted) {
         context.read<AuthBloc>().add(CheckSession());

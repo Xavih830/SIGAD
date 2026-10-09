@@ -47,7 +47,6 @@ def register_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(SQLAlchemyError)
     async def sqlalchemy_error_handler(request: Request, exc: SQLAlchemyError) -> JSONResponse:
-        # Extract SQLSTATE from the dialect-level original exception if available
         sqlstate = getattr(getattr(exc, "orig", None), "pgcode", "N/A")
 
         logger.error(

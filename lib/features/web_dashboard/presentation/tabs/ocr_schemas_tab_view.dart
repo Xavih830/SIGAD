@@ -8,7 +8,6 @@ import 'package:sigad/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_state.dart';
 import 'package:sigad/features/web_dashboard/presentation/dialogs/schema_test_dialog.dart';
 
-/// Pestaña del panel administrativo para gestión y activación de esquemas OCR dinámicos.
 class OcrSchemasTabView extends StatefulWidget {
   final ExtractionSchemasRepository? repository;
 

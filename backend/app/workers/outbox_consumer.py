@@ -28,7 +28,6 @@ async def adquirir_siguiente_documento(db: AsyncSession) -> tuple[uuid.UUID, str
     Returns:
         tuple of (documento_id, ruta_archivo, lease_token) or None if no pending documents.
     """
-    # 1. Atomic acquisition
     stmt = text(
         """
         SELECT id, ruta_archivo
@@ -47,7 +46,6 @@ async def adquirir_siguiente_documento(db: AsyncSession) -> tuple[uuid.UUID, str
     doc_id, ruta_archivo = row[0], row[1]
     lease_token = uuid.uuid4()
 
-    # 2. Lock lease token and transition to procesando
     update_stmt = text(
         """
         UPDATE documentos
@@ -72,7 +70,6 @@ async def procesar_documento_adquirido(
 ) -> bool:
     """Executes extraction in resilient pool and safely commits results with fencing token check."""
     try:
-        # Obtener campos del esquema activo (si existe)
         esquema_res = await db.execute(
             select(EsquemaExtraccion.campos).where(EsquemaExtraccion.es_activo.is_(True)).limit(1)
         )
@@ -85,7 +82,6 @@ async def procesar_documento_adquirido(
             timeout=timeout_seconds,
         )
 
-        # Confirm lease is still valid before writing
         resultado = ResultadoExtraccion(
             documento_id=doc_id,
             texto_completo=resultado_dict["texto_completo"],
@@ -95,7 +91,6 @@ async def procesar_documento_adquirido(
         )
         db.add(resultado)
 
-        # Fenced update
         update_stmt = text(
             """
             UPDATE documentos

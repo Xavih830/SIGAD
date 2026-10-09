@@ -10,8 +10,6 @@ import 'package:sigad/features/web_dashboard/presentation/tabs/ocr_tab_view.dart
 import 'package:sigad/features/web_dashboard/presentation/tabs/policies_tab_view.dart';
 import 'package:sigad/features/web_dashboard/presentation/tabs/reports_tab_view.dart';
 
-/// Registro canónico de pestañas del dashboard web.
-/// Actúa como Single Source of Truth para el menú lateral, encabezados y vistas renderizadas.
 abstract class DashboardTabRegistry {
   static final List<DashboardTabItem> allTabs = [
     DashboardTabItem(
@@ -64,14 +62,12 @@ abstract class DashboardTabRegistry {
     ),
   ];
 
-  /// Retorna las pestañas autorizadas para el usuario actual según sus capacidades.
   static List<DashboardTabItem> getPermittedTabs(UserModel user) {
     return allTabs
         .where((tab) => AuthorizationPolicy.canUser(user, tab.requiredCapability))
         .toList();
   }
 
-  /// Busca una pestaña por su identificador. Retorna null si no existe.
   static DashboardTabItem? findTabById(String id) {
     for (final tab in allTabs) {
       if (tab.id == id) return tab;

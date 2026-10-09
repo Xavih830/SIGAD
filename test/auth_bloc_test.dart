@@ -128,7 +128,6 @@ void main() {
           401,
         ));
 
-    // Attempt 1
     authBloc.add(const LoginSubmitted(identificador: TestFixtures.adminEmail, password: TestFixtures.wrongPassword1));
     await expectLater(
       authBloc.stream,
@@ -138,7 +137,6 @@ void main() {
       ]),
     );
 
-    // Attempt 2
     authBloc.add(const LoginSubmitted(identificador: TestFixtures.adminEmail, password: TestFixtures.wrongPassword2));
     await expectLater(
       authBloc.stream,
@@ -148,7 +146,6 @@ void main() {
       ]),
     );
 
-    // Attempt 3
     authBloc.add(const LoginSubmitted(identificador: TestFixtures.adminEmail, password: TestFixtures.wrongPassword3));
     await expectLater(
       authBloc.stream,

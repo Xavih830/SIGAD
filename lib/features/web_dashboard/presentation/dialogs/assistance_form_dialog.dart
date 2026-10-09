@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sigad/core/models/catalog_model.dart';
 
-/// Diálogo modal para registrar un nuevo servicio de asistencia en carretera.
 class AssistanceFormDialog extends StatefulWidget {
   final AssistanceModel? initialAssistance;
 

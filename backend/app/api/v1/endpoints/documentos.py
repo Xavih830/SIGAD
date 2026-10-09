@@ -75,21 +75,18 @@ async def cargar_documento(
 
     content = await file.read()
 
-    # Pre-check tamaño máximo
     if len(content) > MAX_DOCUMENT_SIZE_BYTES:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail="El archivo excede el tamaño máximo permitido de 15 MB.",
         )
 
-    # Clientes únicamente pueden cargar documentos asociados a una póliza propia
     if current_user.rol == RolEnum.CLIENTE and not poliza_id:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="El campo poliza_id es obligatorio para clientes.",
         )
 
-    # Validar acceso a la póliza si se envía poliza_id
     poliza = None
     if poliza_id:
         p_res = await db.execute(
@@ -272,7 +269,7 @@ async def revisar_campos_documento(
     current_user: Usuario = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> DocumentoRevisionResponse:
-    """Allows Agents and Admins to correct and confirm OCR extracted fields (HU-06)."""
+    """Permite a agentes y administradores corregir y confirmar campos extraídos."""
     if current_user.rol not in [RolEnum.ADMIN, RolEnum.AGENTE]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -296,11 +293,9 @@ async def revisar_campos_documento(
             detail="El documento no posee resultados de extracción para revisar.",
         )
 
-    # Actualizar campos JSONB
     doc.resultado.campos_extraidos = dict(payload.campos_extraidos)
     flag_modified(doc.resultado, "campos_extraidos")
 
-    # Actualizar estado si fue enviado
     if payload.estado_extraccion:
         if payload.estado_extraccion not in [
             EstadoExtraccionEnum.COMPLETADO.value,

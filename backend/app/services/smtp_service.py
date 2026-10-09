@@ -92,5 +92,4 @@ class SMTPService:
             return False
 
 
-# Global singleton instance configured via environment
 smtp_service = SMTPService()

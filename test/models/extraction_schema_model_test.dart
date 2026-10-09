@@ -3,7 +3,7 @@ import 'package:sigad/core/models/extraction_schema_model.dart';
 import '../helpers/test_factories.dart';
 
 void main() {
-  group('ExtractionSchemaModel & DTOs Unit Tests (Fail-Fast Radical)', () {
+  group('ExtractionSchemaModel & DTOs Unit Tests', () {
     test('ExtractionFieldModel serializa y deserializa con tipos estrictos', () {
       final field = TestFactories.createExtractionField(
         nombre: 'placa_vehiculo',
@@ -87,10 +87,9 @@ void main() {
       expect(model.textoCompleto, contains('DOCUMENTO VEHICULAR'));
     });
 
-    test('Fail-Fast: ExtractionSchemaModel lanza TypeError si faltan campos obligatorios', () {
+    test('ExtractionSchemaModel lanza TypeError si faltan campos obligatorios', () {
       final invalidJson = <String, dynamic>{
         'id': 'sch-err-1',
-        // falta codigo y nombre
         'version': 1,
         'es_activo': true,
         'created_at': '2026-01-01T00:00:00Z',

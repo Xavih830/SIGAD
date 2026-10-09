@@ -1,4 +1,4 @@
-"""Integration tests for public catalogs rate limiting and Cache-Control headers."""
+"""Pruebas de integración para rate limiting y cabeceras de caché en catálogos públicos."""
 
 import pytest
 
@@ -11,12 +11,10 @@ pytestmark = pytest.mark.asyncio(loop_scope="session")
 async def test_catalogos_cache_control_headers(db_session):
     """Verify that public catalog endpoints include Cache-Control headers."""
     async with make_client() as client:
-        # Talleres
         res_t = await client.get("/api/v1/talleres")
         assert res_t.status_code == 200
         assert res_t.headers.get("Cache-Control") == "public, max-age=300"
 
-        # Asistencias
         res_a = await client.get("/api/v1/asistencias")
         assert res_a.status_code == 200
         assert res_a.headers.get("Cache-Control") == "public, max-age=300"
@@ -28,11 +26,9 @@ async def test_catalogos_rate_limit_exceeded_triggers_429(db_session):
     headers = {"X-Real-IP": client_ip}
 
     async with make_client() as client:
-        # Exhaust catalog rate limit quota (60 requests)
         for _ in range(60):
             rate_limiter.record_ip(client_ip, endpoint="catalogo")
 
-        # 61st request must trigger HTTP 429
         res = await client.get("/api/v1/talleres", headers=headers)
         assert res.status_code == 429
         assert "Límite de peticiones por IP excedido" in res.json()["detail"]

@@ -6,7 +6,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /backend
 
-# Instalar dependencias del sistema: compiladores, librerías postgres, Tesseract 5 y Poppler
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         gcc \
@@ -17,7 +16,6 @@ RUN apt-get update && \
         poppler-utils && \
     rm -rf /var/lib/apt/lists/*
 
-# Instalar dependencias Python y purgar compiladores temporales (CWE-250)
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt && \
@@ -26,14 +24,11 @@ RUN pip install --no-cache-dir --upgrade pip && \
     apt-get install -y --no-install-recommends libpq5 && \
     rm -rf /var/lib/apt/lists/*
 
-# Crear usuario y grupo de ejecución sin privilegios (CIS Docker Benchmark / CWE-250)
 RUN groupadd -g 10001 sigad && \
     useradd -u 10001 -g sigad -s /bin/sh -d /backend -M sigad
 
-# Copiar código fuente del backend
 COPY backend/ .
 
-# Directorio de uploads con permisos para usuario no privilegiado
 RUN mkdir -p /backend/uploads && \
     chown -R sigad:sigad /backend
 

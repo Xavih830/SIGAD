@@ -1,4 +1,4 @@
-"""TEST 16: Validación de complejidad de contraseña (>= 12 caracteres, 4 clases)."""
+"""Validación de complejidad de contraseña (>= 12 caracteres, 4 clases)."""
 
 import pytest
 from pydantic import ValidationError
@@ -55,13 +55,11 @@ def test_password_missing_special_char():
 
 def test_vinculacion_request_schema_validation():
     """VinculacionRequest schema rejects weak passwords and mismatched confirmation."""
-    # Valid payload
     payload = vinculacion_payload()
     req = VinculacionRequest(**payload)
     assert req.cedula == payload["cedula"]
     assert req.codigo_otp == payload["codigo_otp"]
 
-    # Mismatched confirmation
     with pytest.raises(ValidationError, match=MSG_PASSWORD_MISMATCH):
         VinculacionRequest(
             **vinculacion_payload(password_confirmacion="DifferentPassword123*")

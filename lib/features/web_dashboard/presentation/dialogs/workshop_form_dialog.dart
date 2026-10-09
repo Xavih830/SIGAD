@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sigad/core/models/catalog_model.dart';
 
-/// Diálogo modal para registrar un nuevo taller mecánico autorizado.
 class WorkshopFormDialog extends StatefulWidget {
   final WorkshopModel? initialWorkshop;
 

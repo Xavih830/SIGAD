@@ -1,4 +1,4 @@
-"""TEST 6: SQLAlchemy error handler does NOT leak PII into logs.
+"""SQLAlchemy error handler does NOT leak PII into logs.
 
 Verifies that the global `sqlalchemy_error_handler`:
 1. Returns a generic 500 JSON response.
@@ -21,17 +21,12 @@ def test_no_pii_in_sqlalchemy_logs():
     source = inspect.getsource(handlers_module)
     tree = ast.parse(source)
 
-    # ── Structural check: the handler must NOT log `exc` directly ──
-    # We look for logger.error / logger.warning calls and ensure they
-    # do not include 'exc' as a format argument beyond type(exc).__name__
-
     found_handler = False
     for node in ast.walk(tree):
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == "sqlalchemy_error_handler":
             found_handler = True
             func_source = inspect.getsource(handlers_module.register_handlers)
 
-            # Must NOT contain patterns that would log the full exception
             dangerous_patterns = [
                 "logger.error(str(exc)",
                 "logger.error(exc)",
@@ -48,7 +43,6 @@ def test_no_pii_in_sqlalchemy_logs():
                     f"Only type(exc).__name__, SQLSTATE, and path are allowed."
                 )
 
-            # Must contain safe patterns
             assert "type(exc).__name__" in func_source or "type=" in func_source, (
                 "Handler should log exception type via type(exc).__name__"
             )
@@ -57,8 +51,6 @@ def test_no_pii_in_sqlalchemy_logs():
 
     assert found_handler, "sqlalchemy_error_handler function must be defined in handlers module"
 
-    # ── Behavioral check: verify the handler returns a generic message ──
-    # We inspect the return value structurally
     assert "Error interno del servidor" in source, (
         "Handler must return a generic 'Error interno del servidor' message, not DB details"
     )

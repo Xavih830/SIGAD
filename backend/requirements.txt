@@ -1,5 +1,4 @@
 # SIGAD Backend — Python Dependencies
-# =====================================
 
 # Framework
 fastapi>=0.142.0

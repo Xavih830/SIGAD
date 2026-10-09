@@ -46,8 +46,7 @@ async def crear_poliza(
     current_user: Usuario = Depends(check_role(RolEnum.ADMIN, RolEnum.AGENTE)),
     db: AsyncSession = Depends(get_db),
 ) -> Poliza:
-    """Emisión formal de póliza con snapshot inmutable de kilometraje y evaluación de CFG."""
-    # 1. Verificar existencia del cliente y vehículo
+    """Emisión formal de póliza con snapshot inmutable de kilometraje y cálculo de estado inicial."""
     cliente_res = await db.execute(select(Cliente).where(Cliente.id == payload.cliente_id))
     cliente = cliente_res.scalar_one_or_none()
     if not cliente:
@@ -64,7 +63,6 @@ async def crear_poliza(
             detail=f"Vehículo con ID {payload.vehiculo_id} no existe.",
         )
 
-    # 2. Verificar unicidad de número de póliza
     poliza_existente = await db.execute(
         select(Poliza).where(Poliza.numero_poliza == payload.numero_poliza)
     )
@@ -74,16 +72,13 @@ async def crear_poliza(
             detail=f"Ya existe una póliza con número {payload.numero_poliza}.",
         )
 
-    # 3. Dominio: cálculo de estado inicial formal (CFG 10 nodos, V(G)=4)
     hoy = date.today()
     estado_inicial = validar_y_calcular_estado_inicial(
         payload.fecha_inicio, payload.fecha_fin, hoy
     )
 
-    # 4. Validar límite de vigencia de 5 años
     validar_limite_vigencia_maxima(payload.fecha_inicio, payload.fecha_fin)
 
-    # 5. Crear póliza con kilometraje inmutable
     poliza = Poliza(
         numero_poliza=payload.numero_poliza,
         cliente_id=payload.cliente_id,
@@ -99,7 +94,6 @@ async def crear_poliza(
     db.add(poliza)
     await db.flush()
 
-    # 6. Deducibles (SC-2026-001): si se proveen se registran; si no, deducible por defecto general
     if payload.deducibles:
         for d in payload.deducibles:
             deducible = Deducible(
@@ -110,7 +104,6 @@ async def crear_poliza(
             )
             db.add(deducible)
     else:
-        # Default deducible general (10%, $200 USD)
         db.add(
             Deducible(
                 poliza_id=poliza.id,
@@ -120,7 +113,6 @@ async def crear_poliza(
             )
         )
 
-    # 7. Coberturas
     if payload.coberturas:
         for c in payload.coberturas:
             cobertura = Cobertura(
@@ -130,7 +122,6 @@ async def crear_poliza(
             )
             db.add(cobertura)
 
-    # 8. Cronograma de pagos (HU-20): Generación de cuotas mensuales
     dias_totales = (payload.fecha_fin - payload.fecha_inicio).days
     num_cuotas = max(
         MIN_CUOTAS_POLIZA,
@@ -148,8 +139,6 @@ async def crear_poliza(
         db.add(cuota)
 
     await db.commit()
-
-    # Recargar con relaciones
     stmt = (
         select(Poliza)
         .options(
@@ -233,8 +222,6 @@ async def consultar_deducibles(
     current_user: Usuario = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> Sequence[Deducible]:
-    """Consultar deducibles diferenciados de una póliza (SC-2026-001) con Anti-BOLA."""
-    # Verificar propiedad de la póliza con Anti-BOLA
     stmt_pol = select(Poliza.id).where(Poliza.id == id)
     if current_user.rol == RolEnum.CLIENTE:
         stmt_pol = stmt_pol.join(Cliente, Poliza.cliente_id == Cliente.id).where(

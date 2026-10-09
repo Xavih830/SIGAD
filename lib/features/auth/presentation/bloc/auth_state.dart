@@ -14,7 +14,7 @@ class AuthLoading extends AuthState {}
 
 class AuthSuccess extends AuthState {
   final String token;
-  final UserModel user; //  TIPADO FUERTE: Ya no es Map<String, dynamic>
+  final UserModel user;
 
   const AuthSuccess({required this.token, required this.user});
 

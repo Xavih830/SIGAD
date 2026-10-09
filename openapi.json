@@ -323,7 +323,7 @@
           "Pólizas"
         ],
         "summary": "Crear Poliza",
-        "description": "Emisión formal de póliza con snapshot inmutable de kilometraje y evaluación de CFG.",
+        "description": "Emisión formal de póliza con snapshot inmutable de kilometraje y cálculo de estado inicial.",
         "operationId": "crear_poliza_api_v1_polizas_post",
         "security": [
           {
@@ -487,7 +487,6 @@
           "Pólizas"
         ],
         "summary": "Consultar Deducibles",
-        "description": "Consultar deducibles diferenciados de una póliza (SC-2026-001) con Anti-BOLA.",
         "operationId": "consultar_deducibles_api_v1_polizas__id__deducibles_get",
         "security": [
           {
@@ -599,7 +598,7 @@
           "Pagos"
         ],
         "summary": "Listar Pagos Poliza",
-        "description": "Lists installment schedule with strict Anti-BOLA tenant protection.",
+        "description": "Listar cronograma de pagos y cuotas de una póliza.",
         "operationId": "listar_pagos_poliza_api_v1_polizas__poliza_id__pagos_get",
         "security": [
           {
@@ -652,7 +651,7 @@
           "Pagos"
         ],
         "summary": "Registrar Pago Cuota",
-        "description": "Allows Agents and Admins to register an installment payment.",
+        "description": "Registrar el pago de una cuota de póliza.",
         "operationId": "registrar_pago_cuota_api_v1_polizas__poliza_id__pagos__pago_id__registrar_post",
         "security": [
           {
@@ -721,7 +720,7 @@
           "Vehículos"
         ],
         "summary": "Crear Vehiculo",
-        "description": "Registrar un nuevo vehículo con validación de placa ANT.\n\nAnti-BOLA: Clientes solo pueden registrar vehículos asociados a su propia ficha de cliente.",
+        "description": "Registrar un nuevo vehículo con validación de placa ANT.",
         "operationId": "crear_vehiculo_api_v1_vehiculos_post",
         "security": [
           {
@@ -766,7 +765,7 @@
           "Vehículos"
         ],
         "summary": "Listar Vehiculos",
-        "description": "Listar vehículos con paginación y protección Anti-BOLA estricta.",
+        "description": "Listar vehículos con paginación.",
         "operationId": "listar_vehiculos_api_v1_vehiculos_get",
         "security": [
           {
@@ -836,7 +835,7 @@
           "Vehículos"
         ],
         "summary": "Obtener Vehiculo",
-        "description": "Obtener detalle de vehículo por ID con protección Anti-BOLA.",
+        "description": "Obtener detalle de vehículo por ID.",
         "operationId": "obtener_vehiculo_api_v1_vehiculos__id__get",
         "security": [
           {
@@ -1382,7 +1381,7 @@
           "Documentos"
         ],
         "summary": "Revisar Campos Documento",
-        "description": "Allows Agents and Admins to correct and confirm OCR extracted fields (HU-06).",
+        "description": "Permite a agentes y administradores corregir y confirmar campos extraídos.",
         "operationId": "revisar_campos_documento_api_v1_documentos__documento_id__revision_patch",
         "security": [
           {
@@ -1700,7 +1699,7 @@
           "Infra"
         ],
         "summary": "Health",
-        "description": "Deep readiness probe: validates PostgreSQL with bounded timeout and rate-cache (poryecto.md §2.5).",
+        "description": "Deep readiness probe: validates PostgreSQL connectivity with bounded timeout and rate-cache.",
         "operationId": "health_health_ready_get",
         "responses": {
           "200": {
@@ -1724,7 +1723,7 @@
           "Infra"
         ],
         "summary": "Health",
-        "description": "Deep readiness probe: validates PostgreSQL with bounded timeout and rate-cache (poryecto.md §2.5).",
+        "description": "Deep readiness probe: validates PostgreSQL connectivity with bounded timeout and rate-cache.",
         "operationId": "health_health_get",
         "responses": {
           "200": {
@@ -2620,7 +2619,7 @@
           "cancelada"
         ],
         "title": "EstadoPoliza",
-        "description": "Formal 5-state policy lifecycle.\n\nStates 'error' and 'borrador' are strictly prohibited in the domain model.\n'por_vencer' is only assigned by the temporal background scheduler."
+        "description": "Ciclo de vida formal de cinco estados para una póliza."
       },
       "HTTPValidationError": {
         "properties": {

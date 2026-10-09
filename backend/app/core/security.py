@@ -21,7 +21,6 @@ from app.core.constants import (
     ARGON2_TIME_COST,
 )
 
-# ── Argon2id Hasher (RFC 9106) ───────────────────────────────────────
 
 ph = PasswordHasher(
     memory_cost=ARGON2_MEMORY_COST,
@@ -29,9 +28,6 @@ ph = PasswordHasher(
     parallelism=ARGON2_PARALLELISM,
 )
 
-# Pre-computed dummy hash for constant-time anti-enumeration defense.
-# If a user is not found, we verify the submitted password against this hash
-# so the response time is indistinguishable from a real verification.
 DUMMY_HASH: str = ph.hash("dummy-never-matches-any-real-password")
 
 
@@ -86,7 +82,6 @@ def decode_token(token: str) -> dict:
     return jwt.decode(token, _get_jwt_secret(), algorithms=[settings.JWT_ALGORITHM])
 
 
-# ── OTP HMAC Helpers with Quarterly Secret Rotation ──────────────────
 
 import hashlib
 import hmac
@@ -121,12 +116,10 @@ def verify_otp_hmac(code: str, stored_hmac: str) -> bool:
     1. Compares against active quarterly secret (OTP_SECRET_KEY_ACTUAL).
     2. If mismatch, falls back to previous quarter secret (OTP_SECRET_KEY_ANTERIOR).
     """
-    # 1. Primary check: active quarterly secret
     digest_actual = compute_otp_hmac(code, settings.OTP_SECRET_KEY_ACTUAL)
     if hmac.compare_digest(digest_actual, stored_hmac):
         return True
 
-    # 2. Secondary check: previous quarterly secret (rotation grace window)
     digest_anterior = compute_otp_hmac(code, settings.OTP_SECRET_KEY_ANTERIOR)
     if hmac.compare_digest(digest_anterior, stored_hmac):
         return True

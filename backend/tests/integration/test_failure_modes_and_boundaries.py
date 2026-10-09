@@ -1,11 +1,4 @@
-"""Integration tests for Failure Modes, Boundaries, and Security Invariants.
-
-Design Philosophy:
-- Testing for failure: the most valuable tests don't just assert happy paths,
-  they verify that boundary violations, illegal states, duplicate records,
-  tampered tokens, and unauthorized operations fail gracefully and predictably.
-- Strict isolation: tests do NOT rely on or pollute persistent operational data.
-"""
+"""Pruebas de integración para modos de falla, límites e invariantes del sistema."""
 
 from datetime import date, timedelta
 import uuid
@@ -24,10 +17,6 @@ from tests.integration.conftest import make_client
 
 pytestmark = pytest.mark.asyncio(loop_scope="session")
 
-
-# ═════════════════════════════════════════════════════════════════════════════
-# 1. PÓLIZAS: Boundary, Invariant & Negative Failure Tests
-# ═════════════════════════════════════════════════════════════════════════════
 
 async def test_rechazo_poliza_cliente_inexistente(base_scenario: ScenarioBundle):
     """Falla esperada: emision para cliente inexistente debe responder 404 sin violar foreign key con 500."""
@@ -160,10 +149,6 @@ async def test_rechazo_actualizar_estado_poliza_valor_prohibido(base_scenario: S
         assert res.status_code == 422
 
 
-# ═════════════════════════════════════════════════════════════════════════════
-# 2. CLIENTES: Validation & Boundary Failure Tests
-# ═════════════════════════════════════════════════════════════════════════════
-
 async def test_rechazo_cliente_cedula_invalida_modulo_10(base_scenario: ScenarioBundle):
     """Falla esperada: cedula con digito verificador corrupto rechazada con 422."""
     admin_token = base_scenario.admin_token
@@ -172,7 +157,7 @@ async def test_rechazo_cliente_cedula_invalida_modulo_10(base_scenario: Scenario
         res = await client.post(
             "/api/v1/clientes",
             json=cliente_payload(
-                identificacion="0926687859",  # Verificador correcto es 6, no 9
+                identificacion="0926687859",
                 nombres="Cliente Cedula Corrupta",
                 email="corrupto@test.ec",
             ),
@@ -189,7 +174,7 @@ async def test_rechazo_cliente_cedula_provincia_invalida(base_scenario: Scenario
         res = await client.post(
             "/api/v1/clientes",
             json=cliente_payload(
-                identificacion="2500000000",  # Provincia 25 no existe en Ecuador
+                identificacion="2500000000",
                 nombres="Cliente Provincia Falsa",
             ),
         )
@@ -225,10 +210,6 @@ async def test_rechazo_otp_cliente_inexistente(base_scenario: ScenarioBundle):
         assert "no encontrado" in res.json()["detail"].lower()
 
 
-# ═════════════════════════════════════════════════════════════════════════════
-# 3. VEHÍCULOS: Boundary & Invariant Failure Tests
-# ═════════════════════════════════════════════════════════════════════════════
-
 async def test_rechazo_vehiculo_cliente_inexistente(base_scenario: ScenarioBundle):
     """Falla esperada: registrar vehiculo para cliente inexistente responde 404."""
     admin_token = base_scenario.admin_token
@@ -260,7 +241,7 @@ async def test_rechazo_vehiculo_placa_duplicada(base_scenario: ScenarioBundle):
             "/api/v1/vehiculos",
             json=vehiculo_payload(
                 cliente_a.id,
-                placa=vehiculo_a.placa,  # Placa ya registrada
+                placa=vehiculo_a.placa,
                 marca="Chevrolet",
                 modelo="Aveo",
                 anio=2021,
@@ -276,12 +257,12 @@ async def test_rechazo_vehiculo_placa_malformada(base_scenario: ScenarioBundle):
     cliente_a = base_scenario.cliente_a
 
     placas_invalidas = [
-        "123-ABCD",    # Numeros primero
-        "P-1234",      # Solo 1 letra
-        "PB-12",       # Solo 2 digitos (minimo 4)
-        "PBA-123",     # Formato antiguo de 3 digitos no admitido en nuevas altas
-        "PBA-12345",   # 5 digitos
-        "pba-1234",    # Minusculas no normalizadas
+        "123-ABCD",
+        "P-1234",
+        "PB-12",
+        "PBA-123",
+        "PBA-12345",
+        "pba-1234",
     ]
 
     async with make_client(admin_token) as client:
@@ -298,10 +279,6 @@ async def test_rechazo_vehiculo_placa_malformada(base_scenario: ScenarioBundle):
             )
             assert res.status_code == 422, f"Placa inválida '{p}' debió ser rechazada con 422"
 
-
-# ═════════════════════════════════════════════════════════════════════════════
-# 4. SEGURIDAD: Token Tampering & Injection Failure Tests
-# ═════════════════════════════════════════════════════════════════════════════
 
 async def test_rechazo_token_jwt_manipulado_o_adulterado():
     """Falla esperada: token con firma criptografica adulterada debe ser rechazado con 401."""
@@ -334,17 +311,12 @@ async def test_rechazo_login_sql_injection_en_identificador(db_session: AsyncSes
                 "/api/v1/auth/login",
                 json=login_payload(identificador=sql_payload, password="Password123#"),
             )
-            # Debe responder 401 de credenciales invalidas, NUNCA 500 por error de sintaxis SQL
             assert res.status_code in (401, 429), (
                 f"SQLi payload '{sql_payload}' provocó estado inesperado {res.status_code}"
             )
             if res.status_code == 401:
                 assert "no son válidas" in res.json()["detail"]
 
-
-# ═════════════════════════════════════════════════════════════════════════════
-# 5. CATÁLOGO: Non-existent Resource Failure Tests
-# ═════════════════════════════════════════════════════════════════════════════
 
 async def test_rechazo_taller_inexistente(db_session: AsyncSession):
     """Falla esperada: consultar taller con UUID inexistente responde 404."""

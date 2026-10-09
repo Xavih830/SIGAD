@@ -205,5 +205,4 @@ class StorageService:
         return path
 
 
-# Singleton default instance
 storage_service = StorageService()

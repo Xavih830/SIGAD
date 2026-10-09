@@ -1,11 +1,4 @@
-"""Integration tests for Anti-IDOR / BOLA security controls on Documentos API.
-
-Obligatory Test File #16 in §21 of poryecto.md / IEEE 829 (UAT-16).
-Verifies strict isolation:
-  - Unauthorized clients cannot access or download documents of other clients (404/403).
-  - Agents and Admins have legitimate operational access to inspect and manage documents.
-  - Anonymous requests are rejected immediately with HTTP 401.
-"""
+"""Pruebas de integración para controles de seguridad Anti-IDOR en Documentos API."""
 
 import io
 import uuid
@@ -73,7 +66,6 @@ async def test_cliente_no_puede_descargar_documento_ajeno_retorna_404(base_scena
 
     doc_id, _ = await _crear_documento_en_bd(db_session, poliza_a.id, "cedula_privada_a.pdf")
 
-    # Intento de descarga por CLIENTE B
     async with make_client(token_b) as client_b:
         res_b = await client_b.get(f"/api/v1/documentos/{doc_id}/descargar")
         assert res_b.status_code in (403, 404), (
@@ -103,12 +95,10 @@ async def test_agente_puede_acceder_documentos_de_asegurados(base_scenario: Scen
     doc_id, tamano = await _crear_documento_en_bd(db_session, poliza_a.id, "inspeccion_agente.pdf")
 
     async with make_client(agente_token) as client_agente:
-        # 1. Consulta de metadatos
         res_meta = await client_agente.get(f"/api/v1/documentos/{doc_id}")
         assert res_meta.status_code == 200, f"Agente bloqueado en consulta de documento: {res_meta.text}"
         assert res_meta.json()["id"] == str(doc_id)
 
-        # 2. Descarga de archivo
         res_descarga = await client_agente.get(f"/api/v1/documentos/{doc_id}/descargar")
         assert res_descarga.status_code == 200, f"Agente bloqueado en descarga: {res_descarga.text}"
         assert len(res_descarga.content) == tamano

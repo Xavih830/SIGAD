@@ -1,14 +1,4 @@
-"""Integration test for Anti-BOLA defense-in-depth at SQL query level (Sección 17.1).
-
-Obligatory Test #13 / #23 (Section 21 of poryecto.md).
-Verifies:
-  1. A client can only query their own policies (GET /api/v1/polizas).
-  2. Direct object reference attempts by Client A accessing Client B's policy
-     (GET /api/v1/polizas/{id_b}) return HTTP 404, preventing ID enumeration.
-  3. Direct access to Client B's deductibles (GET /api/v1/polizas/{id_b}/deducibles) returns 404.
-  4. Direct access to Client B's vehicle (GET /api/v1/vehiculos/{id_b}) returns 404.
-  5. Administrators can view and query all policies across all clients.
-"""
+"""Pruebas de integración para defensa BOLA a nivel de consulta SQL."""
 
 import pytest
 
@@ -42,7 +32,6 @@ async def test_cliente_no_puede_acceder_a_poliza_ajena_por_id(base_scenario: Sce
     poliza_b = base_scenario.poliza_b
 
     async with make_client(token_a) as client:
-        # Client A requests Client B's policy
         response = await client.get(f"/api/v1/polizas/{poliza_b.id}")
         assert response.status_code == 404, (
             f"Esperado 404 para ocultar existencia de objeto ajeno, se obtuvo {response.status_code}"

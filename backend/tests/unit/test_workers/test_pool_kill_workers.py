@@ -1,4 +1,4 @@
-"""Test 2: Subproceso de extracción colgado es aniquilado con proc.kill() (SIGKILL)."""
+"""Subproceso de extracción colgado es aniquilado con proc.kill() (SIGKILL)."""
 
 import asyncio
 from concurrent.futures import ProcessPoolExecutor
@@ -21,10 +21,8 @@ async def test_pool_kill_workers_terminates_subprocess():
     executor = ProcessPoolExecutor(max_workers=1, mp_context=ctx)
     loop = asyncio.get_running_loop()
 
-    # Lanzar tarea que nunca termina
     future = loop.run_in_executor(executor, _bucle_infinito_sync)
 
-    # Esperar a que el proceso hijo haya nacido
     for _ in range(50):
         if hasattr(executor, "_processes") and len(executor._processes) > 0:
             break
@@ -35,14 +33,11 @@ async def test_pool_kill_workers_terminates_subprocess():
     pid = proc.pid
     assert proc.is_alive(), "El subproceso debe estar corriendo activamente"
 
-    # Invocar terminación forzosa
     terminar_pool_forzosamente(executor)
 
-    # Verificar que el proceso hijo ya no está vivo
     await asyncio.sleep(0.1)
     assert not proc.is_alive(), f"El subproceso con PID {pid} debió ser eliminado con SIGKILL"
 
-    # Verificar a nivel de sistema operativo que el PID terminó
     is_still_running = True
     try:
         os.kill(pid, 0)

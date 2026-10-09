@@ -1,12 +1,4 @@
-"""TEST: Canonical Jorgensen Decision Table for OCR Document Extraction.
-
-Verifies the 5 canonical business rules for OCR extraction review:
-R1: Legibilidad = No -> 'Rechazar Documento' (indifference on confidence, match, duplicate)
-R2: Legible = Sí, Confianza < 80% -> 'Revisión Manual Obligatoria' (indifference on match, duplicate)
-R3: Legible = Sí, Confianza >= 80%, Placa Duplicada = Sí -> 'Rechazar Documento' (indifference on match)
-R4: Legible = Sí, Confianza >= 80%, Coincide = Sí, Duplicada = No -> 'Aprobar Automáticamente'
-R5: Legible = Sí, Confianza >= 80%, Coincide = No, Duplicada = No -> 'Revisión Manual Obligatoria'
-"""
+"""Pruebas de tabla de decisión para el servicio de extracción OCR."""
 
 from decimal import Decimal
 import itertools
@@ -17,7 +9,6 @@ from app.services.extraccion_service import evaluar_decision_extraccion
 
 def test_regla_1_no_legible_rechaza_indiferente_a_otras_condiciones():
     """R1: If document is not legible, it MUST be rejected regardless of other variables."""
-    # Indifference test across all combinations of (confianza, coincide, duplicada)
     for conf in [Decimal("10.0"), Decimal("79.9"), Decimal("80.0"), Decimal("95.0")]:
         for coincide in [True, False]:
             for duplicada in [True, False]:
@@ -88,8 +79,7 @@ def test_regla_5_discrepancia_vehiculo_revision_manual():
 
 
 def test_fronteras_confianza_80_por_ciento():
-    """BVA: Boundary Value Analysis on the critical 80.0% confidence threshold."""
-    # Just below threshold (79.99%) -> R2 triggers (manual review)
+    """Boundary value analysis on the critical 80.0% confidence threshold."""
     res_below = evaluar_decision_extraccion(
         legible=True,
         confianza=79.99,
@@ -98,7 +88,6 @@ def test_fronteras_confianza_80_por_ciento():
     )
     assert res_below == "Revisión Manual Obligatoria"
 
-    # Exactly at threshold (80.00%) -> R4 triggers (auto-approve)
     res_exact = evaluar_decision_extraccion(
         legible=True,
         confianza=80.00,
@@ -107,7 +96,6 @@ def test_fronteras_confianza_80_por_ciento():
     )
     assert res_exact == "Aprobar Automáticamente"
 
-    # Just above threshold (80.01%) -> R4 triggers (auto-approve)
     res_above = evaluar_decision_extraccion(
         legible=True,
         confianza=80.01,
@@ -137,5 +125,4 @@ def test_completitud_y_consistencia_16_combinaciones():
         ], f"Unexpected decision '{decision}'"
         actions_found.add(decision)
 
-    # All three valid domain outcomes must be reachable across the canonical partition
     assert len(actions_found) == 3

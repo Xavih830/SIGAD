@@ -18,7 +18,6 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # ── Tabla: codigos_vinculacion ──────────────────────────────
     op.create_table(
         "codigos_vinculacion",
         sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
@@ -32,7 +31,6 @@ def upgrade() -> None:
     op.create_index("ix_codigos_vinculacion_cliente_id", "codigos_vinculacion", ["cliente_id"])
     op.create_index("ix_codigos_vinculacion_cliente_consumido", "codigos_vinculacion", ["cliente_id", "consumido"])
 
-    # ── Tabla: talleres ──────────────────────────────────────────
     op.create_table(
         "talleres",
         sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
@@ -46,7 +44,6 @@ def upgrade() -> None:
     op.create_index("ix_talleres_ciudad", "talleres", ["ciudad"])
     op.create_index("ix_talleres_activo", "talleres", ["activo"])
 
-    # ── Tabla: asistencias ───────────────────────────────────────
     op.create_table(
         "asistencias",
         sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
@@ -59,7 +56,6 @@ def upgrade() -> None:
     )
     op.create_index("ix_asistencias_activo", "asistencias", ["activo"])
 
-    # ── Seed data inicial para talleres y asistencias ───────────
     op.execute(
         sa.text("""
         INSERT INTO talleres (nombre, direccion, telefono, ciudad, activo)

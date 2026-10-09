@@ -1,4 +1,4 @@
-"""Test 6: Verificación de las 3 transiciones de pólizas con registro en auditoría e idempotencia."""
+"""Verificación de las 3 transiciones de pólizas con registro en auditoría e idempotencia."""
 
 from datetime import date
 from unittest.mock import AsyncMock, MagicMock
@@ -19,7 +19,6 @@ async def test_scheduler_transiciones_completas_e_idempotencia():
     p_activa = create_mock_poliza(estado=EstadoPoliza.ACTIVA)
     p_por_vencer = create_mock_poliza(estado=EstadoPoliza.ACTIVA)
 
-    # Mock DB execution for Run 1:
     mock_res_activar = MagicMock()
     mock_res_activar.scalars.return_value.all.return_value = [p_pendiente]
 
@@ -37,7 +36,6 @@ async def test_scheduler_transiciones_completas_e_idempotencia():
     ]
     mock_db.commit = AsyncMock()
 
-    # Ejecución 1
     res1 = await ejecutar_transiciones_polizas(mock_db, fecha_referencia=hoy)
     assert res1["activadas"] == 1
     assert res1["por_vencer"] == 1
@@ -48,7 +46,6 @@ async def test_scheduler_transiciones_completas_e_idempotencia():
     assert p_por_vencer.estado == EstadoPoliza.VENCIDA
     assert mock_db.commit.called
 
-    # Mock DB execution for Run 2 (Idempotencia: no polizas qualify):
     mock_empty = MagicMock()
     mock_empty.scalars.return_value.all.return_value = []
     mock_db.execute.side_effect = [mock_empty, mock_empty, mock_empty]

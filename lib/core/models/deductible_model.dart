@@ -1,9 +1,5 @@
 import 'package:sigad/core/utils/numeric_parser.dart';
 
-/// Modelo canónico para Deducibles en SIGAD.
-///
-/// Contrato estricto OpenAPI — sin shims ni fallbacks silenciosos.
-/// Claves canonicas backend: tipo_siniestro, porcentaje_valor, monto_minimo_usd.
 class DeductibleModel {
   final String? id;
   final String tipoSiniestro;
@@ -33,7 +29,6 @@ class DeductibleModel {
         'monto_minimo_usd': montoMinimoUsd,
       };
 
-  /// Serializa únicamente campos requeridos por DeducibleCreate (descarta id para evitar error 422).
   Map<String, dynamic> toCreatePayloadJson() => {
         'tipo_siniestro': tipoSiniestro,
         'porcentaje_valor': porcentajeValor,

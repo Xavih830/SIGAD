@@ -1,4 +1,4 @@
-"""TEST 27: Security Headers compliance verification (alias to test_caddy_headers)."""
+"""Verificación de cabeceras de seguridad HTTP y aislamiento en Caddy."""
 
 from tests.integration.test_caddy_headers import (
     test_caddy_routing_isolation,

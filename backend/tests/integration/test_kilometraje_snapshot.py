@@ -1,12 +1,4 @@
-"""Integration test for inmutable emission mileage snapshot (SC-2026-001 & Sec 3.2).
-
-Obligatory Test #12 (Section 21 of poryecto.md).
-Verifies:
-  1. The `vehiculos` model and table has NO mutable `kilometraje` column.
-  2. Mileage readings are stored in `inspecciones`.
-  3. When a policy is issued, `kilometraje_emision` is recorded inmutably in `polizas`.
-  4. Adding new inspections with higher mileage does NOT mutate `polizas.kilometraje_emision`.
-"""
+"""Prueba de integración para la inmutabilidad del snapshot de kilometraje en pólizas."""
 
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
@@ -42,7 +34,6 @@ async def test_kilometraje_snapshot_inmutable(db_session: AsyncSession, base_sce
     vehiculo_a = base_scenario.vehiculo_a
     admin_token = base_scenario.admin_token
 
-    # 1. Crear una inspección previa con 25,000 km
     inspeccion_1 = await create_inspeccion(
         db_session,
         vehiculo_id=vehiculo_a.id,
@@ -51,7 +42,6 @@ async def test_kilometraje_snapshot_inmutable(db_session: AsyncSession, base_sce
     )
     await db_session.commit()
 
-    # 2. Emitir póliza via API con snapshot de 25,000 km
     poliza_num = f"POL-SNAP-{uuid.uuid4().hex[:6].upper()}"
     payload = poliza_payload(
         cliente_a.id,
@@ -71,7 +61,6 @@ async def test_kilometraje_snapshot_inmutable(db_session: AsyncSession, base_sce
         poliza_id = created_data["id"]
         assert created_data["kilometraje_emision"] == 25000
 
-    # 3. Registrar una nueva inspección 6 meses después con 38,000 km
     inspeccion_2 = await create_inspeccion(
         db_session,
         vehiculo_id=vehiculo_a.id,
@@ -80,7 +69,6 @@ async def test_kilometraje_snapshot_inmutable(db_session: AsyncSession, base_sce
     )
     await db_session.commit()
 
-    # 4. Verificar en BD que kilometraje_emision de la póliza sigue siendo exactamente 25,000 km
     stmt = select(Poliza).where(Poliza.id == uuid.UUID(poliza_id))
     poliza_db = (await db_session.execute(stmt)).scalar_one()
 

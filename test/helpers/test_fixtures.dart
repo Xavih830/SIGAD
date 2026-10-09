@@ -9,13 +9,7 @@ import 'package:sigad/core/models/user_model.dart';
 import 'package:sigad/core/models/vehicle_model.dart';
 import 'test_factories.dart';
 
-/// Single Source of Truth (SSOT) para datos y fixtures de prueba (Object Mother).
-///
-/// Centraliza todas las identidades, credenciales, respuestas HTTP simuladas y entidades
-/// canónicas para erradicar por completo la Cirugía con Escopeta (Shotgun Surgery)
-/// y la dispersión de datos mágicos en la suite de pruebas.
 class TestFixtures {
-  // --- CREDENCIALES Y TOKENS CANÓNICOS ---
   static const String validToken = 'jwt_mock_token_valid';
   static const String refreshToken = 'jwt_refresh_mock_token';
   static const String activationToken = 'mock_activation_access_token';
@@ -31,10 +25,8 @@ class TestFixtures {
 
   static const String clientEmail = 'cliente@seguro.ec';
 
-  // --- CONFIGURACIÓN Y URLs CANÓNICAS ---
   static const String testBaseUrl = 'http://test-server:8000';
 
-  // --- VECTORES DE PRUEBA: CREDENCIALES INVÁLIDAS / MALFORMADAS ---
   static const String invalidCedulaModulo10 = '1234567890';
   static const String shortOtp = '12345';
   static const String invalidOtp = '000000';
@@ -51,7 +43,6 @@ class TestFixtures {
   static const String wrongPassword2 = 'WrongPassword2';
   static const String wrongPassword3 = 'WrongPassword3';
 
-  // --- MENSAJES Y ERRORES ESTÁNDAR ---
   static const String invalidCredentialsMessage = 'Las credenciales ingresadas no son válidas.';
   static const String serverErrorMessage = 'Error de conexión con el servidor';
   static const String invalidCredentialsDetail = 'Invalid credentials';
@@ -66,7 +57,6 @@ class TestFixtures {
   static const String passwordRequiresNumber = 'Debe incluir al menos un número';
   static const String passwordRequiresSpecial = 'Debe incluir un símbolo especial';
 
-  // --- ENTIDADES CANÓNICAS DE USUARIO ---
   static final UserModel adminUser = TestFactories.createUser(
     id: 'usr-admin-1',
     email: adminEmail,
@@ -107,7 +97,6 @@ class TestFixtures {
         refreshToken: activationRefreshToken,
       );
 
-  // --- RESPUESTAS HTTP CANNED (MOCKS) ---
   static String authSuccessResponseBody({
     UserModel? user,
     String? token,
@@ -148,7 +137,6 @@ class TestFixtures {
 
   static String errorDetailBody(String detail) => jsonEncode({'detail': detail});
 
-  // --- VEHÍCULO Y CLIENTE CANÓNICOS ---
   static final VehicleModel standardVehicle = TestFactories.createVehicle(
     id: 'veh-std-100',
     plate: 'PBC-4321',
@@ -171,7 +159,6 @@ class TestFixtures {
 
   static Map<String, dynamic> get standardClientJson => standardClient.toJson();
 
-  // --- PÓLIZAS CANÓNICAS ---
   static final PolicyModel activePolicy = TestFactories.createPolicy(
     id: 'pol-act-100',
     number: 'POL-EC-2026-999',
@@ -190,7 +177,6 @@ class TestFixtures {
 
   static Map<String, dynamic> get activePolicyJson => activePolicy.toJson();
 
-  // --- CUOTAS Y PAGOS CANÓNICOS ---
   static final PaymentModel paidPayment = TestFactories.createPayment(
     id: 'pago-01-paid',
     policyId: activePolicy.id,
@@ -251,7 +237,6 @@ class TestFixtures {
         status: overduePayment.status,
       );
 
-  // --- DOCUMENTOS OCR CANÓNICOS ---
   static const String ocrSampleDocumentId = 'd1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d';
   static const String ocrSampleFilename = 'poliza_contrato_ejemplo.pdf';
 
@@ -278,7 +263,6 @@ class TestFixtures {
 
   static final DocumentModel ocrDocumentModel = DocumentModel.fromJson(ocrDocumentSample);
 
-  // --- CATÁLOGOS CANÓNICOS ---
   static final WorkshopModel standardWorkshop = TestFactories.createWorkshop(
     id: 'tal-std-01',
     name: 'Taller Central Guayaquil',
@@ -299,7 +283,6 @@ class TestFixtures {
   );
   static Map<String, dynamic> get standardAssistanceJson => standardAssistance.toJson();
 
-  // --- DEDUCIBLES Y COBERTURAS CANÓNICAS ---
   static final DeductibleModel standardDeductible = TestFactories.createDeductible(
     id: 'ded-std-01',
     tipoSiniestro: 'general',

@@ -56,12 +56,10 @@ void main() {
       final adminTabs = DashboardTabRegistry.getPermittedTabs(admin);
       final agentTabs = DashboardTabRegistry.getPermittedTabs(agente);
 
-      // Admin debe tener las 6 pestañas (incluyendo esquemas OCR)
       expect(adminTabs.length, equals(6));
       expect(adminTabs.any((t) => t.id == 'reports'), isTrue);
       expect(adminTabs.any((t) => t.id == 'schemas'), isTrue);
 
-      // Agente no debe tener acceso a reports ni schemas
       expect(agentTabs.length, equals(4));
       expect(agentTabs.any((t) => t.id == 'reports'), isFalse);
       expect(agentTabs.any((t) => t.id == 'schemas'), isFalse);
@@ -87,7 +85,6 @@ void main() {
       expect(cache.get(), equals('valor_valido'));
       expect(cache.isValid, isTrue);
 
-      // Esperar expiración
       await Future.delayed(const Duration(milliseconds: 60));
       expect(cache.get(), isNull);
       expect(cache.isValid, isFalse);

@@ -10,7 +10,7 @@ import '../helpers/test_factories.dart';
 import '../helpers/test_fixtures.dart';
 
 void main() {
-  group('ClientsRepository Unit Tests (Zero Shotgun Surgery)', () {
+  group('ClientsRepository Unit Tests', () {
     final mockClient = TestFixtures.standardClient;
     final mockClientJson = TestFixtures.standardClientJson;
 
@@ -77,7 +77,7 @@ void main() {
       );
     });
 
-    test('getClientById propaga ApiForbiddenException ante HTTP 403 (Anti-BOLA)', () async {
+    test('getClientById propaga ApiForbiddenException ante HTTP 403', () async {
       final mockHttpClient = MockClient((request) async {
         return http.Response(
           TestFixtures.errorDetailBody('Acceso denegado a ficha de cliente ajena.'),

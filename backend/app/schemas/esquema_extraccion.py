@@ -51,9 +51,8 @@ class CampoReglaCreate(StrictBaseSchema):
         if v.count("(") > 10:
             raise ValueError("Patrón demasiado complejo (máx. 10 grupos de captura)")
 
-        # Detección de cuantificadores anidados: repetición dentro de grupo repetido
         if re.search(r"\([^)]*[+*]\)[+*]", v):
-            raise ValueError("Patrón potencialmente catastrófico (repetición anidada detectada - Anti-ReDoS)")
+            raise ValueError("Patrón potencialmente catastrófico (repetición anidada detectada)")
 
         return v
 
@@ -102,8 +101,6 @@ class EsquemaCreate(StrictBaseSchema):
             raise ValueError(f"Nombres de campos duplicados en el esquema: {sorted(duplicados)}")
         return v
 
-
-# ── Responses ─────────────────────────────────────────────────────────────────
 
 class EsquemaListItem(StrictBaseSchema):
     """Item de lista — sin campos para reducir tamaño del payload."""

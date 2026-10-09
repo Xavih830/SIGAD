@@ -1,4 +1,4 @@
-"""TEST 17: Detección de colisión de email lanzando EmailDuplicadoException (HTTP 409)."""
+"""Detección de colisión de email lanzando EmailDuplicadoException (HTTP 409)."""
 
 from unittest.mock import AsyncMock, MagicMock
 
@@ -26,12 +26,8 @@ async def test_vinculacion_email_duplicado():
     fake_cliente = create_mock_cliente(email=duplicate_email)
     fake_usuario = create_mock_user(email=duplicate_email)
 
-    # Mock DB session
     mock_session = AsyncMock()
 
-    # Sequence of queries:
-    # 1. select(Cliente) -> returns fake_cliente
-    # 2. select(Usuario) for email duplicate check -> returns fake_usuario (conflict!)
     res_cliente = MagicMock()
     res_cliente.scalar_one_or_none.return_value = fake_cliente
 
@@ -60,7 +56,6 @@ async def test_vinculacion_email_duplicado():
         data = response.json()
         assert data["detail"] == MSG_EMAIL_DUPLICADO
 
-        # Verify that no changes were committed or flushed before aborting
         mock_session.commit.assert_not_called()
         mock_session.flush.assert_not_called()
     finally:

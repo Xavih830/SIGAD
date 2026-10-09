@@ -42,5 +42,4 @@ class Inspeccion(Base):
         nullable=False,
     )
 
-    # Relationships
     vehiculo = relationship("Vehiculo", back_populates="inspecciones")

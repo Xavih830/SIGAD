@@ -38,7 +38,6 @@ logger = logging.getLogger("sigad.auth")
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
-# Uniform error — same message regardless of whether user exists or password is wrong
 _LOGIN_ERROR = "Las credenciales ingresadas no son válidas."
 _VINCULACION_ERROR = "Código de vinculación inválido o expirado."
 
@@ -53,14 +52,11 @@ async def login(
     ip = get_client_ip(request)
     identificador = body.identificador.strip()
 
-    # Rate limiting (Layers 1, 2, 3, 4)
     await rate_limiter.check_all(ip=ip, identity=identificador, endpoint="login")
 
     if "@" in identificador:
-        # Email-based lookup
         stmt = select(Usuario).where(Usuario.email == identificador.lower())
     else:
-        # Cédula-based lookup via clientes JOIN
         stmt = (
             select(Usuario)
             .join(Cliente, Cliente.usuario_id == Usuario.id)
@@ -71,7 +67,6 @@ async def login(
     user = result.scalar_one_or_none()
 
     if user is None or not user.activo:
-        # Constant-time defense: run Argon2 verify against dummy hash
         await verify_dummy(body.password)
         rate_limiter.record_failure(identity=identificador, ip=ip)
         raise HTTPException(
@@ -79,7 +74,6 @@ async def login(
             detail=_LOGIN_ERROR,
         )
 
-    # Real password verification (runs in thread via asyncio.to_thread)
     is_valid = await verify_password(body.password, user.password_hash)
     if not is_valid:
         rate_limiter.record_failure(identity=identificador, ip=ip)
@@ -90,7 +84,6 @@ async def login(
 
     rate_limiter.record_success(identity=identificador, ip=ip)
 
-    # Build JWT payload
     jti = str(uuid.uuid4())
     token_data = {"sub": str(user.id), "rol": user.rol.value, "jti": jti}
     access_token = create_access_token(token_data)
@@ -141,12 +134,10 @@ async def _validar_y_consumir_otp_vinculacion(
             detail=_VINCULACION_ERROR,
         )
 
-    # Validación criptográfica con HMAC-SHA256 (rotación trimestral)
     is_valid_otp = verify_otp_hmac(codigo_otp, codigo_obj.codigo_hmac)
 
     if not is_valid_otp:
         codigo_obj.intentos_fallidos += 1
-        # Al tercer intento fallido consecutivo: invalidar código inmediatamente
         if codigo_obj.intentos_fallidos >= 3:
             codigo_obj.consumido = True
         await db.commit()
@@ -170,16 +161,13 @@ async def vincular_cliente(
     ip = get_client_ip(request)
     cedula = body.cedula.strip()
 
-    # 1. Rate limiting en 4 capas
     await rate_limiter.check_all(ip=ip, identity=cedula, endpoint="vinculacion")
 
-    # 2. Búsqueda de cliente por cédula
     stmt_cliente = select(Cliente).where(Cliente.identificacion == cedula)
     res_cliente = await db.execute(stmt_cliente)
     cliente = res_cliente.scalar_one_or_none()
 
     if not cliente:
-        # Defensa de tiempo constante estructural ante cédula no registrada
         await verify_dummy(body.password)
         verify_dummy_otp(body.codigo_otp)
         rate_limiter.record_failure(identity=cedula, ip=ip)
@@ -188,7 +176,6 @@ async def vincular_cliente(
             detail=_VINCULACION_ERROR,
         )
 
-    # Defensa contra Account Takeover: impedir re-vinculación de cuentas ya activas
     if cliente.usuario_id is not None:
         await verify_dummy(body.password)
         verify_dummy_otp(body.codigo_otp)
@@ -198,7 +185,6 @@ async def vincular_cliente(
             detail="El cliente ya se encuentra vinculado a una cuenta de usuario.",
         )
 
-    # 3. Determinación y verificación estricta de colisión de email
     target_email = body.email_opcional or cliente.email
     if not target_email:
         raise HTTPException(
@@ -207,7 +193,6 @@ async def vincular_cliente(
         )
     target_email = target_email.strip().lower()
 
-    # Detección de colisión: si el correo ya existe en usuarios, abortar ANTES de tocar la DB
     stmt_email_check = select(Usuario).where(Usuario.email == target_email)
     res_email_check = await db.execute(stmt_email_check)
     existing_user_email = res_email_check.scalar_one_or_none()
@@ -216,7 +201,6 @@ async def vincular_cliente(
         rate_limiter.record_failure(identity=cedula, ip=ip)
         raise EmailDuplicadoException("El correo electrónico ya se encuentra registrado")
 
-    # 4. Verificación y consumo criptográfico de código OTP
     codigo_obj = await _validar_y_consumir_otp_vinculacion(
         db=db,
         cliente_id=cliente.id,
@@ -243,7 +227,6 @@ async def vincular_cliente(
 
     rate_limiter.record_success(identity=cedula, ip=ip)
 
-    # 6. Generación de tokens de acceso
     jti = str(uuid.uuid4())
     token_data = {"sub": str(nuevo_usuario.id), "rol": nuevo_usuario.rol.value, "jti": jti}
     access_token = create_access_token(token_data)

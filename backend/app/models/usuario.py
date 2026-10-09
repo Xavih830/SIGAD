@@ -49,5 +49,4 @@ class Usuario(Base):
         nullable=False,
     )
 
-    # Relationships
     sesiones = relationship("SesionAuth", back_populates="usuario", lazy="selectin")

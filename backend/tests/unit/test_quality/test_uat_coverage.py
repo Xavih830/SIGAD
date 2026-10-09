@@ -1,4 +1,4 @@
-"""TEST: 100% Traceability & Coverage of User Acceptance Tests (UAT-01 to UAT-23).
+"""Traceability and coverage verification of User Acceptance Tests (UAT-01 to UAT-23).
 
 Ensures complete bidirectional traceability between User Stories (HU-01 to HU-23),
 Master Test Plan IEEE 829 (SIGAD-TP-001.md), and physical automated test implementations.

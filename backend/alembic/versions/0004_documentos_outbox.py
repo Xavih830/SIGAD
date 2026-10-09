@@ -18,7 +18,6 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # ── Tabla: documentos ──────────────────────────────────────────
     op.create_table(
         "documentos",
         sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
@@ -45,7 +44,6 @@ def upgrade() -> None:
     op.create_index("ix_documentos_estado_extraccion", "documentos", ["estado_extraccion"])
     op.create_index("ix_documentos_lease_token", "documentos", ["lease_token"])
 
-    # ── Tabla: resultados_extraccion ──────────────────────────────
     op.create_table(
         "resultados_extraccion",
         sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),

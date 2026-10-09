@@ -10,7 +10,7 @@ import '../helpers/test_factories.dart';
 import '../helpers/test_fixtures.dart';
 
 void main() {
-  group('DocumentsRepository Unit Tests (Zero Shotgun Surgery)', () {
+  group('DocumentsRepository Unit Tests', () {
     final mockDoc = TestFixtures.ocrDocumentModel;
     final mockDocJson = TestFixtures.ocrDocumentSample;
 
@@ -76,7 +76,7 @@ void main() {
     });
 
     test('downloadDocumentBytes descarga bytes binarios en HTTP 200 con token de autorización', () async {
-      final expectedBytes = Uint8List.fromList([0x25, 0x50, 0x44, 0x46, 0x2D, 0x31, 0x2E, 0x34]); // %PDF-1.4
+      final expectedBytes = Uint8List.fromList([0x25, 0x50, 0x44, 0x46, 0x2D, 0x31, 0x2E, 0x34]);
 
       final mockHttpClient = MockClient((request) async {
         expect(request.url.path, equals(ApiEndpoints.documentoDescarga(mockDoc.id)));
@@ -97,7 +97,7 @@ void main() {
       expect(resultBytes, equals(expectedBytes));
     });
 
-    test('downloadDocumentBytes propaga ApiForbiddenException ante HTTP 403 (Anti-IDOR)', () async {
+    test('downloadDocumentBytes propaga ApiForbiddenException ante HTTP 403', () async {
       final mockHttpClient = MockClient((request) async {
         return http.Response(
           TestFixtures.errorDetailBody('Acceso denegado: el documento no pertenece a sus pólizas.'),

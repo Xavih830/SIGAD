@@ -1,4 +1,4 @@
-"""Test 5: Incremento atómico de intentos y transición a error_permanente al 3er fallo."""
+"""Incremento atómico de intentos y transición a error_permanente al 3er fallo."""
 
 from unittest.mock import AsyncMock, MagicMock
 import pytest
@@ -20,7 +20,6 @@ async def test_watchdog_atomic_increment_to_permanent_error():
     assert afectados == 1
     sql_text = mock_db.execute.call_args[0][0].text
 
-    # Validar la expresión atómica CASE para el 3er intento
     assert "WHEN intentos + 1 >= 3 THEN 'error_permanente'" in sql_text
     assert "WHEN intentos + 1 >= 3 THEN 'max_intentos_alcanzados_watchdog'" in sql_text
     assert "intentos = intentos + 1" in sql_text

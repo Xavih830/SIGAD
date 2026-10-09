@@ -37,10 +37,8 @@ class SesionAuth(Base):
         nullable=False,
     )
 
-    # Relationship
     usuario = relationship("Usuario", back_populates="sesiones")
 
-    # Composite index for active session lookups
     __table_args__ = (
         Index("ix_sesiones_auth_usuario_revocado", "usuario_id", "revocado"),
     )

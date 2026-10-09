@@ -14,7 +14,7 @@ import '../../helpers/test_factories.dart';
 import '../../helpers/test_fixtures.dart';
 
 void main() {
-  group('CBAC & OcrSchemasTabView Widget Tests (Anti-Vibecoding Gate)', () {
+  group('CBAC & OcrSchemasTabView Widget Tests', () {
     test('Control de acceso CBAC: Solo rol ADMIN posee AppCapability.manageOcrSchemas y manageCatalogs', () {
       final admin = TestFixtures.adminUser;
       final agent = TestFactories.createUser(role: UserRole.agente);

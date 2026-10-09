@@ -56,5 +56,4 @@ class Deducible(Base):
         nullable=False,
     )
 
-    # Relationships
     poliza = relationship("Poliza", back_populates="deducibles")

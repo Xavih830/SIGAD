@@ -1,14 +1,4 @@
-"""Multiverse Integration Test Suite — Happy, Bad, Horrible, and Shitty Paths.
-
-This suite demonstrates:
-1. Complete elimination of test data scattering via the Factory Pattern.
-2. Full transactional savepoint rollback (zero persistent database pollution).
-3. Comprehensive coverage across all 4 execution paths:
-   - Happy Path: Legitimate, compliant domain workflows.
-   - Bad Path: Expected business exceptions and client errors (400, 401, 404).
-   - Horrible Path: Boundary violations, domain invariant corruption, malformed formats (422).
-   - Shitty Path: Adversarial security attacks, BOLA/IDOR, privilege escalation, JWT forgery (401, 403, 404).
-"""
+"""Pruebas de integración para rutas de ejecución canónicas, límites y adversarial."""
 
 import base64
 import json
@@ -40,10 +30,6 @@ from tests.integration.conftest import make_client
 pytestmark = pytest.mark.asyncio(loop_scope="session")
 
 
-# ═════════════════════════════════════════════════════════════════════════════
-# 1. HAPPY PATH: Legitimate, Compliant Domain Workflows
-# ═════════════════════════════════════════════════════════════════════════════
-
 async def test_happy_path_emision_poliza_flujo_completo(base_scenario: ScenarioBundle):
     """Happy Path: An authorized admin successfully issues a policy with auto-seeded deductible."""
     admin_token = base_scenario.admin_token
@@ -65,7 +51,6 @@ async def test_happy_path_emision_poliza_flujo_completo(base_scenario: ScenarioB
         assert data["numero_poliza"] == payload["numero_poliza"]
         assert data["estado"] == "activa"
         assert data["kilometraje_emision"] == 12000
-        # Automatically attached default general deductible (SC-2026-001)
         assert len(data["deducibles"]) >= 1
         assert float(data["deducibles"][0]["porcentaje_valor"]) == 10.0
 
@@ -90,7 +75,6 @@ async def test_happy_path_registro_cliente_y_vehiculo_con_formatos_oficiales(bas
 async def test_happy_path_login_polimorfico(base_scenario: ScenarioBundle):
     """Happy Path: Polymorphic login succeeds both via corporate email and via Ecuadorian national ID."""
     async with make_client() as client:
-        # 1. Login by Email (Admin)
         res_email = await client.post(
             "/api/v1/auth/login",
             json=login_payload(base_scenario.admin_user.email),
@@ -98,7 +82,6 @@ async def test_happy_path_login_polimorfico(base_scenario: ScenarioBundle):
         assert res_email.status_code == 200, res_email.text
         assert "access_token" in res_email.json()
 
-        # 2. Login by Cédula (Cliente A)
         res_cedula = await client.post(
             "/api/v1/auth/login",
             json=login_payload(base_scenario.cliente_a.identificacion),
@@ -120,10 +103,6 @@ async def test_happy_path_transicion_estado_poliza(base_scenario: ScenarioBundle
         assert response.status_code == 200, response.text
         assert response.json()["estado"] == "cancelada"
 
-
-# ═════════════════════════════════════════════════════════════════════════════
-# 2. BAD PATH: Business Exceptions & Expected Client Errors (400, 401, 404)
-# ═════════════════════════════════════════════════════════════════════════════
 
 async def test_bad_path_emision_cliente_inexistente(base_scenario: ScenarioBundle):
     """Bad Path: Attempting to issue a policy for a non-existent client returns clean 404."""
@@ -154,7 +133,6 @@ async def test_bad_path_numero_poliza_duplicado(base_scenario: ScenarioBundle):
     admin_token = base_scenario.admin_token
     c_id = base_scenario.cliente_a.id
     v_id = base_scenario.vehiculo_a.id
-    # Use existing policy number from scenario
     payload = poliza_payload(c_id, v_id, numero_poliza=base_scenario.poliza_a.numero_poliza)
 
     async with make_client(admin_token) as client:
@@ -182,10 +160,6 @@ async def test_bad_path_consulta_poliza_id_inexistente(base_scenario: ScenarioBu
         assert response.status_code == 404
 
 
-# ═════════════════════════════════════════════════════════════════════════════
-# 3. HORRIBLE PATH: Boundary Violations, Invariants & Malformed Input (422)
-# ═════════════════════════════════════════════════════════════════════════════
-
 async def test_horrible_path_poliza_cronologia_invertida_o_cero(base_scenario: ScenarioBundle):
     """Horrible Path: Inverted dates (end < start) or zero-duration policy rejected with 422."""
     admin_token = base_scenario.admin_token
@@ -193,7 +167,6 @@ async def test_horrible_path_poliza_cronologia_invertida_o_cero(base_scenario: S
     v_id = base_scenario.vehiculo_a.id
 
     async with make_client(admin_token) as client:
-        # Case A: Inverted dates
         p_inv = poliza_payload(
             c_id, v_id,
             fecha_inicio="2026-06-01",
@@ -202,7 +175,6 @@ async def test_horrible_path_poliza_cronologia_invertida_o_cero(base_scenario: S
         res_inv = await client.post("/api/v1/polizas", json=p_inv)
         assert res_inv.status_code == 422
 
-        # Case B: Zero duration (same day)
         p_zero = poliza_payload(
             c_id, v_id,
             fecha_inicio="2026-06-01",
@@ -221,7 +193,7 @@ async def test_horrible_path_poliza_vigencia_mayor_a_5_anios(base_scenario: Scen
     p_5yr = poliza_payload(
         c_id, v_id,
         fecha_inicio="2026-01-01",
-        fecha_fin="2031-01-05",  # Exceeds 5 years
+        fecha_fin="2031-01-05",
     )
     async with make_client(admin_token) as client:
         response = await client.post("/api/v1/polizas", json=p_5yr)
@@ -234,12 +206,12 @@ async def test_horrible_path_cliente_cedula_violaciones_modulo_10(base_scenario:
     admin_token = base_scenario.admin_token
 
     casos_corruptos = [
-        "2501234567",  # Provincia 25 no existe en Ecuador
-        "9901234567",  # Provincia 99 no existe
-        "0981234567",  # Tercer dígito 8 prohibido para personas naturales
-        "0926687850",  # Check digit adulterado (el válido es 6)
-        "12345",       # Longitud insuficiente
-        "0926687856ABCD",  # Caracteres no numéricos
+        "2501234567",
+        "9901234567",
+        "0981234567",
+        "0926687850",
+        "12345",
+        "0926687856ABCD",
     ]
 
     async with make_client(admin_token) as client:
@@ -277,18 +249,15 @@ async def test_horrible_path_montos_financieros_negativos_o_cero(base_scenario: 
     v_id = base_scenario.vehiculo_a.id
 
     async with make_client(admin_token) as client:
-        # Case A: Insured value <= 0
         p_val_zero = poliza_payload(c_id, v_id, valor_asegurado=0)
         assert (await client.post("/api/v1/polizas", json=p_val_zero)).status_code == 422
 
         p_val_neg = poliza_payload(c_id, v_id, valor_asegurado=-15000)
         assert (await client.post("/api/v1/polizas", json=p_val_neg)).status_code == 422
 
-        # Case B: Premium <= 0
         p_pri_zero = poliza_payload(c_id, v_id, prima_mensual=0)
         assert (await client.post("/api/v1/polizas", json=p_pri_zero)).status_code == 422
 
-        # Case C: Mileage < 0
         p_km_neg = poliza_payload(c_id, v_id, kilometraje_emision=-500)
         assert (await client.post("/api/v1/polizas", json=p_km_neg)).status_code == 422
 
@@ -308,13 +277,8 @@ async def test_horrible_path_inyeccion_sql_en_login_y_consultas(db_session: Asyn
                 "/api/v1/auth/login",
                 json=login_payload(identificador=sqli, password="Password123!"),
             )
-            # Must reject with 401 or 422, NEVER crash with 500
             assert response.status_code in (401, 422), f"SQLi payload provoco código inesperado {response.status_code}"
 
-
-# ═════════════════════════════════════════════════════════════════════════════
-# 4. SHITTY PATH: Adversarial Attacks, BOLA/IDOR, Role Escalation & JWT Forgery
-# ═════════════════════════════════════════════════════════════════════════════
 
 async def test_shitty_path_bola_idor_acceso_cruzado_entre_inquilinos(base_scenario: ScenarioBundle):
     """Shitty Path: Malicious Client A attempts to access or mutate Client B's policy or vehicle."""
@@ -323,15 +287,12 @@ async def test_shitty_path_bola_idor_acceso_cruzado_entre_inquilinos(base_scenar
     vehiculo_b = base_scenario.vehiculo_b
 
     async with make_client(token_a) as client:
-        # Attack 1: Client A tries to read Client B's policy -> 404 (Anti-BOLA query level)
         res_p = await client.get(f"/api/v1/polizas/{poliza_b.id}")
         assert res_p.status_code == 404, "BOLA breach: Client A accessed Client B's policy!"
 
-        # Attack 2: Client A tries to read Client B's deductibles -> 404
         res_d = await client.get(f"/api/v1/polizas/{poliza_b.id}/deducibles")
         assert res_d.status_code == 404, "BOLA breach: Client A accessed Client B's deductibles!"
 
-        # Attack 3: Client A tries to read Client B's vehicle -> 404
         res_v = await client.get(f"/api/v1/vehiculos/{vehiculo_b.id}")
         assert res_v.status_code == 404, "BOLA breach: Client A accessed Client B's vehicle!"
 
@@ -344,12 +305,10 @@ async def test_shitty_path_escalamiento_de_privilegios_rol_cliente(base_scenario
     poliza_id = base_scenario.poliza_a.id
 
     async with make_client(token_cliente) as client:
-        # Attack 1: Client tries to issue a policy
         p_payload = poliza_payload(c_id, v_id)
         res_emit = await client.post("/api/v1/polizas", json=p_payload)
         assert res_emit.status_code == 403, "Privilege escalation: Client was able to issue a policy!"
 
-        # Attack 2: Client tries to cancel/alter a policy state
         res_state = await client.patch(
             f"/api/v1/polizas/{poliza_id}/estado",
             json={"estado": "cancelada"},
@@ -362,7 +321,6 @@ async def test_shitty_path_falsificacion_de_tokens_jwt(base_scenario: ScenarioBu
     admin_id = str(base_scenario.admin_user.id)
 
     async with make_client() as client:
-        # Attack 1: "none" algorithm attack (manually constructed base64url header and payload)
         raw_header = base64.urlsafe_b64encode(b'{"alg":"none","typ":"JWT"}').decode().rstrip("=")
         raw_payload = base64.urlsafe_b64encode(json.dumps({"sub": admin_id}).encode()).decode().rstrip("=")
         none_token = f"{raw_header}.{raw_payload}."
@@ -370,14 +328,12 @@ async def test_shitty_path_falsificacion_de_tokens_jwt(base_scenario: ScenarioBu
             res_none = await forged_client.get("/api/v1/polizas")
             assert res_none.status_code == 401, "JWT breach: 'none' algorithm token was accepted!"
 
-        # Attack 2: Tampered signature (valid token payload with forged signature)
         parts = base_scenario.admin_token.split(".")
         tampered_token = f"{parts[0]}.{parts[1]}.FORGED_SIGNATURE_HERE"
         async with make_client(tampered_token) as forged_client:
             res_tamp = await forged_client.get("/api/v1/polizas")
             assert res_tamp.status_code == 401, "JWT breach: Tampered signature was accepted!"
 
-        # Attack 3: Expired token
         past_exp = datetime.now(timezone.utc) - timedelta(hours=2)
         jwt_key = settings.JWT_SECRET_KEY.get_secret_value() if hasattr(settings.JWT_SECRET_KEY, "get_secret_value") else str(settings.JWT_SECRET_KEY)
         expired_token = jwt.encode(
@@ -389,7 +345,6 @@ async def test_shitty_path_falsificacion_de_tokens_jwt(base_scenario: ScenarioBu
             res_exp = await expired_client.get("/api/v1/polizas")
             assert res_exp.status_code == 401, "JWT breach: Expired token was accepted!"
 
-        # Attack 4: Malformed Bearer header schemas
         for bad_header in ["Bearer ", "Token some_token", "Bearer not.a.jwt", "InvalidHeader"]:
             transport_client = make_client()
             transport_client.headers["Authorization"] = bad_header
@@ -402,13 +357,11 @@ async def test_shitty_path_inyeccion_caracteres_nulos_y_xss(base_scenario: Scena
     admin_token = base_scenario.admin_token
 
     async with make_client(admin_token) as client:
-        # Case A: XSS in Client name (stored securely as text, never crashes or executes)
         xss_payload = cliente_payload(nombres='<script>alert("PWNED")</script>')
         res_xss = await client.post("/api/v1/clientes", json=xss_payload)
         assert res_xss.status_code == 201
         assert res_xss.json()["nombres"] == '<script>alert("PWNED")</script>'
 
-        # Case B: Null Byte Injection in Login
         rate_limiter.reset()
         res_null = await client.post(
             "/api/v1/auth/login",

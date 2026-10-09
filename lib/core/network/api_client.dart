@@ -7,7 +7,6 @@ import 'package:sigad/core/constants/app_constants.dart';
 import 'package:sigad/core/network/token_provider.dart';
 import 'package:sigad/core/services/session_vault.dart';
 
-/// Excepción tipada para respuestas de error de la API HTTP.
 class ApiException implements Exception {
   final int statusCode;
   final String message;
@@ -18,7 +17,6 @@ class ApiException implements Exception {
   String toString() => message;
 }
 
-/// Excepción para acceso no autorizado o permisos insuficientes (HTTP 403).
 class ApiForbiddenException extends ApiException {
   const ApiForbiddenException({
     required super.statusCode,
@@ -26,14 +24,6 @@ class ApiForbiddenException extends ApiException {
   });
 }
 
-/// Cliente HTTP canónico y centralizado para la aplicación.
-///
-/// Encapsula:
-/// 1. Resolución de URL base y timeouts.
-/// 2. Inyección automática del Bearer token de la sesión activa de SessionVault.
-/// 3. Decodificación UTF-8 consistente y parseo de JSON.
-/// 4. Manejo unificado de excepciones mediante [ApiException] y [ApiForbiddenException].
-/// 5. Notificación reactiva ante expiración de sesión (HTTP 401).
 class ApiClient {
   final http.Client _client;
   final String baseUrl;
@@ -99,7 +89,6 @@ class ApiClient {
     );
   }
 
-  /// Realiza una petición GET y retorna una lista de mapas JSON decodificados.
   Future<List<Map<String, dynamic>>> getList(
     String path, {
     String? token,
@@ -121,7 +110,6 @@ class ApiClient {
     _handleError(response);
   }
 
-  /// Realiza una petición GET y retorna un mapa JSON decodificado.
   Future<Map<String, dynamic>> getMap(
     String path, {
     String? token,
@@ -139,7 +127,6 @@ class ApiClient {
     _handleError(response);
   }
 
-  /// Realiza una petición GET y retorna los bytes binarios decodificados (Uint8List).
   Future<Uint8List> getBytes(
     String path, {
     String? token,
@@ -157,7 +144,6 @@ class ApiClient {
     _handleError(response);
   }
 
-  /// Realiza una petición POST enviando un cuerpo JSON opcional.
   Future<Map<String, dynamic>> post(
     String path, {
     Object? body,
@@ -181,7 +167,6 @@ class ApiClient {
     _handleError(response);
   }
 
-  /// Realiza una petición PATCH enviando un cuerpo JSON.
   Future<Map<String, dynamic>> patch(
     String path, {
     Object? body,
@@ -205,7 +190,6 @@ class ApiClient {
     _handleError(response);
   }
 
-  /// Realiza una petición Multipart para subida binaria de documentos.
   Future<Map<String, dynamic>> multipart({
     required String path,
     required Uint8List bytes,

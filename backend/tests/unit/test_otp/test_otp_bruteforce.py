@@ -1,4 +1,4 @@
-"""TEST 19: Bloqueo e invalidación forzosa del OTP tras 3 intentos fallidos consecutivos."""
+"""Bloqueo e invalidación forzosa del OTP tras 3 intentos fallidos consecutivos."""
 
 from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock
@@ -27,7 +27,6 @@ async def test_otp_bruteforce_invalidates_at_third_failed_attempt():
 
     fake_cliente = create_mock_cliente(nombres="Carlos Mendoza", email="carlos@test.ec")
 
-    # Real OTP is 654321, attacker will guess 000001, 000002, 000003
     real_otp = "654321"
     real_hmac = compute_otp_hmac(real_otp, settings.OTP_SECRET_KEY_ACTUAL)
 
@@ -42,10 +41,6 @@ async def test_otp_bruteforce_invalidates_at_third_failed_attempt():
 
     mock_session = AsyncMock()
 
-    # DB mocks:
-    # 1. select(Cliente) -> fake_cliente
-    # 2. select(Usuario) for email duplicate check -> None
-    # 3. select(CodigoVinculacion) -> codigo_obj
     res_cliente = MagicMock()
     res_cliente.scalar_one_or_none.return_value = fake_cliente
 
@@ -56,9 +51,9 @@ async def test_otp_bruteforce_invalidates_at_third_failed_attempt():
     res_otp.scalar_one_or_none.return_value = codigo_obj
 
     mock_session.execute.side_effect = [
-        res_cliente, res_user, res_otp,  # 1st attempt
-        res_cliente, res_user, res_otp,  # 2nd attempt
-        res_cliente, res_user, res_otp,  # 3rd attempt
+        res_cliente, res_user, res_otp,
+        res_cliente, res_user, res_otp,
+        res_cliente, res_user, res_otp,
     ]
     mock_session.commit = AsyncMock()
 
@@ -71,7 +66,6 @@ async def test_otp_bruteforce_invalidates_at_third_failed_attempt():
     try:
         transport = ASGITransport(app=app)
         async with AsyncClient(transport=transport, base_url="http://test") as client:
-            # Attempt 1: wrong OTP
             r1 = await client.post(
                 "/api/v1/auth/vinculacion",
                 json=vinculacion_payload(
@@ -84,7 +78,6 @@ async def test_otp_bruteforce_invalidates_at_third_failed_attempt():
             assert codigo_obj.intentos_fallidos == 1
             assert codigo_obj.consumido is False
 
-            # Attempt 2: wrong OTP
             r2 = await client.post(
                 "/api/v1/auth/vinculacion",
                 json=vinculacion_payload(
@@ -97,7 +90,6 @@ async def test_otp_bruteforce_invalidates_at_third_failed_attempt():
             assert codigo_obj.intentos_fallidos == 2
             assert codigo_obj.consumido is False
 
-            # Attempt 3: wrong OTP -> Must trigger lockout & invalidation
             r3 = await client.post(
                 "/api/v1/auth/vinculacion",
                 json=vinculacion_payload(

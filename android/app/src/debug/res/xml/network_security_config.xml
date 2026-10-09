@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Desarrollo / Debug Android (poryecto.md Sección 7.15): Permite cleartext traffic exclusivamente para emuladores y localhost -->
 <network-security-config>
     <base-config cleartextTrafficPermitted="false">
         <trust-anchors>

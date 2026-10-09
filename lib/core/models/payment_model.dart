@@ -7,7 +7,7 @@ class PaymentModel {
   final double amountUsd;
   final DateTime dueDate;
   final DateTime? paymentDate;
-  final String status; // 'pendiente', 'pagado', 'atrasado'
+  final String status;
   final String? paymentMethod;
   final String? receiptRef;
 
@@ -27,7 +27,6 @@ class PaymentModel {
   bool get isPending => status.toLowerCase() == 'pendiente';
   bool get isOverdue => status.toLowerCase() == 'atrasado';
 
-  /// Evalúa el estado financiero consolidado a partir de una lista de cuotas.
   static String calculateConsolidatedStatus(List<PaymentModel> payments, {String? defaultStatus}) {
     if (payments.isEmpty) {
       return defaultStatus ?? 'Sin cuotas registradas';

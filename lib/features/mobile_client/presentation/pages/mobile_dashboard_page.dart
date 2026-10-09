@@ -13,7 +13,7 @@ import 'package:sigad/features/mobile_client/presentation/tabs/mobile_policies_t
 import 'package:sigad/features/mobile_client/presentation/tabs/mobile_workshops_tab.dart';
 
 class MobileDashboardPage extends StatefulWidget {
-  final UserModel user; //  UserModel
+  final UserModel user;
   const MobileDashboardPage({super.key, required this.user});
 
   @override

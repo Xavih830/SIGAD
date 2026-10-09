@@ -6,7 +6,6 @@ import 'package:sigad/core/models/document_model.dart';
 import 'package:sigad/core/network/api_client.dart';
 import 'package:sigad/core/security/file_security_validator.dart';
 
-/// Repositorio canónico fuertemente tipado para el ciclo de vida de documentos OCR (HU-06).
 class DocumentsRepository {
   final ApiClient _client;
 
@@ -30,7 +29,6 @@ class DocumentsRepository {
     );
   }
 
-  /// Valida la integridad del archivo antes de transmitirlo al servidor (Pre-Flight Guard).
   static void validateFileIntegrity(Uint8List bytes, String filename) {
     FileSecurityValidator.validatePreFlight(bytes: bytes, filename: filename);
   }

@@ -10,7 +10,7 @@ import '../helpers/test_factories.dart';
 import '../helpers/test_fixtures.dart';
 
 void main() {
-  group('CatalogRepository Unit Tests (Zero Shotgun Surgery)', () {
+  group('CatalogRepository Unit Tests', () {
     final mockWorkshop = TestFixtures.standardWorkshop;
     final mockWorkshopJson = TestFixtures.standardWorkshopJson;
     final mockAssistance = TestFixtures.standardAssistance;
@@ -36,7 +36,7 @@ void main() {
 
       expect(firstCall, hasLength(1));
       expect(secondCall, hasLength(1));
-      expect(requestCount, equals(1)); // Respeto al rate-limit mediante cache
+      expect(requestCount, equals(1));
     });
 
     test('createWorkshop envía POST, invalida caché y retorna WorkshopModel creado', () async {

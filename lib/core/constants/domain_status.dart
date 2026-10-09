@@ -1,4 +1,3 @@
-/// Estados canónicos de dominio del sistema SIGAD.
 library;
 
 enum ExtractionStatus {

@@ -1,4 +1,4 @@
-"""Endpoints REST para consulta y liquidación de cuotas de pólizas con Anti-BOLA."""
+"""Endpoints REST para consulta y liquidación de cuotas de pólizas."""
 
 from datetime import date
 from typing import Any
@@ -25,8 +25,7 @@ async def listar_pagos_poliza(
     current_user: Usuario = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
-    """Lists installment schedule with strict Anti-BOLA tenant protection."""
-    # Verificar existencia y propiedad de la póliza
+    """Listar cronograma de pagos y cuotas de una póliza."""
     stmt = select(Poliza).options(selectinload(Poliza.cliente)).where(Poliza.id == poliza_id)
     res = await db.execute(stmt)
     poliza = res.scalar_one_or_none()
@@ -34,7 +33,6 @@ async def listar_pagos_poliza(
     if not poliza:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Póliza no encontrada.")
 
-    # Filtro SQL Anti-BOLA: cliente solo accede a sus pólizas
     if current_user.rol == RolEnum.CLIENTE:
         if not poliza.cliente or poliza.cliente.usuario_id != current_user.id:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Póliza no encontrada.")
@@ -52,7 +50,7 @@ async def registrar_pago_cuota(
     current_user: Usuario = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> Any:
-    """Allows Agents and Admins to register an installment payment."""
+    """Registrar el pago de una cuota de póliza."""
     if current_user.rol not in [RolEnum.ADMIN, RolEnum.AGENTE]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No autorizado para registrar pagos.")
 

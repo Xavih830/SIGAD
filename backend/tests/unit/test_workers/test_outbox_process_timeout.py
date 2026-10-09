@@ -1,4 +1,4 @@
-"""Test 1: Disparo de TimeoutError exacto al superar el timeout en extracción."""
+"""Disparo de TimeoutError exacto al superar el timeout en extracción."""
 
 import asyncio
 import time

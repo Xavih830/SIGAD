@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Reglas de extracción de datos seguras para Android 12+ (API 31+) - CWE-538 / OWASP MASVS-STORAGE -->
 <data-extraction-rules>
     <cloud-backup>
         <exclude domain="root" />

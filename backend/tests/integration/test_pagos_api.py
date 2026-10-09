@@ -1,11 +1,4 @@
-"""Integration tests for Pagos and Installments REST API (HU-20 / UAT-20).
-
-Validates:
-1. Installment schedule querying by authorized clients and staff.
-2. Strict SQL-level Anti-BOLA isolation (Cliente B gets 404 trying to view Cliente A's payments).
-3. RBAC on payment registration (Admins & Agents can register, Clients receive 403).
-4. Error handling for non-existent policies and installments.
-"""
+"""Pruebas de integración para la API REST de Pagos y Cuotas."""
 
 from datetime import date, timedelta
 from decimal import Decimal
@@ -27,7 +20,6 @@ async def test_listar_pagos_propios_cliente(base_scenario: ScenarioBundle, db_se
     poliza_a = base_scenario.poliza_a
     token_a = base_scenario.token_a
 
-    # Create 2 installments for poliza_a
     await create_pago(
         db_session,
         poliza_id=poliza_a.id,

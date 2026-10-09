@@ -120,7 +120,6 @@ class _OcrTabViewState extends State<OcrTabView> {
     } catch (_) {}
     if (!mounted) return;
 
-    // Extraer campos reales detectados por OCR (sin inventar datos sintéticos)
     final String numeroPoliza = campos['numero_poliza']?.toString().trim() ?? '';
     final String rawValor = (campos['valor_asegurado']?.toString() ?? '').replaceAll(RegExp(r'[^0-9.]'), '');
     final double? parsedValor = rawValor.isNotEmpty ? double.tryParse(rawValor) : null;
@@ -138,7 +137,6 @@ class _OcrTabViewState extends State<OcrTabView> {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No hay clientes registrados. Cree un cliente antes de vincular una póliza OCR.'), backgroundColor: Colors.red));
       return;
     }
-    // Usar UUID canónico del cliente
     final String clientId = clients.first.id;
 
     final request = CreatePolicyRequest(

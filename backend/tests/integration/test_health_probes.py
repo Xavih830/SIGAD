@@ -1,12 +1,4 @@
-"""TEST: Healthcheck probes and orchestration verification.
-
-Validates that:
-1. API /health and /health/ready verify database connectivity with bounded latency.
-2. API /health/live provides lightweight liveness without hitting the database.
-3. Worker health endpoints validate ProcessPool responsiveness.
-4. docker-compose.yml defines healthchecks and restart policies per poryecto.md §2.5.
-5. Caddyfile reverse-proxies health, docs, and openapi.
-"""
+"""Validación de sondas de salud (liveness y readiness) y orquestación."""
 
 from pathlib import Path
 import pytest
@@ -26,29 +18,23 @@ pytestmark = pytest.mark.asyncio(loop_scope="session")
 async def test_api_health_and_readiness_endpoints(db_session: AsyncSession):
     """API /health and /health/ready validate active database connection and handle degradation."""
     async with make_client(None) as client:
-        # 1. Health (Readiness default)
         res_health = await client.get("/health")
         assert res_health.status_code == 200, f"Health check failed with body: {res_health.text}"
         data_health = res_health.json()
         assert data_health["status"] == "ok"
         assert data_health["database"] == "connected"
 
-        # 2. Readiness explicit
         res_ready = await client.get("/health/ready")
         assert res_ready.status_code == 200
         assert res_ready.json()["database"] == "connected"
 
-        # 3. Liveness explicit (0 DB dependency)
         res_live = await client.get("/health/live")
         assert res_live.status_code == 200
         assert res_live.json() == {"status": "ok"}
 
-        # 4. Simular caída de base de datos para verificar 503 Degraded
         with patch.object(db_session, "execute", side_effect=Exception("Connection lost")):
-            # Reset cache timestamp to force deep check
             from app.main import app as main_app
             res_degraded = await client.get("/health")
-            # In live scenario with real DB error, should return 503
             assert res_degraded.status_code in [200, 503]
 
 
@@ -56,12 +42,10 @@ async def test_worker_health_endpoints():
     """Worker /health and /health/live return active pool status."""
     transport = ASGITransport(app=worker_app)
     async with AsyncClient(transport=transport, base_url="http://test") as worker_client:
-        # Liveness
         res_live = await worker_client.get("/health/live")
         assert res_live.status_code == 200
         assert res_live.json() == {"status": "ok", "worker": "running"}
 
-        # Readiness
         res_health = await worker_client.get("/health")
         assert res_health.status_code == 200
         data = res_health.json()
@@ -85,7 +69,6 @@ async def test_docker_compose_healthchecks_and_restart_policy():
         assert srv.get("restart") == "always", f"Service {service_name} does not have restart: always"
         assert "healthcheck" in srv, f"Service {service_name} missing healthcheck declaration (§2.5)"
 
-    # Verify caddy proxies /health, /docs, /openapi.json
     caddy_path = repo_root / "Caddyfile"
     caddy_content = caddy_path.read_text(encoding="utf-8")
     assert "handle /health*" in caddy_content or "/health" in caddy_content

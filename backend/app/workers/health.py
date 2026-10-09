@@ -20,7 +20,7 @@ worker_app = FastAPI(
 
 
 _worker_health_cache: dict[str, Any] = {"status": "unknown", "timestamp": 0.0}
-_CACHE_TTL = 3.0  # segundos
+_CACHE_TTL = 3.0
 
 
 @worker_app.get("/health/live")
@@ -32,7 +32,7 @@ async def get_worker_liveness() -> dict[str, str]:
 @worker_app.get("/health")
 @worker_app.get("/health/ready")
 async def get_worker_health() -> dict[str, Any]:
-    """Returns worker status ok and validates that ProcessPool is active (poryecto.md §2.5)."""
+    """Returns worker status ok and validates that ProcessPool is active."""
     now = time.monotonic()
     if now - _worker_health_cache["timestamp"] < _CACHE_TTL and _worker_health_cache["status"] == "active":
         return {"status": "ok", "worker": "running", "pool": "active"}
@@ -66,7 +66,6 @@ async def start_health_server_async(host: str = "127.0.0.1", port: int = 8001) -
     config = uvicorn.Config(app=worker_app, host=host, port=port, log_level="warning")
     server = uvicorn.Server(config)
     asyncio.create_task(server.serve())
-    # Allow short spin-up
     await asyncio.sleep(0.2)
     return server
 

@@ -4,7 +4,6 @@ import 'package:sigad/core/repositories/extraction_schemas_repository.dart';
 import 'package:sigad/core/theme/app_theme.dart';
 import 'package:sigad/core/utils/file_picker_helper.dart';
 
-/// Diálogo interactivo para probar reglas de esquemas OCR en memoria contra documentos reales.
 class SchemaTestDialog extends StatefulWidget {
   final ExtractionSchemaModel schema;
   final ExtractionSchemasRepository? repository;

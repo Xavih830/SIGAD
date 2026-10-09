@@ -1,12 +1,4 @@
-"""Esquemas de extracción configurables — CRUD con BFLA via check_role.
-
-Seguridad aplicada (OWASP API Security Top 10:2023):
-- API2: HTTPBearer + type=='access' heredado de get_current_user.
-- API3: StrictBaseSchema con extra='forbid' en todos los payloads de entrada.
-- API5 BFLA: check_role(ADMIN) en escrituras, check_role(ADMIN, AGENTE) en lecturas.
-- ReDoS: @field_validator("regex") en Pydantic compila, limita grupos y detecta anidación.
-- Tmpfile leak: os.unlink(tmp_path) en bloque finally garantizado.
-"""
+"""Esquemas de extracción configurables — Endpoints de administración y testing."""
 
 import os
 from pathlib import Path
@@ -37,8 +29,6 @@ from app.services.storage_service import (
 
 router = APIRouter(prefix="/esquemas", tags=["Esquemas de Extracción"])
 
-
-# ── Lecturas: ADMIN + AGENTE ──────────────────────────────────────────────────
 
 @router.get("", response_model=list[EsquemaListItem])
 async def listar_esquemas(
@@ -73,8 +63,6 @@ async def obtener_esquema(
         )
     return esquema
 
-
-# ── Escrituras: solo ADMIN ────────────────────────────────────────────────────
 
 @router.post("", response_model=EsquemaResponse, status_code=status.HTTP_201_CREATED)
 async def crear_esquema(
@@ -129,7 +117,6 @@ async def activar_esquema(
             detail="Esquema no encontrado.",
         )
 
-    # Desactivar todas las demás versiones del mismo codigo
     await db.execute(
         update(EsquemaExtraccion)
         .where(
@@ -143,8 +130,6 @@ async def activar_esquema(
     await db.refresh(esquema)
     return esquema
 
-
-# ── Prueba sin persistir: ADMIN + AGENTE ─────────────────────────────────────
 
 @router.post("/{esquema_id}/probar", response_model=ProbarEsquemaResponse)
 async def probar_esquema(

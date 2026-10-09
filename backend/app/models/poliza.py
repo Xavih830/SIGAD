@@ -50,8 +50,6 @@ class Poliza(Base):
     )
     valor_asegurado: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     prima_mensual: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
-    
-    # Snapshot contractual inmutable (SC-2026-001 & Sec 3.2):
     kilometraje_emision: Mapped[int] = mapped_column(Integer, nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(
@@ -68,7 +66,6 @@ class Poliza(Base):
         nullable=False,
     )
 
-    # Relationships
     cliente = relationship("Cliente", back_populates="polizas")
     vehiculo = relationship("Vehiculo", back_populates="polizas")
     inspeccion = relationship("Inspeccion")

@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:sigad/core/models/policy_model.dart';
 import 'package:sigad/core/theme/app_theme.dart';
 
-/// Diálogo de visualización canónica de Póliza en modo solo lectura.
-/// Respeta la inmutabilidad de los contratos emitidos en el backend (PostgreSQL).
 class PolicyDetailDialog extends StatelessWidget {
   final PolicyModel policy;
   final ValueChanged<String>? onStatusChange;

@@ -29,7 +29,6 @@ def create_app() -> FastAPI:
         openapi_url=None if is_production else "/openapi.json",
     )
 
-    # CORS Middleware with strict origin whitelist (CWE-942 remediation)
     application.add_middleware(
         CORSMiddleware,
         allow_origins=settings.CORS_ORIGINS,
@@ -38,14 +37,11 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    # Register global exception handlers (SQLAlchemyError → no PII in logs)
     register_handlers(application)
-
-    # Mount API v1 routes
     application.include_router(api_router)
 
     _health_cache = {"status": "unknown", "timestamp": 0.0}
-    _CACHE_TTL = 3.0  # segundos
+    _CACHE_TTL = 3.0
 
     @application.get("/health/live", tags=["Infra"])
     async def liveness() -> dict[str, str]:
@@ -55,7 +51,7 @@ def create_app() -> FastAPI:
     @application.get("/health", tags=["Infra"])
     @application.get("/health/ready", tags=["Infra"])
     async def health(db: AsyncSession = Depends(get_db)) -> dict:
-        """Deep readiness probe: validates PostgreSQL with bounded timeout and rate-cache (poryecto.md §2.5)."""
+        """Deep readiness probe: validates PostgreSQL connectivity with bounded timeout and rate-cache."""
         now = time.monotonic()
         if now - _health_cache["timestamp"] < _CACHE_TTL and _health_cache["status"] == "connected":
             return {"status": "ok", "database": "connected"}

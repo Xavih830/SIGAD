@@ -104,7 +104,6 @@ class AssistanceModel {
   };
 }
 
-/// DTO para la creación administrativa de un nuevo taller mecánico autorizado.
 class CreateWorkshopRequest {
   final String nombre;
   final String direccion;
@@ -129,7 +128,6 @@ class CreateWorkshopRequest {
   };
 }
 
-/// DTO para la creación administrativa de un nuevo servicio de asistencia.
 class CreateAssistanceRequest {
   final String titulo;
   final String descripcion;

@@ -19,10 +19,8 @@ logger = logging.getLogger("sigad.worker")
 async def main() -> None:
     """Entrypoint executing health server and background tasks."""
     logger.info("Initializing SIGAD background worker services...")
-    # Start healthcheck server on port 8001 bound strictly to private container loopback
     await start_health_server_async(host="127.0.0.1", port=8001)
 
-    # Run background loops concurrently
     tasks = [
         asyncio.create_task(loop_consumidor_outbox()),
         asyncio.create_task(loop_scheduler_diario()),
@@ -42,7 +40,6 @@ async def main() -> None:
         except (NotImplementedError, RuntimeError):
             pass
 
-    # Wait until stop or any fatal error
     wait_stop = asyncio.create_task(stop_event.wait())
     done, pending = await asyncio.wait(
         [wait_stop, *tasks],

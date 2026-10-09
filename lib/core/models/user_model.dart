@@ -1,4 +1,3 @@
-/// Roles canónicos de usuarios en SIGAD según contrato OpenAPI.
 enum UserRole {
   admin('admin', 'Administrador'),
   agente('agente', 'Agente Autorizado'),
@@ -16,10 +15,6 @@ enum UserRole {
   }
 }
 
-/// Modelo canónico para Usuarios en SIGAD.
-///
-/// Contrato estricto OpenAPI — sin shims bilingüe ni fallbacks silenciosos.
-/// Falla-Rápido: lanza TypeError o StateError si el backend omite campos requeridos.
 class UserModel {
   final String id;
   final String email;

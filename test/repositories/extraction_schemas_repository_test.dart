@@ -11,7 +11,7 @@ import '../helpers/test_factories.dart';
 import '../helpers/test_fixtures.dart';
 
 void main() {
-  group('ExtractionSchemasRepository Unit Tests (Zero Shotgun Surgery)', () {
+  group('ExtractionSchemasRepository Unit Tests', () {
     final mockSchema = TestFactories.createExtractionSchema();
     final mockSchemaJson = mockSchema.toJson();
     final mockListItem = TestFactories.createExtractionSchemaListItem();
@@ -39,7 +39,7 @@ void main() {
       expect(list.first.version, equals(mockListItem.version));
     });
 
-    test('getSchemas propaga ApiForbiddenException ante HTTP 403 (BFLA)', () async {
+    test('getSchemas propaga ApiForbiddenException ante HTTP 403', () async {
       final mockHttpClient = MockClient((request) async {
         return http.Response(
           TestFixtures.errorDetailBody('Solo ADMIN y AGENTE pueden consultar esquemas.'),
@@ -161,7 +161,7 @@ void main() {
     });
 
     test('testSchema valida pre-flight y retorna TestSchemaResultModel en HTTP 200', () async {
-      final pdfBytes = Uint8List.fromList([0x25, 0x50, 0x44, 0x46, 0x2D, 0x31, 0x2E, 0x34]); // %PDF-1.4
+      final pdfBytes = Uint8List.fromList([0x25, 0x50, 0x44, 0x46, 0x2D, 0x31, 0x2E, 0x34]);
       final testResult = TestFactories.createTestSchemaResult(
         confianza: 95.0,
         camposExtraidos: {'numero_poliza': 'POL-9999'},

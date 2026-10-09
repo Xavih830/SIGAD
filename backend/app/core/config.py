@@ -13,13 +13,12 @@ from typing import Literal
 from pydantic import SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# backend/app/core/config.py -> core(1) -> app(2) -> backend(3) -> SIGAD(4)
 _CANONICAL_ROOT_ENV = Path(__file__).resolve().parents[3] / ".env"
 _ENV_FILE_SOURCE = _CANONICAL_ROOT_ENV if _CANONICAL_ROOT_ENV.exists() else None
 
 
 class Settings(BaseSettings):
-    """Application settings sourced strictly from environment or canonical root .env file."""
+    """Configuración de la aplicación cargada desde variables de entorno o archivo .env."""
 
     model_config = SettingsConfigDict(
         env_file=_ENV_FILE_SOURCE,
@@ -27,26 +26,21 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # 1. Entorno de Ejecución
     ENVIRONMENT: Literal["development", "staging", "production", "testing"] = "development"
 
-    # 2. Base de Datos PostgreSQL (FAIL-FAST: Sin defaults)
     DATABASE_URL: str
     DATABASE_SYNC_URL: str
     SQL_ECHO: bool = False
 
-    # 3. Seguridad JWT (FAIL-FAST: Sin defaults, enmascarado)
     JWT_SECRET_KEY: SecretStr
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     JWT_REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
-    # 4. OTP HMAC con Rotación Trimestral (FAIL-FAST: Sin defaults, enmascarado)
     OTP_SECRET_KEY_ACTUAL: SecretStr
     OTP_SECRET_KEY_ANTERIOR: SecretStr
     OTP_EXPIRATION_MINUTES: int = 15
 
-    # 5. Canal SMTP Corporativo (FAIL-FAST: Sin defaults)
     SMTP_HOST: str
     SMTP_PORT: int
     SMTP_FROM_EMAIL: str
@@ -54,12 +48,10 @@ class Settings(BaseSettings):
     SMTP_PASSWORD: SecretStr = SecretStr("")
     SMTP_USE_TLS: bool = False
 
-    # 6. Servidor Uvicorn
     UVICORN_WORKERS: int = 2
     UVICORN_HOST: str = "0.0.0.0"
     UVICORN_PORT: int = 8000
 
-    # 7. Almacenamiento
     UPLOAD_DIR: str = "uploads"
 
     @field_validator("UPLOAD_DIR")
@@ -73,10 +65,8 @@ class Settings(BaseSettings):
             raise ValueError(f"Directorio UPLOAD_DIR inseguro o reservado: {v}")
         return clean
 
-    # 8. Rate Limiting
     RATE_LIMITING_ENABLED: bool = True
 
-    # 9. Dominios permitidos para CORS (Prevención de CWE-942)
     CORS_ORIGINS: list[str] = [
         "http://localhost",
         "http://localhost:80",
@@ -107,5 +97,4 @@ def get_settings() -> Settings:
     return Settings()
 
 
-# Singleton export for application modules
 settings = get_settings()

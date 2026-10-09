@@ -24,7 +24,6 @@ ph = PasswordHasher(memory_cost=19456, time_cost=2, parallelism=1)
 
 
 def upgrade() -> None:
-    # ── Tabla: usuarios ─────────────────────────────────────────
     op.create_table(
         "usuarios",
         sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
@@ -37,7 +36,6 @@ def upgrade() -> None:
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
     )
 
-    # ── Tabla: clientes ─────────────────────────────────────────
     op.create_table(
         "clientes",
         sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
@@ -49,7 +47,6 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
     )
 
-    # ── Tabla: sesiones_auth ────────────────────────────────────
     op.create_table(
         "sesiones_auth",
         sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
@@ -63,7 +60,6 @@ def upgrade() -> None:
     )
     op.create_index("ix_sesiones_auth_usuario_revocado", "sesiones_auth", ["usuario_id", "revocado"])
 
-    # ── Seed data ───────────────────────────────────────────────
     usuarios_table = sa.table(
         "usuarios",
         sa.column("id", UUID(as_uuid=True)),

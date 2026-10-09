@@ -8,12 +8,10 @@
         Permissions-Policy "camera=(), microphone=(), geolocation=()"
     }
 
-    # Control de tamaño de buffer de subida (Anti-DoS / Buffer Overflow)
     request_body {
         max_size 15MB
     }
 
-    # Enrutamiento de la API REST hacia el contenedor backend
     handle /api/* {
         reverse_proxy api:8000 {
             header_up Host {host}
@@ -21,7 +19,6 @@
         }
     }
 
-    # Documentación OpenAPI interactiva (Swagger)
     handle /docs* {
         reverse_proxy api:8000 {
             header_up Host {host}
@@ -36,7 +33,6 @@
         }
     }
 
-    # Sonda de salud (Health Check)
     handle /health* {
         reverse_proxy api:8000 {
             header_up Host {host}
@@ -44,14 +40,11 @@
         }
     }
 
-
-    # Descarga directa del APK de la app móvil
     handle /descargas/* {
         root * /srv/downloads
         file_server
     }
 
-    # SPA Flutter Web
     handle {
         root * /srv/flutter_web
         try_files {path} /index.html

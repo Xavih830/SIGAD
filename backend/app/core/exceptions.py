@@ -10,11 +10,7 @@ class SIGADException(Exception):
 
 
 class FechaInvalidaException(SIGADException):
-    """Raised when policy dates are chronologically incoherent (fecha_fin <= fecha_inicio).
-    
-    Represents Node 4 (Exception Sink) in the formal Control Flow Graph (CFG) of
-    validar_y_calcular_estado_inicial.
-    """
+    """Raised when policy dates are chronologically incoherent (fecha_fin <= fecha_inicio)."""
 
     def __init__(self, message: str = "La fecha de fin debe ser estrictamente posterior a la fecha de inicio.") -> None:
         super().__init__(message)

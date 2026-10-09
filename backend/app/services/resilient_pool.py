@@ -83,5 +83,4 @@ class ResilientProcessPool:
             )
 
 
-# Default shared singleton instance
 resilient_pool = ResilientProcessPool(max_workers=1)

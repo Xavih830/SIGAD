@@ -6,8 +6,6 @@ import 'package:sigad/core/models/policy_model.dart';
 import 'package:sigad/core/models/vehicle_model.dart';
 import 'package:sigad/core/network/api_client.dart';
 
-/// Repositorio canónico para gestión y consulta de pólizas de seguro.
-/// Desacopla la lógica HTTP y deserialización de las vistas de presentación.
 class PoliciesRepository {
   final ApiClient _client;
 

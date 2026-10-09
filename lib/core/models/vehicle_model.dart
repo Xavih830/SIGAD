@@ -1,9 +1,5 @@
 import 'package:sigad/core/utils/numeric_parser.dart';
 
-/// Modelo de datos canónico para Vehículos en SIGAD.
-///
-/// Contrato estricto OpenAPI — sin shims de compatibilidad en inglés.
-/// Falla-Rápido: si el backend no entrega los campos requeridos, lanza TypeError.
 class VehicleModel {
   final String? id;
   final String plate;

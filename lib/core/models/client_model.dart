@@ -1,7 +1,3 @@
-/// Modelo canónico para Clientes en SIGAD.
-///
-/// Contrato estricto con OpenAPI (/api/v1/clientes) — sin shims bilingües.
-/// Falla-rápido: campos requeridos tipados estrictamente.
 class ClientModel {
   final String id;
   final String identificacion;
@@ -50,7 +46,6 @@ class ClientModel {
       };
 }
 
-/// DTO canónico para la solicitud de creación de clientes.
 class CreateClientRequest {
   final String identificacion;
   final String nombres;

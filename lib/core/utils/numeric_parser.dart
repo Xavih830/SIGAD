@@ -1,7 +1,3 @@
-/// Utilidad estricta para deserialización numérica de contratos JSON/OpenAPI.
-///
-/// Soporta tanto literales numéricos (`num`) como representaciones serializadas
-/// de `Decimal` de Python/FastAPI (`String`), sin recurrir a fallbacks silenciosos.
 double parseRequiredDouble(dynamic value) {
   if (value == null) {
     throw TypeError();

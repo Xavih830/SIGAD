@@ -47,5 +47,4 @@ class ResultadoExtraccion(Base):
         nullable=False,
     )
 
-    # Relación
     documento = relationship("Documento", back_populates="resultado")

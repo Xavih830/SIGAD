@@ -1,11 +1,4 @@
-"""Unit tests for EsquemaExtraccion schemas and aplicar_esquema service function.
-
-Multi-Domain & Adversarial Testing:
-- Evaluates 3 distinct policy domains: Vehicular (Equinoccial), Vida (Chubb), Hogar (Mapfre).
-- Actively attempts to break the implementation with ReDoS, null bytes, duplicate fields,
-  giant payloads, unicode text, and type incoherence.
-- Strict Zero Shotgun Surgery: all payloads provisioned via canonical factories and fixtures.
-"""
+"""Pruebas unitarias para esquemas de extracción y la función aplicar_esquema."""
 
 import pytest
 from pydantic import ValidationError
@@ -37,8 +30,6 @@ from tests.factories.payloads import (
     esquema_vida_payload,
 )
 
-
-# ── 1. Pruebas Multi-Dominio (3 Esquemas Distintos) ──────────────────────────
 
 def test_aplicar_esquema_dominio_vehicular():
     """Dominio 1: Extracción vehicular extrae 5 campos canónicos con 100% de confianza."""
@@ -86,8 +77,6 @@ def test_aplicar_esquema_cruce_dominios_incompatible_retorna_cero():
     assert all(v is None for v in resultado.values())
     assert confianza == 0.0
 
-
-# ── 2. Adversarial & Edge Cases en aplicar_esquema ────────────────────────────
 
 def test_adversarial_texto_gigante_no_bloquea():
     """Ataque DoS: Texto gigante de 100KB de caracteres aleatorios no debe colgar el algoritmo."""
@@ -140,15 +129,13 @@ def test_adversarial_lista_vacia():
     assert confianza == 0.0
 
 
-# ── 3. Intentos de Romper Validación Pydantic (Anti-ReDoS, Inyecciones) ───────
-
 @pytest.mark.parametrize("evil_regex", [
-    r"(a+)+",              # Nested plus repetition (ReDoS clásico)
-    r"([0-9]+)+",          # Nested digit group
-    r"((a*)*)*",           # Nested star repetition
-    r"([a-zA-Z]+)*",       # Outer star over inner plus
-    r"(((((((((((a)))))))))))",  # Más de 10 grupos de captura
-    r"[A-Z+(",             # Sintaxis regex rota / corchete sin cerrar
+    r"(a+)+",
+    r"([0-9]+)+",
+    r"((a*)*)*",
+    r"([a-zA-Z]+)*",
+    r"(((((((((((a)))))))))))",
+    r"[A-Z+(",
 ])
 def test_adversarial_rechazo_evil_regex_anti_redos(evil_regex: str):
     """Anti-ReDoS: Pydantic DEBE rechazar cualquier regex catastrófico antes de persistirlo."""
@@ -170,7 +157,7 @@ def test_adversarial_null_byte_injection_rechazado(payload_nulo: dict):
 def test_adversarial_campos_duplicados_en_mismo_esquema_rechazado():
     """Integridad: prohíbe que un esquema defina dos campos con el mismo nombre."""
     campo_1 = campo_regla_payload(nombre="placa", orden=0)
-    campo_2 = campo_regla_payload(nombre="placa", orden=1)  # Duplicado
+    campo_2 = campo_regla_payload(nombre="placa", orden=1)
     payload = esquema_payload(campos=[campo_1, campo_2])
 
     with pytest.raises(ValidationError) as exc_info:
@@ -180,12 +167,10 @@ def test_adversarial_campos_duplicados_en_mismo_esquema_rechazado():
 
 def test_adversarial_incoherencia_fecha_y_formato():
     """Incoherencia de tipos: 'fecha' requiere 'formato_fecha'; otros tipos lo prohíben."""
-    # Caso 1: tipo='fecha' sin formato
     with pytest.raises(ValidationError) as exc_1:
         CampoReglaCreate(**campo_regla_payload(tipo="fecha", formato_fecha=None))
     assert "formato_fecha es obligatorio" in str(exc_1.value)
 
-    # Caso 2: tipo='texto' con formato de fecha
     with pytest.raises(ValidationError) as exc_2:
         CampoReglaCreate(**campo_regla_payload(tipo="texto", formato_fecha="YYYY-MM-DD"))
     assert "solo es aplicable cuando tipo='fecha'" in str(exc_2.value)
@@ -199,7 +184,7 @@ def test_adversarial_incoherencia_fecha_y_formato():
     "<script>alert(1)</script>",
     "CODIGO\x00NULO",
     "",
-    "A" * 81,  # Excede max 80
+    "A" * 81,
 ])
 def test_adversarial_codigo_esquema_formatos_invalidos(codigo_invalido: str):
     """El código del esquema debe cumplir estrictamente el patrón ^[A-Z0-9_]+$."""
@@ -210,11 +195,9 @@ def test_adversarial_codigo_esquema_formatos_invalidos(codigo_invalido: str):
 
 def test_adversarial_limites_cardinalidad_campos():
     """Límites de campos: mínimo 1 y máximo MAX_CAMPOS_POR_ESQUEMA (50)."""
-    # 0 campos
     with pytest.raises(ValidationError):
         EsquemaCreate(**esquema_payload(campos=[]))
 
-    # 51 campos (exceso)
     muchos_campos = [campo_regla_payload(nombre=f"c_{i}") for i in range(MAX_CAMPOS_POR_ESQUEMA + 1)]
     with pytest.raises(ValidationError):
         EsquemaCreate(**esquema_payload(campos=muchos_campos))
@@ -230,8 +213,6 @@ def test_adversarial_inyeccion_atributos_extra_bloqueada():
     with pytest.raises(ValidationError):
         CampoReglaCreate(**payload_campo)
 
-
-# ── 4. Verificación de Creación de los 3 Presets ──────────────────────────────
 
 def test_preset_vehicular_valido():
     """Verifica que el builder canónico de póliza vehicular cumpla el esquema."""

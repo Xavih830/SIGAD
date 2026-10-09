@@ -1,4 +1,4 @@
-"""TEST 2: Polymorphic login — email-based lookup.
+"""Polymorphic login — email-based lookup.
 
 Uses the FastAPI TestClient to verify that login with an email address
 performs a direct lookup in the `usuarios` table.

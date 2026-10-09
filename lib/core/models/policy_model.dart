@@ -2,9 +2,6 @@ import 'package:sigad/core/models/deductible_model.dart';
 import 'package:sigad/core/models/vehicle_model.dart';
 import 'package:sigad/core/utils/numeric_parser.dart';
 
-/// Modelo canónico para Coberturas en SIGAD.
-///
-/// Contrato estricto OpenAPI — claves: id, nombre, monto.
 class CoverageModel {
   final String id;
   final String nombre;
@@ -30,17 +27,12 @@ class CoverageModel {
         'monto': monto,
       };
 
-  /// Serializa únicamente campos requeridos por CoberturaCreate (sin id).
   Map<String, dynamic> toCreatePayloadJson() => {
         'nombre': nombre,
         'monto': monto,
       };
 }
 
-/// Modelo canónico para Pólizas de Seguro en SIGAD.
-///
-/// Contrato estricto OpenAPI — sin shims bilingüe ni fallbacks silenciosos.
-/// Falla-Rápido: lanza TypeError si el backend omite campos requeridos.
 class PolicyModel {
   final String id;
   final String number;
@@ -49,7 +41,7 @@ class PolicyModel {
   final VehicleModel? vehicle;
   final DateTime startDate;
   final DateTime endDate;
-  final String status; // 'activa', 'vencida', 'cancelada'
+  final String status;
   final double insuredValue;
   final double monthlyPremium;
   final int emissionMileage;
@@ -78,21 +70,18 @@ class PolicyModel {
     this.lastPaymentDate,
   });
 
-  // Getters de Negocio Puros (Anti-Tangling en Widgets)
   int get daysUntilExpiration => endDate.difference(DateTime.now()).inDays;
   bool get isExpired =>
       DateTime.now().isAfter(endDate) || status.toLowerCase() == 'vencida';
   bool get isExpiringSoon =>
       !isExpired && daysUntilExpiration <= 30 && daysUntilExpiration >= 0;
 
-  /// Ordena una lista de pólizas priorizando las vigentes sobre las vencidas.
   static List<PolicyModel> sortByActivePriority(List<PolicyModel> policies) {
     final copy = List<PolicyModel>.from(policies);
     copy.sort((a, b) => (!b.isExpired ? 1 : 0).compareTo(!a.isExpired ? 1 : 0));
     return copy;
   }
 
-  /// Cuenta las pólizas activas/vigentes en una lista.
   static int countActivePolicies(List<PolicyModel> policies) {
     return policies.where((p) => !p.isExpired).length;
   }
@@ -135,8 +124,6 @@ class PolicyModel {
     );
   }
 
-  /// Serializa únicamente el payload permitido por el esquema canónico PolizaCreate de FastAPI.
-  /// Previene error 422 extra_forbidden descartando campos internos (id, estado, vehiculo, etc.).
   Map<String, dynamic> toCreatePayloadJson() => {
         'numero_poliza': number,
         'cliente_id': clientId,
@@ -172,8 +159,6 @@ class PolicyModel {
       };
 }
 
-/// DTO canónico para la emisión y registro de una póliza vehicular en el sistema.
-/// Encapsula los atributos requeridos por la API REST para la creación de pólizas.
 class CreatePolicyRequest {
   final String number;
   final String clientId;

@@ -1,4 +1,4 @@
-"""TEST 21: Evaluación de las 4 capas de limitación de tasa (IP, identidad, tarpitting, bloqueo)."""
+"""Evaluación de las 4 capas de limitación de tasa (IP, identidad, tarpitting, bloqueo)."""
 
 import pytest
 
@@ -14,12 +14,10 @@ def test_layer1_ip_rate_limit_login():
     limiter = RateLimiter(maxsize=100)
     test_ip = "192.168.1.100"
 
-    # First 5 attempts should pass
     for _ in range(5):
         limiter.check_ip(test_ip, endpoint="login")
         limiter.record_ip(test_ip, endpoint="login")
 
-    # 6th attempt must be rejected
     with pytest.raises(RateLimitExceeded, match="Límite de peticiones por IP excedido"):
         limiter.check_ip(test_ip, endpoint="login")
 
@@ -29,12 +27,10 @@ def test_layer1_ip_rate_limit_vinculacion():
     limiter = RateLimiter(maxsize=100)
     test_ip = "192.168.1.101"
 
-    # First 3 attempts pass
     for _ in range(3):
         limiter.check_ip(test_ip, endpoint="vinculacion")
         limiter.record_ip(test_ip, endpoint="vinculacion")
 
-    # 4th attempt rejected
     with pytest.raises(RateLimitExceeded, match="Límite de peticiones por IP excedido"):
         limiter.check_ip(test_ip, endpoint="vinculacion")
 
@@ -44,12 +40,10 @@ def test_layer2_identity_rate_limit():
     limiter = RateLimiter(maxsize=100)
     identity = "0926687856"
 
-    # 3 attempts for vinculacion pass
     for _ in range(3):
         limiter.check_identity(identity, endpoint="vinculacion")
         limiter.record_identity(identity, endpoint="vinculacion")
 
-    # 4th attempt rejected
     with pytest.raises(RateLimitExceeded, match="Límite de intentos para la identidad"):
         limiter.check_identity(identity, endpoint="vinculacion")
 
@@ -60,15 +54,12 @@ async def test_layer3_tarpitting_burst_delay():
     limiter = RateLimiter(maxsize=100)
     test_ip = "10.0.0.50"
 
-    # Initially 0 delay
     d0 = await limiter.apply_tarpitting(test_ip)
     assert d0 == 0.0
 
-    # 2nd immediate attempt: threshold reached
     d1 = await limiter.apply_tarpitting(test_ip)
     assert d1 >= 0.5
 
-    # 3rd immediate attempt: delay grows
     d2 = await limiter.apply_tarpitting(test_ip)
     assert d2 >= d1
 
@@ -80,21 +71,17 @@ def test_layer4_account_lockout():
 
     assert limiter.is_account_locked(identity) is False
 
-    # Record 9 failed attempts -> still unlocked
     for _ in range(9):
         limiter.record_failure(identity)
     assert limiter.is_account_locked(identity) is False
 
-    # 10th failure -> locks account
     limiter.record_failure(identity)
     assert limiter.is_account_locked(identity) is True
 
-    # Check consolidated raises AccountLockedOut
     import asyncio
     with pytest.raises(AccountLockedOut, match="Cuenta bloqueada temporalmente"):
         asyncio.run(limiter.check_all(ip="127.0.0.1", identity=identity, endpoint="login"))
 
-    # Successful login resets lockout
     limiter.record_success(identity)
     assert limiter.is_account_locked(identity) is False
 
@@ -117,18 +104,15 @@ def test_get_client_ip_resolution():
     from unittest.mock import MagicMock
     from app.api.deps import get_client_ip
 
-    # 1. Con X-Real-IP establecido por Caddy
     mock_req_caddy = MagicMock()
     mock_req_caddy.headers.get.side_effect = lambda h: "203.0.113.195" if h == "x-real-ip" else None
     assert get_client_ip(mock_req_caddy) == "203.0.113.195"
 
-    # 2. Sin X-Real-IP -> fallback a client.host
     mock_req_direct = MagicMock()
     mock_req_direct.headers.get.return_value = None
     mock_req_direct.client.host = "192.168.1.50"
     assert get_client_ip(mock_req_direct) == "192.168.1.50"
 
-    # 3. Sin headers ni client -> fallback a 127.0.0.1
     mock_req_none = MagicMock()
     mock_req_none.headers.get.return_value = None
     mock_req_none.client = None

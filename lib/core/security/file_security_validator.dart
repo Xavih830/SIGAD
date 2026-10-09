@@ -1,12 +1,7 @@
 import 'dart:typed_data';
 import 'package:sigad/core/constants/app_constants.dart';
 
-/// Servicio de dominio para validación de seguridad de archivos pre-vuelo.
 abstract class FileSecurityValidator {
-  /// Valida la integridad, tamaño y firmas binarias (Magic Bytes) de un archivo
-  /// antes de iniciar el envío multipart a la red.
-  ///
-  /// Lanza [ArgumentError] con descripción fail-fast si el archivo es inválido.
   static void validatePreFlight({
     required Uint8List bytes,
     required String filename,
@@ -30,7 +25,6 @@ abstract class FileSecurityValidator {
       );
     }
 
-    // Validación de Magic Bytes (Firmas Binarias Reales - CWE-434)
     if (ext == 'pdf') {
       if (bytes.length < 5 ||
           bytes[0] != 0x25 ||

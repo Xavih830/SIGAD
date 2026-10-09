@@ -3,8 +3,6 @@ import 'package:sigad/core/constants/api_endpoints.dart';
 import 'package:sigad/core/models/client_model.dart';
 import 'package:sigad/core/network/api_client.dart';
 
-/// Repositorio canónico para gestión de clientes y OTP.
-/// Desacopla la lógica HTTP y deserialización de las vistas de presentación.
 class ClientsRepository {
   final ApiClient _client;
 

@@ -3,10 +3,6 @@ import 'package:sigad/core/models/user_model.dart';
 import 'package:sigad/core/security/app_capability.dart';
 import 'package:sigad/core/security/authorization_policy.dart';
 
-/// Guardia declarativa de interfaz de usuario basada en capacidades.
-///
-/// Si el [user] tiene la [capability], renderiza [child].
-/// De lo contrario, renderiza [fallback] (por defecto un widget invisible).
 class CapabilityGate extends StatelessWidget {
   final UserModel user;
   final AppCapability capability;

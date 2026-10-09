@@ -18,7 +18,6 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # ── Tabla: vehiculos ─────────────────────────────────────────
     op.create_table(
         "vehiculos",
         sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
@@ -33,7 +32,6 @@ def upgrade() -> None:
     op.create_index("ix_vehiculos_cliente_id", "vehiculos", ["cliente_id"])
     op.create_index("ix_vehiculos_placa", "vehiculos", ["placa"])
 
-    # ── Tabla: inspecciones ──────────────────────────────────────
     op.create_table(
         "inspecciones",
         sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
@@ -45,7 +43,6 @@ def upgrade() -> None:
     )
     op.create_index("ix_inspecciones_vehiculo_id", "inspecciones", ["vehiculo_id"])
 
-    # ── Tabla: polizas ───────────────────────────────────────────
     op.create_table(
         "polizas",
         sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
@@ -71,7 +68,6 @@ def upgrade() -> None:
     op.create_index("ix_polizas_numero_poliza", "polizas", ["numero_poliza"])
     op.create_index("ix_polizas_estado", "polizas", ["estado"])
 
-    # ── Tabla: deducibles (SC-2026-001) ──────────────────────────
     op.create_table(
         "deducibles",
         sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
@@ -87,7 +83,6 @@ def upgrade() -> None:
     )
     op.create_index("ix_deducibles_poliza_id", "deducibles", ["poliza_id"])
 
-    # ── Tabla: coberturas ────────────────────────────────────────
     op.create_table(
         "coberturas",
         sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
@@ -98,7 +93,6 @@ def upgrade() -> None:
     )
     op.create_index("ix_coberturas_poliza_id", "coberturas", ["poliza_id"])
 
-    # ── Tabla: historial_cambios ─────────────────────────────────
     op.create_table(
         "historial_cambios",
         sa.Column("id", sa.BigInteger(), primary_key=True, autoincrement=True),
@@ -112,7 +106,6 @@ def upgrade() -> None:
     )
     op.create_index("ix_historial_cambios_entidad_entidad_id", "historial_cambios", ["entidad", "entidad_id"])
 
-    # ── Función y Triggers de Auditoría en PostgreSQL ────────────
     op.execute(
         """
         CREATE OR REPLACE FUNCTION fn_auditoria_historial_cambios()
@@ -165,7 +158,6 @@ def upgrade() -> None:
         """
     )
 
-    # ── Migración de datos históricos (Sección 12.4) ──────────────
     op.execute(
         """
         INSERT INTO deducibles (id, poliza_id, tipo_siniestro, porcentaje_valor, monto_minimo_usd, created_at)
@@ -185,12 +177,10 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    # ── Eliminar triggers y función de auditoría ─────────────────
     op.execute("DROP TRIGGER IF EXISTS trg_audit_vehiculos ON vehiculos;")
     op.execute("DROP TRIGGER IF EXISTS trg_audit_polizas ON polizas;")
     op.execute("DROP FUNCTION IF EXISTS fn_auditoria_historial_cambios();")
 
-    # ── Eliminar tablas ──────────────────────────────────────────
     op.drop_table("coberturas")
     op.drop_table("deducibles")
     op.drop_table("polizas")
@@ -198,6 +188,5 @@ def downgrade() -> None:
     op.drop_table("vehiculos")
     op.drop_table("historial_cambios")
 
-    # ── Eliminar tipos Enum ──────────────────────────────────────
     sa.Enum(name="tipo_siniestro_enum").drop(op.get_bind(), checkfirst=True)
     sa.Enum(name="estado_poliza_enum").drop(op.get_bind(), checkfirst=True)

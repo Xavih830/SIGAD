@@ -1,4 +1,4 @@
-"""TEST 20: Verificación estructural de tiempo constante ante cédulas no registradas en vinculación."""
+"""Verificación estructural de tiempo constante ante cédulas no registradas en vinculación."""
 
 import ast
 import inspect
@@ -17,15 +17,12 @@ from tests.factories import vinculacion_payload
 
 def test_constant_time_vinculacion_structural_ast():
     """Structurally verify constant-time defense mechanisms exist in vinculación endpoint."""
-    # 1. DUMMY_HASH and DUMMY_OTP_HMAC must exist
     assert hasattr(security, "DUMMY_HASH"), "security module must define DUMMY_HASH"
     assert hasattr(security, "DUMMY_OTP_HMAC"), "security module must define DUMMY_OTP_HMAC"
 
-    # 2. verify_dummy and verify_dummy_otp must exist
     assert hasattr(security, "verify_dummy"), "security module must define verify_dummy"
     assert hasattr(security, "verify_dummy_otp"), "security module must define verify_dummy_otp"
 
-    # 3. Source code of vincular_cliente must invoke constant-time defense when cliente is None
     source = inspect.getsource(auth_module.vincular_cliente)
     tree = ast.parse(source)
 

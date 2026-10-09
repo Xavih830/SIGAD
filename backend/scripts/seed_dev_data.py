@@ -70,7 +70,6 @@ async def clean_database(session: AsyncSession) -> None:
         "esquemas_extraccion",
         "usuarios",
     ]
-    # Fast atomic truncate with CASCADE
     truncate_query = f"TRUNCATE TABLE {', '.join(tables)} CASCADE;"
     await session.execute(text(truncate_query))
     await session.commit()
@@ -204,7 +203,7 @@ def _get_clients_seed(today: date) -> list[dict]:
                     "poliza": {
                         "numero": "POL-VL-2026-002",
                         "inicio": today - timedelta(days=350),
-                        "fin": today + timedelta(days=15),  # 15 días restantes -> POR_VENCER
+                        "fin": today + timedelta(days=15),
                         "estado": EstadoPoliza.POR_VENCER,
                         "valor": Decimal("13800.00"),
                         "prima": Decimal("42.00"),
@@ -277,7 +276,7 @@ def _get_clients_seed(today: date) -> list[dict]:
                     "poliza": {
                         "numero": "POL-VL-2026-004",
                         "inicio": today - timedelta(days=340),
-                        "fin": today + timedelta(days=25),  # 25 días restantes -> POR_VENCER
+                        "fin": today + timedelta(days=25),
                         "estado": EstadoPoliza.POR_VENCER,
                         "valor": Decimal("28500.00"),
                         "prima": Decimal("84.00"),
@@ -313,7 +312,7 @@ def _get_clients_seed(today: date) -> list[dict]:
                     "poliza": {
                         "numero": "POL-VL-2025-005",
                         "inicio": today - timedelta(days=400),
-                        "fin": today - timedelta(days=35),  # Venció hace 35 días -> VENCIDA
+                        "fin": today - timedelta(days=35),
                         "estado": EstadoPoliza.VENCIDA,
                         "valor": Decimal("19000.00"),
                         "prima": Decimal("58.00"),
@@ -382,7 +381,6 @@ async def _seed_vehiculo_poliza(
             vehiculo.placa,
         )
 
-    # Inspección técnica con lectura de kilometraje
     res_insp = await session.execute(
         select(Inspeccion)
         .where(Inspeccion.vehiculo_id == vehiculo.id)
@@ -402,7 +400,6 @@ async def _seed_vehiculo_poliza(
         session.add(inspeccion)
         await session.flush()
 
-    # Póliza
     p_info = v_data["poliza"]
     res_p = await session.execute(select(Poliza).where(Poliza.numero_poliza == p_info["numero"]))
     poliza = res_p.scalar_one_or_none()
@@ -711,22 +708,15 @@ async def seed_data(session: AsyncSession, clean: bool = False) -> None:
 
     today = date.today()
 
-    # 1. Usuarios base del sistema
     await _seed_base_users(session)
 
-    # 2. Clientes, vehículos, inspecciones y pólizas
     logger.info("Seeding clients, vehicles, and linked user credentials...")
     for c_data in _get_clients_seed(today):
         await _seed_single_client(session, c_data, today)
     await session.flush()
 
-    # 3. Catálogo de talleres autorizados
     await _seed_talleres(session)
-
-    # 4. Asistencias en carretera y números de emergencia
     await _seed_asistencias(session)
-
-    # 5. Esquemas dinámicos de extracción OCR
     await _seed_esquemas(session)
 
     await session.commit()

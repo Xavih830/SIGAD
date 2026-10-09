@@ -1,4 +1,3 @@
-/// Modelo de dominio para campos de reglas dentro de un esquema de extracción OCR.
 class ExtractionFieldModel {
   final String nombre;
   final String regex;
@@ -41,7 +40,6 @@ class ExtractionFieldModel {
   };
 }
 
-/// Modelo resumido para listados de versiones de esquemas de extracción.
 class ExtractionSchemaListItemModel {
   final String id;
   final String codigo;
@@ -80,7 +78,6 @@ class ExtractionSchemaListItemModel {
   };
 }
 
-/// Modelo de dominio detallado para un esquema de extracción OCR.
 class ExtractionSchemaModel {
   final String id;
   final String codigo;
@@ -135,7 +132,6 @@ class ExtractionSchemaModel {
   };
 }
 
-/// DTO para creación de nueva versión de esquema de extracción.
 class CreateSchemaRequest {
   final String codigo;
   final String nombre;
@@ -157,7 +153,6 @@ class CreateSchemaRequest {
   };
 }
 
-/// Modelo de resultado de prueba en memoria de un esquema OCR.
 class TestSchemaResultModel {
   final String metodo;
   final double confianza;

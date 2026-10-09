@@ -14,10 +14,9 @@ async def test_rechazo_inyeccion_campos_extra_mass_assignment(client: httpx.Asyn
     agente_token = base_scenario.agente_token
     headers = {"Authorization": f"Bearer {agente_token}"}
 
-    # Inyección de campo 'rol' y 'is_admin' en registro de cliente
     payload_malicioso = cliente_payload(
-        rol="admin",          # Campo extra inyectado
-        is_admin=True,        # Campo extra inyectado
+        rol="admin",
+        is_admin=True,
     )
 
     res = await client.post("/api/v1/clientes", json=payload_malicioso, headers=headers)
@@ -42,7 +41,6 @@ async def test_rechazo_subida_sin_content_type(client: httpx.AsyncClient, base_s
     """Verifica que un archivo sin MIME type sea rechazado con 422 (Fail-Fast sin fallback)."""
     agente_token = base_scenario.agente_token
     headers = {"Authorization": f"Bearer {agente_token}"}
-    # Enviar archivo sin tipo MIME explícito
     files = {"file": ("test.pdf", b"%PDF-1.4...", "")}
 
     res = await client.post("/api/v1/documentos", files=files, headers=headers)
@@ -56,7 +54,7 @@ async def test_rechazo_coercion_implicita_tipos_strict_mode(client: httpx.AsyncC
 
     payload_coercion = vehiculo_payload(
         cliente_id=base_scenario.cliente_a.id,
-        anio="2024",  # String en vez de int
+        anio="2024",
     )
 
     res = await client.post("/api/v1/vehiculos", json=payload_coercion, headers=headers)

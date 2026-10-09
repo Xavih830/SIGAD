@@ -49,7 +49,6 @@ class Vehiculo(Base):
         nullable=False,
     )
 
-    # Relationships
     cliente = relationship("Cliente", back_populates="vehiculos")
     polizas = relationship("Poliza", back_populates="vehiculo", cascade="all, delete-orphan")
     inspecciones = relationship("Inspeccion", back_populates="vehiculo", cascade="all, delete-orphan")

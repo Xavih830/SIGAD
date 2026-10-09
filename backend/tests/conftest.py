@@ -8,7 +8,6 @@ from pathlib import Path
 from dotenv import load_dotenv
 import pytest
 
-# Load canonical root .env if present
 _CANONICAL_ROOT_ENV = Path(__file__).resolve().parents[2] / ".env"
 if _CANONICAL_ROOT_ENV.is_file():
     load_dotenv(_CANONICAL_ROOT_ENV)

@@ -50,13 +50,11 @@ def test_docker_compose_enforces_fail_fast_upload_dir():
     assert compose_path.is_file(), "docker-compose.yml debe existir en la raíz"
     content = compose_path.read_text(encoding="utf-8")
 
-    # Verificar que no esté hardcodeado
     assert "uploads_data:/backend/uploads" not in content, (
         "PROHIBIDO hardcodear la ruta de uploads en docker-compose.yml. "
         "Debe configurarse mediante la variable de entorno con Fail-Fast."
     )
 
-    # Verificar que use la sintaxis estricta fail-fast :?
     fail_fast_pattern = re.compile(r"uploads_data:/backend/\$\{UPLOAD_DIR:\?[^}]+\}")
     matches = fail_fast_pattern.findall(content)
     assert len(matches) >= 2, (
@@ -73,7 +71,6 @@ def test_flutter_api_config_enforces_fail_fast():
     assert api_config_path.is_file(), "api_config.dart debe existir en lib/core/config/"
     content = api_config_path.read_text(encoding="utf-8")
 
-    # Prohibido hardcoding de URLs de desarrollo
     assert "_hostWeb = 'http://localhost:8000'" not in content, (
         "PROHIBIDO hardcodear _hostWeb en api_config.dart"
     )
@@ -84,7 +81,6 @@ def test_flutter_api_config_enforces_fail_fast():
         "PROHIBIDO bifurcar entornos mágicamente con kReleaseMode en api_config.dart"
     )
 
-    # Debe validar Fail-Fast con StateError
     assert "StateError" in content, (
         "api_config.dart DEBE lanzar StateError si API_BASE_URL no está configurada"
     )
@@ -153,12 +149,10 @@ def test_storage_service_enforces_magic_bytes_and_extensions():
     import pytest
     from app.services.storage_service import InvalidMimeTypeException, storage_service
 
-    # 1. Spoofed MIME: Text content claiming to be JPEG
     fake_jpeg = b"This is plain text pretending to be a photo"
     with pytest.raises(InvalidMimeTypeException, match="magic bytes"):
         storage_service.save_file(fake_jpeg, "foto.jpg", "image/jpeg")
 
-    # 2. Incompatible dangerous extension: Valid PDF content named exploit.php
     valid_pdf_header = b"%PDF-1.4\n%fake-pdf-content"
     with pytest.raises(InvalidMimeTypeException, match="Extensión de archivo"):
         storage_service.save_file(valid_pdf_header, "exploit.php", "application/pdf")
@@ -229,7 +223,7 @@ async def test_vinculacion_rejects_already_linked_client():
     rate_limiter.reset()
     mock_session = AsyncMock()
     mock_cliente = MagicMock(spec=Cliente)
-    mock_cliente.usuario_id = uuid.uuid4()  # Ya vinculado previamente
+    mock_cliente.usuario_id = uuid.uuid4()
     mock_cliente.identificacion = "0926687856"
     res_cliente = MagicMock()
     res_cliente.scalar_one_or_none.return_value = mock_cliente

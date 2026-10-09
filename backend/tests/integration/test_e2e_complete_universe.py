@@ -1,12 +1,4 @@
-"""Full E2E Multiverse Test Suite — 0 to 100% verification across all user roles.
-
-Follows the canonical SIGAD Testing Architecture:
-- Object Mother & Factory Pattern (TestFixtures / TestFactories / ScenarioBundle).
-- Canonical payloads (login_payload, taller_payload, asistencia_payload, cliente_payload, vehiculo_payload, poliza_payload, vinculacion_payload).
-- Zero magic numbers & zero scattered literals (app.core.constants & tests.factories.fixtures).
-- Fully scoped HTTP clients (make_client).
-- Live components without mocks: Mailpit SMTP (:1025) & HTTP API (:8025), Scheduler, Anti-BOLA, Anti-IDOR.
-"""
+"""Prueba de integración end-to-end sobre el ciclo operativo completo."""
 
 import asyncio
 from datetime import date, timedelta
@@ -60,9 +52,6 @@ async def test_complete_universe_end_to_end(
     """Executes the entire 0-to-100% operational lifecycle with live components and zero mocks."""
     mailpit_api = f"http://{TEST_MAILPIT_HOST}:{TEST_MAILPIT_HTTP_PORT}/api/v1"
 
-    # =========================================================================
-    # FASE 1: Administrador configura catálogos globales
-    # =========================================================================
     async with make_client() as anon_client:
         admin_login = await anon_client.post(
             "/api/v1/auth/login",
@@ -72,7 +61,6 @@ async def test_complete_universe_end_to_end(
         admin_token = admin_login.json()["access_token"]
 
     async with make_client(admin_token) as admin_client:
-        # Crear Taller Mecánico Afiliado
         taller_res = await admin_client.post(
             "/api/v1/talleres",
             json=taller_payload(),
@@ -80,16 +68,12 @@ async def test_complete_universe_end_to_end(
         assert taller_res.status_code in [200, 201], f"Admin debe poder crear taller afiliado: {taller_res.text}"
         assert taller_res.json()["nombre"] == TALLER_NOMBRE
 
-        # Crear Servicio de Asistencia
         asistencia_res = await admin_client.post(
             "/api/v1/asistencias",
             json=asistencia_payload(),
         )
         assert asistencia_res.status_code in [200, 201], f"Admin debe poder crear asistencia: {asistencia_res.text}"
 
-    # =========================================================================
-    # FASE 2: Agente registra Cliente con Cédula Oficial y Correo
-    # =========================================================================
     async with make_client() as anon_client:
         agente_login = await anon_client.post(
             "/api/v1/auth/login",
@@ -98,7 +82,6 @@ async def test_complete_universe_end_to_end(
         assert agente_login.status_code == 200, f"Login de Agente debe ser exitoso: {agente_login.text}"
         agente_token = agente_login.json()["access_token"]
 
-    # Generar cliente mediante payload canónico (Módulo 10 garantizado)
     c_payload = cliente_payload()
     cedula_cliente = c_payload["identificacion"]
     email_cliente = c_payload["email"]
@@ -114,9 +97,6 @@ async def test_complete_universe_end_to_end(
         otp_generado = cliente_data["codigo_vinculacion"]
         assert len(otp_generado) == 6, "El código OTP generado debe tener 6 dígitos."
 
-    # =========================================================================
-    # FASE 3: Verificación de Envío SMTP e Interceptación en Mailpit
-    # =========================================================================
     target_msg = None
     async with httpx.AsyncClient() as mail_client:
         for _ in range(15):
@@ -135,9 +115,6 @@ async def test_complete_universe_end_to_end(
         msg_detail = (await mail_client.get(f"{mailpit_api}/message/{target_msg['ID']}")).json()
         assert otp_generado in msg_detail.get("Text", ""), "El cuerpo del correo capturado debe contener el OTP exacto."
 
-    # =========================================================================
-    # FASE 4: Cliente Asegurado activa su cuenta móvil con el OTP
-    # =========================================================================
     nueva_password_cliente = CLIENTE_PASSWORD
     vinc_data = vinculacion_payload(
         cedula=cedula_cliente,
@@ -152,7 +129,6 @@ async def test_complete_universe_end_to_end(
         )
         assert activacion_res.status_code in [200, 201], f"La activación con OTP válido debe ser exitosa: {activacion_res.text}"
 
-        # Login móvil polimórfico del Cliente usando su CÉDULA
         cliente_login = await anon_client.post(
             "/api/v1/auth/login",
             json=login_payload(cedula_cliente, password=nueva_password_cliente),
@@ -160,9 +136,6 @@ async def test_complete_universe_end_to_end(
         assert cliente_login.status_code == 200, f"El cliente debe autenticarse usando su cédula: {cliente_login.text}"
         cliente_token = cliente_login.json()["access_token"]
 
-    # =========================================================================
-    # FASE 5: Vehículo, Documento OCR y Corrección de Campos (HU-06)
-    # =========================================================================
     v_payload = vehiculo_payload(cliente_id)
     placa_cliente = v_payload["placa"]
     async with make_client(agente_token) as agente_client:
@@ -173,7 +146,6 @@ async def test_complete_universe_end_to_end(
         assert vehiculo_res.status_code in [200, 201], f"Creación de vehículo debe ser exitosa: {vehiculo_res.text}"
         vehiculo_id = vehiculo_res.json()["id"]
 
-        # Crear documento y resultado de extracción OCR usando Model Factories
         doc = await create_documento(
             db_session,
             nombre_archivo=f"matricula_{placa_cliente.lower().replace('-', '_')}.pdf",
@@ -185,7 +157,6 @@ async def test_complete_universe_end_to_end(
             campos_extraidos=ocr_campos_con_error,
         )
 
-        # HU-06: Agente revisa y corrige el campo de placa
         rev_payload = revision_documento_payload(
             campos_extraidos={**DEFAULT_CAMPOS_EXTRAIDOS, "placa": placa_cliente},
             estado_extraccion="completado",
@@ -197,9 +168,6 @@ async def test_complete_universe_end_to_end(
         assert revision_res.status_code == 200, "Agente debe poder revisar y confirmar campos OCR."
         assert revision_res.json()["campos_extraidos"]["placa"] == placa_cliente
 
-        # =========================================================================
-        # FASE 6: Emisión de Póliza con Deducibles (SC-2026-001) y Pagos (HU-20)
-        # =========================================================================
         p_payload = poliza_payload(
             cliente_id=cliente_id,
             vehiculo_id=vehiculo_id,
@@ -213,7 +181,6 @@ async def test_complete_universe_end_to_end(
         poliza_id = poliza_data["id"]
         assert poliza_data["estado"] == "activa"
 
-    # Verificar que el cronograma de pagos (HU-20) se generó en la base de datos
     async with make_client(cliente_token) as cliente_client:
         pagos_res = await cliente_client.get(f"/api/v1/polizas/{poliza_id}/pagos")
         assert pagos_res.status_code == 200, "El cliente debe poder consultar sus pagos (HU-20)."
@@ -221,9 +188,6 @@ async def test_complete_universe_end_to_end(
         assert len(cuotas) >= MIN_CUOTAS_POLIZA, "Debe existir al menos una cuota en el cronograma."
         assert float(cuotas[0]["monto_usd"]) == p_payload["prima_mensual"]
 
-    # =========================================================================
-    # FASE 7: Scheduler diario ejecuta transiciones temporales
-    # =========================================================================
     hoy = date.today()
     poliza_futura = await create_poliza(
         db_session,
@@ -234,16 +198,11 @@ async def test_complete_universe_end_to_end(
         estado=EstadoPoliza.PENDIENTE,
     )
 
-    # Ejecutar transición simulando el avance a la fecha de inicio
     res_sched = await ejecutar_transiciones_polizas(db_session, fecha_referencia=hoy + timedelta(days=1))
     assert res_sched["activadas"] >= 1, "El scheduler debe activar pólizas pendientes cuya fecha llegó."
     await db_session.refresh(poliza_futura)
     assert poliza_futura.estado == EstadoPoliza.ACTIVA
 
-    # =========================================================================
-    # FASE 8: Pruebas de Seguridad Hostil en Profundidad
-    # =========================================================================
-    # 8.1 Anti-BOLA: Cliente ajeno (Cliente B del escenario) no puede acceder a esta póliza ni a sus pagos
     async with make_client(base_scenario.token_b) as otro_client:
         bola_poliza = await otro_client.get(f"/api/v1/polizas/{poliza_id}")
         assert bola_poliza.status_code == 404, "Anti-BOLA: cliente ajeno debe recibir 404 en póliza."
@@ -251,12 +210,10 @@ async def test_complete_universe_end_to_end(
         bola_pagos = await otro_client.get(f"/api/v1/polizas/{poliza_id}/pagos")
         assert bola_pagos.status_code == 404, "Anti-BOLA: cliente ajeno debe recibir 404 en pagos."
 
-    # 8.2 Anti-IDOR en Descargas: Intento de descarga de documento no asociado
     async with make_client(cliente_token) as cliente_client:
         idor_res = await cliente_client.get(f"/api/v1/documentos/{doc.id}/descargar")
         assert idor_res.status_code in [403, 404], "Anti-IDOR debe denegar la descarga no autorizada."
 
-    # 8.3 Rechazo de caracteres nulos (Null-Byte Injection)
     async with make_client() as anon_client:
         null_byte_res = await anon_client.post(
             "/api/v1/auth/login",
@@ -264,7 +221,6 @@ async def test_complete_universe_end_to_end(
         )
         assert null_byte_res.status_code == 422, "Pydantic debe rechazar inyección de byte nulo con 422."
 
-    # 8.4 Bloqueo / Invalidación de OTP tras intentos fallidos consecutivos
     brute_payload = cliente_payload()
     cedula_brute = brute_payload["identificacion"]
     async with make_client(agente_token) as agente_client:
@@ -272,7 +228,6 @@ async def test_complete_universe_end_to_end(
         assert res_brute_cli.status_code == 201
         cliente_brute_id = uuid.UUID(res_brute_cli.json()["id"])
 
-    # Reset rate limiter to isolate 3-failed-attempts OTP lockout from IP-level throttling
     rate_limiter.reset()
     async with make_client() as anon_client:
         for _ in range(MAX_FAILED_OTP_ATTEMPTS):
@@ -286,7 +241,6 @@ async def test_complete_universe_end_to_end(
             )
             assert res_fail.status_code == 400
 
-    # Verificar que el código quedó consumido / invalidado en DB
     stmt_check_otp = select(CodigoVinculacion).where(CodigoVinculacion.cliente_id == cliente_brute_id)
     otp_db = (await db_session.execute(stmt_check_otp)).scalar_one()
     assert otp_db.consumido is True, "El OTP debe quedar invalidado (consumido=True) tras 3 fallos."

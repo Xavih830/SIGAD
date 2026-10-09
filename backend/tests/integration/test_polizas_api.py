@@ -1,7 +1,4 @@
-"""Consolidated integration tests for Polizas and Vehiculos REST API.
-
-Verification Gate 3: alembic upgrade head && pytest tests/integration/test_polizas_api.py
-"""
+"""Pruebas de integración para las APIs REST de Pólizas y Vehículos."""
 
 from datetime import date, timedelta
 from decimal import Decimal
@@ -38,7 +35,6 @@ async def test_crear_poliza_flujo_completo(base_scenario: ScenarioBundle):
         assert data["numero_poliza"] == poliza_num
         assert data["estado"] == "activa"
         assert data["kilometraje_emision"] == 18200
-        # Default deductible (SC-2026-001) automatically seeded
         assert len(data["deducibles"]) == 1
         assert data["deducibles"][0]["tipo_siniestro"] == "general"
         assert float(data["deducibles"][0]["porcentaje_valor"]) == 10.0
@@ -77,7 +73,7 @@ async def test_crear_poliza_vigencia_mayor_a_5_anios_rechaza_422(base_scenario: 
     vehiculo_a = base_scenario.vehiculo_a
 
     fecha_inicio = date(2026, 1, 1)
-    fecha_fin = date(2031, 1, 2)  # 5 años + 1 día
+    fecha_fin = date(2031, 1, 2)
 
     payload = poliza_payload(
         cliente_id=cliente_a.id,
@@ -127,7 +123,7 @@ async def test_crear_vehiculo_placa_invalida_rechaza_422(base_scenario: Scenario
 
     payload = vehiculo_payload(
         cliente_id=cliente_a.id,
-        placa="XYZ-123",  # Formato antiguo 3L+3D no permitido
+        placa="XYZ-123",
         marca="Hyundai",
         modelo="Tucson",
         anio=2024,
@@ -145,21 +141,17 @@ async def test_listar_polizas_paginacion_limites_y_validacion(base_scenario: Sce
     admin_token = base_scenario.admin_token
 
     async with make_client(admin_token) as client:
-        # Petición por defecto (limit=50, skip=0)
         res_default = await client.get("/api/v1/polizas")
         assert res_default.status_code == 200
         assert isinstance(res_default.json(), list)
 
-        # Petición con limit=1
         res_limit1 = await client.get("/api/v1/polizas?limit=1")
         assert res_limit1.status_code == 200
         assert len(res_limit1.json()) <= 1
 
-        # Validación fail-fast: limit > 100 debe rechazar con 422
         res_overflow = await client.get("/api/v1/polizas?limit=101")
         assert res_overflow.status_code == 422
 
-        # Validación fail-fast: skip < 0 debe rechazar con 422
         res_negative_skip = await client.get("/api/v1/polizas?skip=-1")
         assert res_negative_skip.status_code == 422
 
@@ -169,21 +161,17 @@ async def test_listar_vehiculos_paginacion_limites_y_validacion(base_scenario: S
     admin_token = base_scenario.admin_token
 
     async with make_client(admin_token) as client:
-        # Petición por defecto
         res_default = await client.get("/api/v1/vehiculos")
         assert res_default.status_code == 200
         assert isinstance(res_default.json(), list)
 
-        # Petición con limit=1
         res_limit1 = await client.get("/api/v1/vehiculos?limit=1")
         assert res_limit1.status_code == 200
         assert len(res_limit1.json()) <= 1
 
-        # Validación fail-fast: limit > 100 debe rechazar con 422
         res_overflow = await client.get("/api/v1/vehiculos?limit=101")
         assert res_overflow.status_code == 422
 
-        # Validación fail-fast: skip < 0 debe rechazar con 422
         res_negative_skip = await client.get("/api/v1/vehiculos?skip=-1")
         assert res_negative_skip.status_code == 422
 

@@ -41,7 +41,6 @@ def test_no_magic_file_size_limits_hardcoded_in_backend_endpoints():
     endpoints_dir = BACKEND_APP / "api" / "v1" / "endpoints"
     assert endpoints_dir.is_dir()
 
-    # Patrón para 15MB expresado literalmente (15 * 1024 * 1024 o 15728640)
     magic_size_pattern = re.compile(r"(15\s*\*\s*1024\s*\*\s*1024|15728640)")
 
     violations = []
@@ -101,7 +100,6 @@ def test_declarative_code_smells_compliance():
 
         scope_path = rule.get("scope_path")
 
-        # Escanear Dart
         if "dart" in languages:
             target_files = (
                 REPO_ROOT.glob(scope_path) if scope_path else FLUTTER_LIB.rglob("*.dart")
@@ -116,7 +114,6 @@ def test_declarative_code_smells_compliance():
                         f"[{rule['id']}] {dart_file.relative_to(REPO_ROOT)}: {matches}"
                     )
 
-        # Escanear Python
         if "python" in languages:
             target_files = (
                 REPO_ROOT.glob(scope_path) if scope_path else BACKEND_APP.rglob("*.py")
@@ -124,7 +121,6 @@ def test_declarative_code_smells_compliance():
             for py_file in target_files:
                 if not py_file.is_file():
                     continue
-                # Excluir constants.py si la regla es sobre magic numbers en endpoints
                 if rule["id"] == "smell-python-magic-file-size" and py_file.name == "constants.py":
                     continue
                 content = py_file.read_text(encoding="utf-8")

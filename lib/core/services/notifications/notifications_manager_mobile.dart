@@ -99,7 +99,6 @@ class NotificationsManagerImpl {
 
     final now = DateTime.now();
 
-    // 1. 30 Days before
     final date30 = endDate.subtract(const Duration(days: 30));
     if (date30.isAfter(now)) {
       await _schedule(
@@ -111,7 +110,6 @@ class NotificationsManagerImpl {
       );
     }
 
-    // 2. 15 Days before
     final date15 = endDate.subtract(const Duration(days: 15));
     if (date15.isAfter(now)) {
       await _schedule(
@@ -123,7 +121,6 @@ class NotificationsManagerImpl {
       );
     }
 
-    // 3. 7 Days before
     final date7 = endDate.subtract(const Duration(days: 7));
     if (date7.isAfter(now)) {
       await _schedule(
@@ -135,8 +132,7 @@ class NotificationsManagerImpl {
       );
     }
 
-    // 4. Expiration Day
-    final date0 = DateTime(endDate.year, endDate.month, endDate.day, 9, 0); // 9:00 AM on expiry day
+    final date0 = DateTime(endDate.year, endDate.month, endDate.day, 9, 0);
     if (date0.isAfter(now)) {
       await _schedule(
         id: number.hashCode + 0,

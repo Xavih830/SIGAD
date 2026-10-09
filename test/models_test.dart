@@ -160,7 +160,6 @@ void main() {
       expect(policy.isExpiringSoon, isTrue);
       expect(policy.daysUntilExpiration, inInclusiveRange(14, 16));
 
-      // Expired policy check
       final expiredPolicyJson = TestFactories.createPolicyJson(
         id: 'pol-exp-002',
         startDate: DateTime(2026, 1, 1),
@@ -196,13 +195,11 @@ void main() {
       expect(payload['prima_mensual'], equals(policy.monthlyPremium));
       expect(payload['kilometraje_emision'], equals(policy.emissionMileage));
 
-      // Campos prohibidos por extra='forbid'
       expect(payload.containsKey('id'), isFalse);
       expect(payload.containsKey('estado'), isFalse);
       expect(payload.containsKey('vehiculo'), isFalse);
       expect(payload.containsKey('cliente_nombre'), isFalse);
 
-      // Verificar que coberturas y deducibles no arrastren 'id'
       final deds = payload['deducibles'] as List<dynamic>?;
       if (deds != null && deds.isNotEmpty) {
         for (final d in deds) {

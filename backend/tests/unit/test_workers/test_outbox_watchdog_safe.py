@@ -1,4 +1,4 @@
-"""Test 4: Watchdog rescata documentos abandonados restableciendo el estado a pendiente."""
+"""Watchdog rescata documentos abandonados restableciendo el estado a pendiente."""
 
 from unittest.mock import AsyncMock, MagicMock
 import pytest
@@ -11,7 +11,7 @@ async def test_outbox_watchdog_rescues_abandoned_document():
     """El watchdog rescata documentos colgados en procesando y restablece estado a pendiente."""
     mock_db = AsyncMock()
     mock_result = MagicMock()
-    mock_result.rowcount = 2  # Simula 2 documentos rescatados
+    mock_result.rowcount = 2
     mock_db.execute.return_value = mock_result
     mock_db.commit = AsyncMock()
 
@@ -21,7 +21,6 @@ async def test_outbox_watchdog_rescues_abandoned_document():
     assert mock_db.execute.called
     assert mock_db.commit.called
 
-    # Verificar que la consulta SQL contiene las cláusulas requeridas
     call_args = mock_db.execute.call_args
     sql_text = call_args[0][0].text
     params = call_args[0][1]

@@ -5,10 +5,6 @@ import 'package:sigad/core/constants/app_constants.dart';
 import 'package:sigad/core/models/catalog_model.dart';
 import 'package:sigad/core/network/api_client.dart';
 
-/// Repositorio canónico para consulta de catálogos (talleres y asistencias viales).
-///
-/// Utiliza [InMemoryCache] desacoplado para respetar el rate limit del backend (60 req/min)
-/// sin entrelazar lógica de expiración con la lógica de red.
 class CatalogRepository {
   final ApiClient _client;
   final InMemoryCache<List<WorkshopModel>> _workshopsCache;

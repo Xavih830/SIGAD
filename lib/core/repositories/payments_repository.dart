@@ -3,7 +3,6 @@ import 'package:sigad/core/constants/api_endpoints.dart';
 import 'package:sigad/core/models/payment_model.dart';
 import 'package:sigad/core/network/api_client.dart';
 
-/// Repositorio canónico para consulta y registro de cuotas y pagos de pólizas (HU-20).
 class PaymentsRepository {
   final ApiClient _client;
 

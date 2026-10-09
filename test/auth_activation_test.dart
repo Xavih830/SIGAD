@@ -75,13 +75,11 @@ void main() {
       await tester.pumpWidget(createWidgetUnderTest(const AccountActivationPage()));
       await tester.pumpAndSettle();
 
-      // Cédula vacía
       await tester.ensureVisible(find.byKey(const Key('activate_button')));
       await tester.tap(find.byKey(const Key('activate_button')));
       await tester.pumpAndSettle();
       expect(find.text(TestFixtures.cedulaRequiredMessage), findsOneWidget);
 
-      // Cédula inválida bajo Módulo 10
       await tester.enterText(find.byKey(const Key('cedula_field')), TestFixtures.invalidCedulaModulo10);
       await tester.ensureVisible(find.byKey(const Key('activate_button')));
       await tester.tap(find.byKey(const Key('activate_button')));
@@ -120,35 +118,30 @@ void main() {
       await tester.pumpWidget(createWidgetUnderTest(const AccountActivationPage()));
       await tester.pumpAndSettle();
 
-      // Menor a 12 caracteres
       await tester.enterText(find.byKey(const Key('password_field')), TestFixtures.passwordTooShort);
       await tester.ensureVisible(find.byKey(const Key('activate_button')));
       await tester.tap(find.byKey(const Key('activate_button')));
       await tester.pumpAndSettle();
       expect(find.text(TestFixtures.passwordMinLength), findsOneWidget);
 
-      // Sin mayúscula
       await tester.enterText(find.byKey(const Key('password_field')), TestFixtures.passwordMissingUpper);
       await tester.ensureVisible(find.byKey(const Key('activate_button')));
       await tester.tap(find.byKey(const Key('activate_button')));
       await tester.pumpAndSettle();
       expect(find.text(TestFixtures.passwordRequiresUpper), findsOneWidget);
 
-      // Sin minúscula
       await tester.enterText(find.byKey(const Key('password_field')), TestFixtures.passwordMissingLower);
       await tester.ensureVisible(find.byKey(const Key('activate_button')));
       await tester.tap(find.byKey(const Key('activate_button')));
       await tester.pumpAndSettle();
       expect(find.text(TestFixtures.passwordRequiresLower), findsOneWidget);
 
-      // Sin número
       await tester.enterText(find.byKey(const Key('password_field')), TestFixtures.passwordMissingDigit);
       await tester.ensureVisible(find.byKey(const Key('activate_button')));
       await tester.tap(find.byKey(const Key('activate_button')));
       await tester.pumpAndSettle();
       expect(find.text(TestFixtures.passwordRequiresNumber), findsOneWidget);
 
-      // Sin símbolo especial
       await tester.enterText(find.byKey(const Key('password_field')), TestFixtures.passwordMissingSpecial);
       await tester.ensureVisible(find.byKey(const Key('activate_button')));
       await tester.tap(find.byKey(const Key('activate_button')));

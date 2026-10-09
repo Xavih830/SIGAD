@@ -1,4 +1,4 @@
-"""TEST 22: Acotamiento estricto de memoria en caché LRU a <= 10.000 entradas (~2 MB)."""
+"""Acotamiento estricto de memoria en caché LRU a <= 10.000 entradas (~2 MB)."""
 
 import sys
 from cachetools import LRUCache
@@ -20,14 +20,11 @@ def test_rate_limiter_lru_eviction_and_max_size():
     for i in range(test_max + 25):
         limiter.record_ip(f"192.168.1.{i}", endpoint="login")
 
-    # Cache length must NEVER exceed test_max
     assert len(limiter.cache) == test_max
 
-    # Oldest entries (e.g. 0 to 24) should have been evicted
-    assert f"ip:login:192.168.1.0" not in limiter.cache
-    assert f"ip:login:192.168.1.24" not in limiter.cache
+    assert "ip:login:192.168.1.0" not in limiter.cache
+    assert "ip:login:192.168.1.24" not in limiter.cache
 
-    # Most recent entries should be present
     assert f"ip:login:192.168.1.{test_max + 24}" in limiter.cache
 
 
@@ -35,13 +32,11 @@ def test_rate_limiter_memory_footprint_under_2mb():
     """Verify that 10,000 typical rate limit entries in LRU consume <= 2 MB."""
     limiter = RateLimiter(maxsize=10000)
 
-    # Populate 10,000 entries
     for i in range(10000):
         limiter.cache[f"ip:login:10.0.{i // 256}.{i % 256}"] = [1700000000.0 + i]
 
     assert len(limiter.cache) == 10000
 
-    # Estimate rough memory usage in MB
     total_bytes = sys.getsizeof(limiter.cache)
     for k, v in limiter.cache.items():
         total_bytes += sys.getsizeof(k) + sys.getsizeof(v)

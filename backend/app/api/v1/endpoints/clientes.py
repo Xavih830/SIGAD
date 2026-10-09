@@ -34,7 +34,6 @@ async def registrar_cliente(
     """Registra un nuevo cliente asegurado y genera su código OTP de vinculación inicial."""
     identificacion = body.identificacion.strip()
 
-    # Verificar si ya existe cliente con esa identificación
     stmt = select(Cliente).where(Cliente.identificacion == identificacion)
     res = await db.execute(stmt)
     existing = res.scalar_one_or_none()
@@ -45,7 +44,6 @@ async def registrar_cliente(
             detail=f"Ya existe un cliente registrado con la cédula {identificacion}.",
         )
 
-    # Crear cliente en base de datos
     nuevo_cliente = Cliente(
         identificacion=identificacion,
         nombres=body.nombres.strip(),
@@ -55,7 +53,6 @@ async def registrar_cliente(
     db.add(nuevo_cliente)
     await db.flush()  # Obtener ID para el código de vinculación
 
-    # Generar código OTP de 6 dígitos
     codigo_plano = generate_otp_code(6)
     codigo_hmac = compute_otp_hmac(codigo_plano, settings.OTP_SECRET_KEY_ACTUAL)
     expira_en = datetime.now(timezone.utc) + timedelta(minutes=settings.OTP_EXPIRATION_MINUTES)
@@ -73,7 +70,6 @@ async def registrar_cliente(
 
     logger.info("cliente_registrado id=%s cedula=%s", nuevo_cliente.id, identificacion)
 
-    # Disparo asíncrono como canal de respaldo vía SMTP
     if nuevo_cliente.email:
         background_tasks.add_task(
             smtp_service.send_otp_email,
@@ -82,7 +78,6 @@ async def registrar_cliente(
             nombres=nuevo_cliente.nombres,
         )
 
-    # Retornar datos con el código plano para que el panel web lo presente y permita copiarlo a WhatsApp
     return ClienteResponse(
         id=nuevo_cliente.id,
         identificacion=nuevo_cliente.identificacion,
@@ -133,7 +128,6 @@ async def obtener_cliente(
             detail="Cliente no encontrado.",
         )
 
-    # Si es cliente asegurado, solo puede acceder a su propio registro (Anti-BOLA/IDOR)
     if current_user.rol not in (RolEnum.ADMIN, RolEnum.AGENTE):
         if cliente.usuario_id != current_user.id:
             raise HTTPException(
@@ -168,7 +162,6 @@ async def regenerar_otp_cliente(
             detail="El cliente ya tiene una cuenta de usuario vinculada.",
         )
 
-    # Invalidar códigos OTP previos activos para prevenir acumulación/concurrencia (CWE-613)
     await db.execute(
         update(CodigoVinculacion)
         .where(

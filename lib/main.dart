@@ -7,13 +7,8 @@ import 'package:sigad/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:sigad/features/mobile_client/presentation/pages/splash_screen.dart';
 
 void main() async {
-  // Ensure Flutter engine is initialized
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Initialize hardware secure session storage
   await SessionVault.init();
-
-  // Initialize Local Notification Scheduler for Expirations
   await NotificationsManager.init();
 
   runApp(const MyApp());

@@ -1,16 +1,4 @@
-"""Integration test for policy state updates and PostgreSQL audit triggers.
-
-Obligatory Test #15 / #21 (Section 21 of poryecto.md).
-Verifies:
-  1. Policy state transition via PATCH /api/v1/polizas/{id}/estado updates the record.
-  2. The PostgreSQL AFTER UPDATE trigger (`trg_audit_polizas`) automatically logs the change
-     into the `historial_cambios` audit table:
-       - entidad: 'polizas'
-       - entidad_id: poliza.id
-       - campo: 'estado'
-       - valor_anterior: 'activa'
-       - valor_nuevo: 'cancelada'
-"""
+"""Prueba de integración para actualización de estados de póliza y triggers de auditoría."""
 
 import uuid
 
@@ -34,7 +22,6 @@ async def test_actualizacion_estado_dispara_trigger_auditoria(db_session: AsyncS
 
     assert poliza_a.estado == EstadoPoliza.ACTIVA
 
-    # 1. Realizar actualización de estado a CANCELADA via API
     async with make_client(admin_token) as client:
         response = await client.patch(
             f"/api/v1/polizas/{poliza_a.id}/estado",
@@ -44,7 +31,6 @@ async def test_actualizacion_estado_dispara_trigger_auditoria(db_session: AsyncS
         updated = response.json()
         assert updated["estado"] == "cancelada"
 
-    # 2. Consultar la tabla historial_cambios para comprobar el trigger de PostgreSQL
     stmt = (
         select(HistorialCambio)
         .where(

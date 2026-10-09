@@ -84,7 +84,6 @@ class Documento(Base):
         nullable=False,
     )
 
-    # Relaciones
     poliza = relationship("Poliza")
     resultado = relationship(
         "ResultadoExtraccion",

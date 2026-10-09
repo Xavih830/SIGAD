@@ -1,12 +1,4 @@
-"""TEST: Selective PII (Personally Identifiable Information) Redaction in Logs.
-
-Verifies that logging filters / formatters redact:
-- Ecuadorian 10-digit IDs (cédulas)
-- Email addresses
-- Passwords, keys, and tokens
-- Bearer authorization headers
-Ensuring zero PII leakage to observability / log aggregators.
-"""
+"""Pruebas de ofuscación y redacción de PII en logs."""
 
 import io
 import logging
@@ -30,22 +22,14 @@ class PIIRedactionFilter(logging.Filter):
         if not isinstance(text, str):
             text = str(text)
 
-        # 1. Redact passwords / secrets in key-value pairs
         text = cls.PASSWORD_REGEX.sub(r"\1[REDACTED_SECRET]\3", text)
-
-        # 2. Redact Bearer tokens
         text = cls.BEARER_REGEX.sub(r"\1[REDACTED_TOKEN]", text)
-
-        # 3. Redact Emails
         text = cls.EMAIL_REGEX.sub("[REDACTED_EMAIL]", text)
-
-        # 4. Redact 10-digit Ecuadorian Cedulas
         text = cls.CEDULA_REGEX.sub("[REDACTED_CEDULA]", text)
 
         return text
 
     def filter(self, record: logging.LogRecord) -> bool:
-        # Pre-format message to ensure interpolated arguments are fully scrutinized
         rendered_msg = record.getMessage()
         record.msg = self.redact(rendered_msg)
         record.args = None
@@ -93,7 +77,6 @@ def test_pii_logging_filter_in_standard_logger():
     logger.handlers.clear()
     logger.addHandler(handler)
 
-    # Log statement with sensitive PII
     logger.info(
         "Vinculacion OTP: cliente=%s con email=%s clave_temp='%s'",
         "1710034065",

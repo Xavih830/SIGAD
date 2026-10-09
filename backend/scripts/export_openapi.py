@@ -1,18 +1,11 @@
 #!/usr/bin/env python3
-"""OpenAPI schema exporter with defensive socket blocking.
-
-Guarantees 100% offline schema generation:
-1. Neutralizes Python's socket interface at the interpreter level during export.
-2. Injects safe development / mock environment variables.
-3. Exports the current OpenAPI schema to `openapi.json` in the project root.
-"""
+"""Exportador fuera de línea del contrato OpenAPI con aislamiento defensivo de red."""
 
 import contextlib
 import json
 from pathlib import Path
 import socket
 
-# 1. Bloqueo Defensivo de Sockets a nivel de intérprete
 _original_socket_class = socket.socket
 _original_create_connection = getattr(socket, "create_connection", None)
 
@@ -43,7 +36,6 @@ def defensive_socket_blocking():
 
 backend_dir = Path(__file__).resolve().parent.parent
 
-# 3. Importar app e inspeccionar OpenAPI
 from app.main import app
 
 

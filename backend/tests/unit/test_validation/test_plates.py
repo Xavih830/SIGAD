@@ -1,17 +1,4 @@
-"""Unit tests for Ecuadorian ANT License Plate Validation (Section 11.2).
-
-Verification Gate 2: Particiones de equivalencia de placas ANT.
-Validates:
-  - Particular (3L+4D): PBA-1234
-  - Moto (2L+4D): AB-1234
-  - Moto ANT actual (2L+3D+1L): AB-123C
-  - Servicio público (3L+4D): PTA-1234
-Rejects:
-  - Formato antiguo (3L+3D): XYZ-123
-  - Invertido: 1234-ABC
-  - Caracteres especiales / espacios: AB C-123
-  - Sin guión o minúsculas no normalizadas: PBA1234, pba-1234
-"""
+"""Pruebas unitarias para la validación de placas vehiculares ecuatorianas (ANT)."""
 
 import pytest
 
@@ -31,7 +18,7 @@ from app.schemas.vehiculo import validar_placa_ecuador
     ],
 )
 def test_placas_ant_validas(placa: str, descripcion: str):
-    """Valida particiones de equivalencia válidas según Sección 11.2."""
+    """Valida formatos de placas vehiculares permitidos."""
     assert validar_placa_ecuador(placa) is True, f"Falló placa válida ({descripcion}): {placa}"
 
 
@@ -56,5 +43,5 @@ def test_placas_ant_validas(placa: str, descripcion: str):
     ],
 )
 def test_placas_ant_invalidas(placa: str, motivo: str):
-    """Rechaza particiones inválidas según Sección 11.2."""
+    """Verifica el rechazo de formatos de placas vehiculares no permitidos."""
     assert validar_placa_ecuador(placa) is False, f"Se debió rechazar ({motivo}): {placa}"
