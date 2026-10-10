@@ -1,21 +1,22 @@
 """Schemas for Documento and OCR extraction lifecycle."""
 
 from datetime import datetime
-from typing import Any, Optional
 import uuid
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemas.base import StrictBaseSchema
 
+ValorCampoOCR = str | int | float | bool | None
+
 
 class DocumentoRevisionRequest(StrictBaseSchema):
     """Payload to review and correct OCR extracted fields."""
-    campos_extraidos: dict[str, Any] = Field(
+    campos_extraidos: dict[str, ValorCampoOCR] = Field(
         ...,
         description="Claves y valores extraídos validados por el agente.",
     )
-    estado_extraccion: Optional[str] = Field(
+    estado_extraccion: str | None = Field(
         None,
         max_length=30,
         description="Nuevo estado de extracción (completado, requiere_revision_manual).",
@@ -27,8 +28,8 @@ class ResultadoExtraccionResponse(BaseModel):
 
     metodo: str
     confianza: float
-    texto_completo: Optional[str] = None
-    campos_extraidos: dict[str, Any]
+    texto_completo: str | None = None
+    campos_extraidos: dict[str, ValorCampoOCR]
 
 
 class DocumentoResponse(BaseModel):
@@ -36,18 +37,18 @@ class DocumentoResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    poliza_id: Optional[uuid.UUID] = None
+    poliza_id: uuid.UUID | None = None
     nombre_archivo: str
     tipo_mime: str
     tamano_bytes: int
-    hash_sha256: Optional[str] = None
+    hash_sha256: str | None = None
     estado_extraccion: str
     intentos: int = 0
-    error_motivo: Optional[str] = None
-    paginas: Optional[int] = None
+    error_motivo: str | None = None
+    paginas: int | None = None
     created_at: datetime
-    updated_at: Optional[datetime] = None
-    resultado: Optional[ResultadoExtraccionResponse] = None
+    updated_at: datetime | None = None
+    resultado: ResultadoExtraccionResponse | None = None
 
 
 class DocumentoRevisionResponse(BaseModel):
@@ -55,7 +56,7 @@ class DocumentoRevisionResponse(BaseModel):
 
     id: uuid.UUID
     estado_extraccion: str
-    campos_extraidos: dict[str, Any]
+    campos_extraidos: dict[str, ValorCampoOCR]
     updated_at: datetime
 
 
@@ -63,7 +64,7 @@ class DocumentoListItemResponse(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
-    poliza_id: Optional[uuid.UUID] = None
+    poliza_id: uuid.UUID | None = None
     nombre_archivo: str
     tipo_mime: str
     tamano_bytes: int

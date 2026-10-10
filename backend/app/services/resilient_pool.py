@@ -3,9 +3,11 @@
 import asyncio
 from concurrent.futures import ProcessPoolExecutor
 import multiprocessing as mp
-from typing import Any, Callable
+from typing import Callable, TypeVar
 
 from app.core.constants import OCR_PROCESS_TIMEOUT_SECONDS
+
+T = TypeVar("T")
 
 
 class DocumentProcessingTimeoutException(TimeoutError):
@@ -61,10 +63,10 @@ class ResilientProcessPool:
 
     async def ejecutar_con_timeout(
         self,
-        func: Callable[..., Any],
-        *args: Any,
+        func: Callable[..., T],
+        *args: object,
         timeout: float = float(OCR_PROCESS_TIMEOUT_SECONDS),
-    ) -> Any:
+    ) -> T:
         """Executes a CPU/IO-bound sync function in the process pool with strict timeout.
         
         If timeout is exceeded, the worker is immediately killed with SIGKILL,

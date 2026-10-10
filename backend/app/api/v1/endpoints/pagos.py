@@ -1,7 +1,7 @@
 """Endpoints REST para consulta y liquidación de cuotas de pólizas."""
 
+from collections.abc import Sequence
 from datetime import date
-from typing import Any
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -24,7 +24,7 @@ async def listar_pagos_poliza(
     poliza_id: uuid.UUID,
     current_user: Usuario = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> Any:
+) -> Sequence[Pago]:
     """Listar cronograma de pagos y cuotas de una póliza."""
     stmt = select(Poliza).options(selectinload(Poliza.cliente)).where(Poliza.id == poliza_id)
     res = await db.execute(stmt)
@@ -49,7 +49,7 @@ async def registrar_pago_cuota(
     payload: RegistrarPagoRequest,
     current_user: Usuario = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> Any:
+) -> Pago:
     """Registrar el pago de una cuota de póliza."""
     if current_user.rol not in [RolEnum.ADMIN, RolEnum.AGENTE]:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="No autorizado para registrar pagos.")

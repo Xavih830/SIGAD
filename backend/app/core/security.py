@@ -8,6 +8,9 @@ Security invariants enforced:
 
 import asyncio
 from datetime import datetime, timedelta, timezone
+import hashlib
+import hmac
+import secrets
 
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
@@ -80,12 +83,6 @@ def create_refresh_token(data: dict) -> str:
 def decode_token(token: str) -> dict:
     """Decode and validate a JWT token."""
     return jwt.decode(token, _get_jwt_secret(), algorithms=[settings.JWT_ALGORITHM])
-
-
-
-import hashlib
-import hmac
-import secrets
 
 
 def generate_otp_code(length: int = 6) -> str:

@@ -5,7 +5,6 @@ from decimal import Decimal
 import gc
 from pathlib import Path
 import re
-from typing import Any
 
 from PIL import Image
 import pdfplumber
@@ -103,8 +102,8 @@ def _extraer_compuerta_2_tesseract_200dpi(file_path: str) -> str:
 
 def extraer_documento_sync(
     file_path: str,
-    campos_esquema: list[dict] | None = None,
-) -> dict[str, Any]:
+    campos_esquema: list[dict[str, object]] | None = None,
+) -> dict[str, object]:
     """Execute the two-gate extraction pipeline on a target file.
 
     Extracts raw text via Gate 1 (pdfplumber) or Gate 2 (tesseract_200dpi)
@@ -198,10 +197,15 @@ def aplicar_esquema(texto: str, campos: list[dict]) -> tuple[dict, float]:
 
         match = re.search(patron, texto, re.IGNORECASE)
         if match:
-            try:
-                valor = match.group(grupo).strip()
-            except IndexError:
+            total_grupos = len(match.groups())
+            if total_grupos == 0:
                 valor = match.group(0).strip()
+            elif grupo <= total_grupos:
+                valor = match.group(grupo).strip()
+            else:
+                raise IndexError(
+                    f"El grupo de captura {grupo} excede los {total_grupos} grupos definidos en el patrón '{patron}' para el campo '{nombre}'."
+                )
             resultado[nombre] = valor
             aciertos += 1
         else:

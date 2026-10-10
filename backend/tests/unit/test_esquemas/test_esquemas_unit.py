@@ -122,6 +122,14 @@ def test_adversarial_datos_corruptos_lanza_keyerror_fail_fast():
         aplicar_esquema("texto", [corrupted_2])
 
 
+def test_adversarial_grupo_captura_invalido_lanza_indexerror_fail_fast():
+    """Principio Fail-Fast Radical: grupo_captura fuera de rango no se parcha con group(0), lanza IndexError."""
+    regla = campo_regla_payload(nombre="campo_invalido", regex=r"(HOLA)", grupo_captura=99)
+    with pytest.raises(IndexError) as exc_info:
+        aplicar_esquema("HOLA MUNDO", [regla])
+    assert "El grupo de captura 99 excede" in str(exc_info.value)
+
+
 def test_adversarial_lista_vacia():
     """Lista vacía de campos retorna diccionario vacío y confianza 0.0."""
     resultado, confianza = aplicar_esquema("cualquier texto", [])

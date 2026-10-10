@@ -3,7 +3,7 @@
 import asyncio
 import logging
 import time
-from typing import Any
+
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 import uvicorn
@@ -19,7 +19,7 @@ worker_app = FastAPI(
 )
 
 
-_worker_health_cache: dict[str, Any] = {"status": "unknown", "timestamp": 0.0}
+_worker_health_cache: dict[str, str | float] = {"status": "unknown", "timestamp": 0.0}
 _CACHE_TTL = 3.0
 
 
@@ -29,9 +29,9 @@ async def get_worker_liveness() -> dict[str, str]:
     return {"status": "ok", "worker": "running"}
 
 
-@worker_app.get("/health")
-@worker_app.get("/health/ready")
-async def get_worker_health() -> dict[str, Any]:
+@worker_app.get("/health", response_model=None)
+@worker_app.get("/health/ready", response_model=None)
+async def get_worker_health() -> JSONResponse | dict[str, str]:
     """Returns worker status ok and validates that ProcessPool is active."""
     now = time.monotonic()
     if now - _worker_health_cache["timestamp"] < _CACHE_TTL and _worker_health_cache["status"] == "active":
