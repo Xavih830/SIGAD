@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sigad/core/models/user_model.dart';
-import 'package:sigad/core/services/notifications_manager.dart';
+import 'package:sigad/core/services/notifications/notifications_manager.dart';
 import 'package:sigad/core/theme/app_theme.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_event.dart';
@@ -22,22 +22,23 @@ class MobileDashboardPage extends StatefulWidget {
 
 class _MobileDashboardPageState extends State<MobileDashboardPage> {
   int _currentIndex = 0;
+  late final List<Widget> _tabs;
 
   @override
   void initState() {
     super.initState();
+    _tabs = [
+      MobilePoliciesTab(user: widget.user, onNavigateToContact: () => setState(() => _currentIndex = 3)),
+      const MobileAssistanceTab(),
+      const MobileWorkshopsTab(),
+      const MobileContactTab(),
+    ];
     NotificationsManager.showWelcomeNotification(widget.user.email);
   }
 
   @override
   Widget build(BuildContext context) {
     final titles = ['Mis Pólizas', 'Asistencias', 'Talleres Autorizados', 'Contacto'];
-    final tabs = [
-      MobilePoliciesTab(user: widget.user, onNavigateToContact: () => setState(() => _currentIndex = 3)),
-      const MobileAssistanceTab(),
-      const MobileWorkshopsTab(),
-      const MobileContactTab(),
-    ];
 
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
@@ -61,7 +62,12 @@ class _MobileDashboardPageState extends State<MobileDashboardPage> {
             ),
           ],
         ),
-        body: SafeArea(child: tabs[_currentIndex]),
+        body: SafeArea(
+          child: IndexedStack(
+            index: _currentIndex,
+            children: _tabs,
+          ),
+        ),
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: _currentIndex,
           onTap: (i) => setState(() => _currentIndex = i),

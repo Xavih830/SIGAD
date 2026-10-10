@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sigad/core/models/policy_model.dart';
 import 'package:sigad/core/theme/app_theme.dart';
+import 'package:sigad/core/utils/date_formatter.dart';
 
 class PolicyDetailDialog extends StatelessWidget {
   final PolicyModel policy;
@@ -49,7 +50,7 @@ class PolicyDetailDialog extends StatelessWidget {
               _buildInfoRow('Valor Asegurado:', '\$${policy.insuredValue.toStringAsFixed(2)} USD'),
               _buildInfoRow('Prima Mensual:', '\$${policy.monthlyPremium.toStringAsFixed(2)} USD'),
               _buildInfoRow('Kilometraje de Emisión:', '${policy.emissionMileage} km'),
-              _buildInfoRow('Vigencia:', '${policy.startDate.toIso8601String().substring(0, 10)}  al  ${policy.endDate.toIso8601String().substring(0, 10)}'),
+              _buildInfoRow('Vigencia:', '${DateFormatter.toIsoDate(policy.startDate)}  al  ${DateFormatter.toIsoDate(policy.endDate)}'),
               const Divider(height: 24),
               _buildSectionTitle('Coberturas Contratadas'),
               if (policy.coverages.isEmpty)

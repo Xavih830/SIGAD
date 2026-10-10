@@ -1,16 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:sigad/core/models/document_model.dart';
+import 'package:sigad/core/models/extraction_schema_model.dart';
 import 'package:sigad/core/repositories/documents_repository.dart';
+import 'package:sigad/core/repositories/extraction_schemas_repository.dart';
 import 'package:sigad/core/theme/app_theme.dart';
 import 'package:sigad/core/utils/file_downloader_helper.dart';
+import 'package:sigad/features/web_dashboard/presentation/widgets/ocr/ocr_editable_fields_list.dart';
+import 'package:sigad/features/web_dashboard/presentation/widgets/ocr/ocr_raw_text_preview.dart';
+import 'package:sigad/features/web_dashboard/presentation/widgets/ocr/ocr_schema_reextraction_bar.dart';
+import 'package:sigad/features/web_dashboard/presentation/widgets/ocr/ocr_status_badge.dart';
 
 class OcrDocumentDetailCard extends StatefulWidget {
   final DocumentModel? document;
   final bool isLoading;
   final VoidCallback onRefresh;
   final Function(Map<String, dynamic> confirmedFields) onLinkPolicy;
-  final String authToken;
+  final String? authToken;
   final DocumentsRepository? documentsRepository;
+  final ExtractionSchemasRepository? extractionSchemasRepository;
 
   const OcrDocumentDetailCard({
     super.key,
@@ -18,8 +25,9 @@ class OcrDocumentDetailCard extends StatefulWidget {
     required this.isLoading,
     required this.onRefresh,
     required this.onLinkPolicy,
-    required this.authToken,
+    this.authToken,
     this.documentsRepository,
+    this.extractionSchemasRepository,
   });
 
   @override
@@ -30,11 +38,18 @@ class _OcrDocumentDetailCardState extends State<OcrDocumentDetailCard> {
   final Map<String, TextEditingController> _controllers = {};
   bool _isSaving = false;
   bool _isDownloading = false;
+  bool _isReExtracting = false;
+
+  late final ExtractionSchemasRepository _extractionSchemasRepo;
+  List<ExtractionSchemaListItemModel> _extractionSchemas = [];
+  String? _selectedExtractionSchemaId;
 
   @override
   void initState() {
     super.initState();
+    _extractionSchemasRepo = widget.extractionSchemasRepository ?? ExtractionSchemasRepository();
     _initControllers();
+    _loadExtractionSchemas();
   }
 
   @override
@@ -54,6 +69,77 @@ class _OcrDocumentDetailCardState extends State<OcrDocumentDetailCard> {
     final campos = widget.document?.camposExtraidos ?? {};
     for (final entry in campos.entries) {
       _controllers[entry.key] = TextEditingController(text: entry.value?.toString() ?? '');
+    }
+  }
+
+  Future<void> _loadExtractionSchemas() async {
+    try {
+      final list = await _extractionSchemasRepo.getSchemas(token: widget.authToken);
+      if (!mounted) return;
+      setState(() {
+        _extractionSchemas = list;
+        final activo = list.where((s) => s.esActivo).firstOrNull;
+        _selectedExtractionSchemaId = activo?.id ?? (list.isNotEmpty ? list.first.id : null);
+      });
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cargar esquemas de extracción: $e'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _reprocesarConEsquema() async {
+    if (widget.document == null || _selectedExtractionSchemaId == null) return;
+    final doc = widget.document!;
+
+    setState(() => _isReExtracting = true);
+    try {
+      final repo = widget.documentsRepository ?? DocumentsRepository();
+      final bytes = await repo.downloadDocumentBytes(
+        doc.id,
+        token: widget.authToken,
+      );
+
+      final result = await _extractionSchemasRepo.testSchema(
+        _selectedExtractionSchemaId!,
+        bytes: bytes,
+        filename: doc.nombreArchivo,
+        token: widget.authToken,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        for (final c in _controllers.values) {
+          c.dispose();
+        }
+        _controllers.clear();
+        for (final entry in result.camposExtraidos.entries) {
+          _controllers[entry.key] = TextEditingController(text: entry.value?.toString() ?? '');
+        }
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Documento re-procesado con éxito (Confianza: ${result.confianza.toStringAsFixed(1)}%).'),
+          backgroundColor: AppTheme.successColor,
+        ),
+      );
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al re-procesar documento: $e'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isReExtracting = false);
     }
   }
 
@@ -143,85 +229,6 @@ class _OcrDocumentDetailCardState extends State<OcrDocumentDetailCard> {
     }
   }
 
-  Widget _buildStatusBadge(String estado) {
-    Color color = AppTheme.textMuted;
-    switch (estado.toLowerCase()) {
-      case 'completado':
-        color = AppTheme.successColor;
-        break;
-      case 'procesando':
-      case 'pendiente':
-        color = AppTheme.warningColor;
-        break;
-      case 'revision_requerida':
-        color = Colors.indigo;
-        break;
-      case 'error':
-      case 'fallido':
-      case 'error_permanente':
-        color = AppTheme.errorColor;
-        break;
-    }
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(4),
-        border: Border.all(color: color.withValues(alpha: 0.4)),
-      ),
-      child: Text(
-        estado.toUpperCase(),
-        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold),
-      ),
-    );
-  }
-
-  Widget _buildConfidenceBadge(double? c) {
-    if (c == null) return const SizedBox.shrink();
-    final color = c < 60 ? AppTheme.errorColor : (c < 85 ? AppTheme.warningColor : AppTheme.successColor);
-    final nivel = c < 60 ? 'BAJA' : (c < 85 ? 'MEDIA' : 'ALTA');
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Text(
-        'CONFIANZA $nivel (${c.toStringAsFixed(1)}%)',
-        style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.bold),
-      ),
-    );
-  }
-
-  Widget _buildPendingBanner(String estado) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.amber.shade50,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.amber.shade200),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.hourglass_empty, color: Colors.amber),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'Documento en estado "$estado". Se procesará en segundo plano.',
-              style: const TextStyle(fontSize: 13, color: AppTheme.textDark),
-            ),
-          ),
-          TextButton.icon(
-            onPressed: widget.onRefresh,
-            icon: const Icon(Icons.refresh, size: 16),
-            label: const Text('Actualizar'),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildResultContent(DocumentModel doc) {
     final metodo = doc.metodo ?? 'desconocido';
     final confianza = doc.confianza;
@@ -234,95 +241,28 @@ class _OcrDocumentDetailCardState extends State<OcrDocumentDetailCard> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text('Método: $metodo', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-            _buildConfidenceBadge(confianza),
+            OcrConfidenceBadge(confianza: confianza),
           ],
         ),
         const Divider(height: 24, color: AppTheme.borderLight),
-        Wrap(
-          alignment: WrapAlignment.spaceBetween,
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            const Text(
-              'Campos Extraídos (Editables para Corrección):',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-            ),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                OutlinedButton.icon(
-                  onPressed: _isSaving ? null : _guardarRevision,
-                  icon: _isSaving
-                      ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.check, size: 16),
-                  label: const Text('Confirmar Correcciones'),
-                ),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(backgroundColor: AppTheme.successColor),
-                  onPressed: () {
-                    final currentValues = <String, dynamic>{};
-                    _controllers.forEach((k, v) => currentValues[k] = v.text.trim());
-                    widget.onLinkPolicy(currentValues);
-                  },
-                  icon: const Icon(Icons.add_task, color: Colors.white, size: 16),
-                  label: const Text('Vincular a Póliza', style: TextStyle(color: Colors.white)),
-                ),
-              ],
-            ),
-          ],
+        OcrSchemaReextractionBar(
+          extractionSchemas: _extractionSchemas,
+          selectedSchemaId: _selectedExtractionSchemaId,
+          isReExtracting: _isReExtracting,
+          onSchemaChanged: (id) => setState(() => _selectedExtractionSchemaId = id),
+          onReExtract: _reprocesarConEsquema,
         ),
-        const SizedBox(height: 12),
-        if (_controllers.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(vertical: 12.0),
-            child: Text('No se detectaron campos estructurados en este documento.', style: TextStyle(color: AppTheme.textMuted)),
-          )
-        else
-          for (final entry in _controllers.entries)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: Row(
-                children: [
-                  SizedBox(
-                    width: 160,
-                    child: Text(
-                      entry.key.toUpperCase(),
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: AppTheme.textMuted),
-                    ),
-                  ),
-                  Expanded(
-                    child: TextFormField(
-                      controller: entry.value,
-                      decoration: InputDecoration(
-                        isDense: true,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        if (texto.isNotEmpty) ...[
-          const SizedBox(height: 20),
-          const Text('Texto Completo Reconocido:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-          const SizedBox(height: 8),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.grey.shade50,
-              border: Border.all(color: AppTheme.borderLight),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: SelectableText(
-              texto,
-              style: const TextStyle(fontSize: 11, fontFamily: 'monospace', height: 1.3),
-            ),
-          ),
-        ],
+        OcrEditableFieldsList(
+          controllers: _controllers,
+          isSaving: _isSaving,
+          onSaveRevision: _guardarRevision,
+          onLinkPolicy: () {
+            final currentValues = <String, dynamic>{};
+            _controllers.forEach((k, v) => currentValues[k] = v.text.trim());
+            widget.onLinkPolicy(currentValues);
+          },
+        ),
+        OcrRawTextPreview(text: texto),
       ],
     );
   }
@@ -376,7 +316,7 @@ class _OcrDocumentDetailCardState extends State<OcrDocumentDetailCard> {
                         : const Icon(Icons.download, size: 16),
                     label: const Text('Descargar Documento'),
                   ),
-                  _buildStatusBadge(doc.estadoExtraccion),
+                  OcrStatusBadge(estado: doc.estadoExtraccion),
                 ],
               ),
             ],
@@ -385,7 +325,7 @@ class _OcrDocumentDetailCardState extends State<OcrDocumentDetailCard> {
           if (doc.hasResultado)
             _buildResultContent(doc)
           else
-            _buildPendingBanner(doc.estadoExtraccion),
+            OcrPendingBanner(estado: doc.estadoExtraccion, onRefresh: widget.onRefresh),
         ],
       ),
     );

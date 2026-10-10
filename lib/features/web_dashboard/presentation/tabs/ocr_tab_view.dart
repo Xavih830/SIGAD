@@ -114,24 +114,31 @@ class _OcrTabViewState extends State<OcrTabView> {
   }
 
   Future<void> _vincularNuevaPoliza(Map<String, dynamic> campos) async {
-    List<ClientModel> clients = [];
+    final List<ClientModel> clients;
     try {
       clients = await _clientsRepo.getClients(token: _getAuthToken());
-    } catch (_) {}
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al obtener clientes: $e'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
+      return;
+    }
     if (!mounted) return;
 
     final String numeroPoliza = campos['numero_poliza']?.toString().trim() ?? '';
     final String rawValor = (campos['valor_asegurado']?.toString() ?? '').replaceAll(RegExp(r'[^0-9.]'), '');
-    final double? parsedValor = rawValor.isNotEmpty ? double.tryParse(rawValor) : null;
-    final double valorAsegurado = parsedValor ?? AppConstants.ocrDefaultInsuredValue;
+    final double? valorAsegurado = rawValor.isNotEmpty ? double.tryParse(rawValor) : null;
 
     final String rawPrima = (campos['prima_mensual']?.toString() ?? '').replaceAll(RegExp(r'[^0-9.]'), '');
-    final double? parsedPrima = rawPrima.isNotEmpty ? double.tryParse(rawPrima) : null;
-    final double primaMensual = parsedPrima ?? AppConstants.ocrDefaultMonthlyPremium;
+    final double? primaMensual = rawPrima.isNotEmpty ? double.tryParse(rawPrima) : null;
 
     final String rawKm = (campos['kilometraje']?.toString() ?? '').replaceAll(RegExp(r'[^0-9]'), '');
-    final int? parsedKm = rawKm.isNotEmpty ? int.tryParse(rawKm) : null;
-    final int kilometraje = parsedKm ?? AppConstants.ocrDefaultEmissionMileage;
+    final int? kilometraje = rawKm.isNotEmpty ? int.tryParse(rawKm) : null;
 
     if (clients.isEmpty) {
       if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No hay clientes registrados. Cree un cliente antes de vincular una póliza OCR.'), backgroundColor: Colors.red));
@@ -148,11 +155,16 @@ class _OcrTabViewState extends State<OcrTabView> {
       insuredValue: valorAsegurado,
       monthlyPremium: primaMensual,
       emissionMileage: kilometraje,
+      camposAdicionales: campos,
     );
 
     final created = await showDialog<CreatePolicyRequest>(
       context: context,
-      builder: (_) => PolicyFormDialog(initialRequest: request, clients: clients),
+      builder: (_) => PolicyFormDialog(
+        initialRequest: request,
+        clients: clients,
+        authToken: _getAuthToken(),
+      ),
     );
 
     if (created != null && mounted) {
@@ -202,7 +214,7 @@ class _OcrTabViewState extends State<OcrTabView> {
                 isLoading: _isLoadingDetail,
                 onRefresh: () => _selectedDocument != null ? _seleccionarDocumento(_selectedDocument!.id) : null,
                 onLinkPolicy: _vincularNuevaPoliza,
-                authToken: _getAuthToken() ?? (throw StateError('OcrTabView renderizado con sesión nula. El BLoC de autenticación está en estado inválido.')),
+                authToken: _getAuthToken(),
                 documentsRepository: _docsRepo,
               ),
             ),

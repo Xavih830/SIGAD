@@ -2,19 +2,30 @@ import 'package:flutter/material.dart';
 import 'package:sigad/core/constants/app_constants.dart';
 import 'package:sigad/core/models/client_model.dart';
 import 'package:sigad/core/models/policy_model.dart';
+import 'package:sigad/core/models/policy_schema_model.dart';
 import 'package:sigad/core/models/vehicle_model.dart';
-import 'package:sigad/core/utils/plate_validator.dart';
+import 'package:sigad/core/repositories/policy_schemas_repository.dart';
+import 'package:sigad/core/theme/app_theme.dart';
+import 'package:sigad/core/utils/date_formatter.dart';
+import 'package:sigad/features/web_dashboard/presentation/dialogs/policy_form/policy_basic_fields_section.dart';
+import 'package:sigad/features/web_dashboard/presentation/dialogs/policy_form/policy_coverages_section.dart';
+import 'package:sigad/features/web_dashboard/presentation/dialogs/policy_form/policy_schema_selector_section.dart';
+import 'package:sigad/features/web_dashboard/presentation/widgets/dynamic_policy_form.dart';
 
 class PolicyFormDialog extends StatefulWidget {
   final PolicyModel? initialPolicy;
   final CreatePolicyRequest? initialRequest;
   final List<ClientModel> clients;
+  final PolicySchemasRepository? policySchemasRepository;
+  final String? authToken;
 
   const PolicyFormDialog({
     super.key,
     this.initialPolicy,
     this.initialRequest,
     required this.clients,
+    this.policySchemasRepository,
+    this.authToken,
   });
 
   @override
@@ -23,9 +34,17 @@ class PolicyFormDialog extends StatefulWidget {
 
 class _PolicyFormDialogState extends State<PolicyFormDialog> {
   final _formKey = GlobalKey<FormState>();
+  final _dynamicFormKey = GlobalKey<DynamicPolicyFormState>();
+  late final PolicySchemasRepository _schemasRepo;
+
   late final TextEditingController _numCtrl, _brandCtrl, _modelCtrl, _yearCtrl, _plateCtrl, _valCtrl, _primaCtrl, _startCtrl, _endCtrl, _kmCtrl;
   late String _selectedClientDoc, _status;
   final List<String> _selectedCoverages = [];
+
+  List<PolicySchemaListItemModel> _availableSchemas = [];
+  PolicySchemaModel? _selectedSchemaDetail;
+  String? _selectedSchemaId;
+  bool _isLoadingSchemas = false;
 
   final List<String> _allCoverages = const [
     'Pérdida Total por Accidente', 'Pérdida Total por Robo', 'Daños Parciales al Vehículo',
@@ -35,6 +54,8 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
   @override
   void initState() {
     super.initState();
+    _schemasRepo = widget.policySchemasRepository ?? PolicySchemasRepository();
+
     final p = widget.initialPolicy;
     final req = widget.initialRequest;
     final number = p?.number ?? req?.number ?? '';
@@ -44,13 +65,13 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
     final plate = p?.vehicle?.plate ?? req?.vehicle?.plate ?? '';
     final val = (p != null && p.insuredValue > 0)
         ? p.insuredValue.toStringAsFixed(2)
-        : (req != null && req.insuredValue > 0 ? req.insuredValue.toStringAsFixed(2) : '');
+        : (req?.insuredValue != null && req!.insuredValue! > 0 ? req.insuredValue!.toStringAsFixed(2) : '');
     final prima = (p != null && p.monthlyPremium > 0)
         ? p.monthlyPremium.toStringAsFixed(2)
-        : (req != null && req.monthlyPremium > 0 ? req.monthlyPremium.toStringAsFixed(2) : '');
+        : (req?.monthlyPremium != null && req!.monthlyPremium! > 0 ? req.monthlyPremium!.toStringAsFixed(2) : '');
     final km = (p != null && p.emissionMileage > 0)
         ? p.emissionMileage.toString()
-        : (req != null && req.emissionMileage > 0 ? req.emissionMileage.toString() : '');
+        : (req?.emissionMileage != null && req!.emissionMileage! > 0 ? req.emissionMileage!.toString() : '');
     final startDt = p?.startDate ?? req?.startDate ?? DateTime.now();
     final endDt = p?.endDate ?? req?.endDate ?? DateTime.now().add(const Duration(days: AppConstants.defaultPolicyDurationDays));
 
@@ -62,8 +83,8 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
     _valCtrl = TextEditingController(text: val);
     _primaCtrl = TextEditingController(text: prima);
     _kmCtrl = TextEditingController(text: km);
-    _startCtrl = TextEditingController(text: startDt.toIso8601String().substring(0, 10));
-    _endCtrl = TextEditingController(text: endDt.toIso8601String().substring(0, 10));
+    _startCtrl = TextEditingController(text: DateFormatter.toIsoDate(startDt));
+    _endCtrl = TextEditingController(text: DateFormatter.toIsoDate(endDt));
 
     _status = p?.status ?? req?.status ?? 'activa';
     _selectedClientDoc = p?.clientId ?? req?.clientId ?? (widget.clients.isNotEmpty ? widget.clients.first.id : '');
@@ -74,6 +95,70 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
     } else {
       _selectedCoverages.add('Responsabilidad Civil');
     }
+
+    _selectedSchemaId = p?.esquemaId ?? req?.esquemaId;
+    _loadSchemas();
+  }
+
+  Future<void> _loadSchemas() async {
+    setState(() => _isLoadingSchemas = true);
+    try {
+      final list = await _schemasRepo.getSchemas(token: widget.authToken);
+      if (!mounted) return;
+      setState(() {
+        _availableSchemas = list;
+        _isLoadingSchemas = false;
+      });
+
+      if (_selectedSchemaId != null) {
+        await _fetchSchemaDetail(_selectedSchemaId!);
+      } else {
+        final activo = list.where((s) => s.esActivo).firstOrNull;
+        if (activo != null) {
+          _onSchemaSelected(activo.id);
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoadingSchemas = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error al cargar esquemas: $e'),
+            backgroundColor: AppTheme.errorColor,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _fetchSchemaDetail(String schemaId) async {
+    try {
+      final detail = await _schemasRepo.getSchemaById(schemaId, token: widget.authToken);
+      if (!mounted) return;
+      setState(() {
+        _selectedSchemaDetail = detail;
+        _selectedSchemaId = schemaId;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al cargar detalle del esquema: $e'),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
+    }
+  }
+
+  void _onSchemaSelected(String? schemaId) {
+    if (schemaId == null) {
+      setState(() {
+        _selectedSchemaId = null;
+        _selectedSchemaDetail = null;
+      });
+      return;
+    }
+    _fetchSchemaDetail(schemaId);
   }
 
   @override
@@ -86,6 +171,10 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
 
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
+    if (_selectedSchemaDetail != null && !(_dynamicFormKey.currentState?.validate() ?? true)) {
+      return;
+    }
+
     final start = DateTime.tryParse(_startCtrl.text.trim());
     final end = DateTime.tryParse(_endCtrl.text.trim());
 
@@ -135,6 +224,10 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
       return;
     }
 
+    final Map<String, dynamic>? camposAdicionales = _selectedSchemaDetail != null
+        ? _dynamicFormKey.currentState?.getValues()
+        : (widget.initialRequest?.camposAdicionales ?? widget.initialPolicy?.camposAdicionales);
+
     Navigator.of(context).pop(CreatePolicyRequest(
       number: _numCtrl.text.trim(),
       clientId: _selectedClientDoc,
@@ -153,6 +246,8 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
       emissionMileage: km,
       coverages: List<String>.from(_selectedCoverages),
       deductibles: widget.initialPolicy?.deductibles ?? widget.initialRequest?.deductibles ?? const [],
+      esquemaId: _selectedSchemaId,
+      camposAdicionales: camposAdicionales,
     ));
   }
 
@@ -161,7 +256,7 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
     return AlertDialog(
       title: Text(widget.initialPolicy == null ? 'Nueva Póliza Vehicular' : 'Emisión de Póliza (Borrador)'),
       content: SizedBox(
-        width: 600,
+        width: 650,
         child: Form(
           key: _formKey,
           child: SingleChildScrollView(
@@ -169,136 +264,49 @@ class _PolicyFormDialogState extends State<PolicyFormDialog> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Row(
-                  children: [
-                    Expanded(child: TextFormField(controller: _numCtrl, decoration: const InputDecoration(labelText: 'Número de Póliza'), validator: (v) => (v == null || v.isEmpty) ? 'Requerido' : null)),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        initialValue: _status,
-                        decoration: const InputDecoration(labelText: 'Estado'),
-                        items: const [DropdownMenuItem(value: 'activa', child: Text('Activa')), DropdownMenuItem(value: 'vencida', child: Text('Vencida')), DropdownMenuItem(value: 'cancelada', child: Text('Cancelada'))],
-                        onChanged: (v) => setState(() => _status = v ?? 'activa'),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                if (widget.clients.isNotEmpty)
-                  DropdownButtonFormField<String>(
-                    initialValue: _selectedClientDoc.isNotEmpty ? _selectedClientDoc : null,
-                    decoration: const InputDecoration(labelText: 'Cliente Titular'),
-                    items: widget.clients.map((c) => DropdownMenuItem(value: c.id, child: Text('${c.nombres} (${c.identificacion})'))).toList(),
-                    onChanged: (v) => setState(() => _selectedClientDoc = v ?? ''),
-                  ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(child: TextFormField(controller: _brandCtrl, decoration: const InputDecoration(labelText: 'Marca'), validator: (v) => (v == null || v.isEmpty) ? 'Requerido' : null)),
-                    const SizedBox(width: 12),
-                    Expanded(child: TextFormField(controller: _modelCtrl, decoration: const InputDecoration(labelText: 'Modelo'), validator: (v) => (v == null || v.isEmpty) ? 'Requerido' : null)),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _yearCtrl,
-                        decoration: const InputDecoration(labelText: 'Año'),
-                        keyboardType: TextInputType.number,
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty) return 'Requerido';
-                          final y = int.tryParse(v.trim());
-                          if (y == null || y < 1900 || y > DateTime.now().year + 1) return 'Año inválido';
-                          return null;
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _plateCtrl,
-                  decoration: const InputDecoration(labelText: 'Placa Vehicular (Formato ANT, ej. PBA-1234)'),
-                  validator: (v) => PlateValidator.isValid(v ?? '') ? null : 'Placa no cumple formato ANT',
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _valCtrl,
-                        decoration: const InputDecoration(labelText: 'Valor Asegurado (USD)'),
-                        keyboardType: TextInputType.number,
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty) return 'Requerido';
-                          final val = double.tryParse(v.trim());
-                          if (val == null || val <= 0) return 'Valor inválido';
-                          return null;
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _primaCtrl,
-                        decoration: const InputDecoration(labelText: 'Prima Mensual (USD)'),
-                        keyboardType: TextInputType.number,
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty) return 'Requerido';
-                          final p = double.tryParse(v.trim());
-                          if (p == null || p < 0) return 'Prima inválida';
-                          return null;
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _kmCtrl,
-                  decoration: const InputDecoration(labelText: 'Kilometraje de Emisión (Snapshot inmutable)'),
-                  keyboardType: TextInputType.number,
-                  validator: (v) {
-                    if (v == null || v.trim().isEmpty) return 'Requerido';
-                    final k = int.tryParse(v.trim());
-                    if (k == null || k < 0) return 'Kilometraje inválido (debe ser >= 0)';
-                    return null;
-                  },
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _startCtrl,
-                        decoration: const InputDecoration(labelText: 'Inicio (AAAA-MM-DD)'),
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty) return 'Requerido';
-                          if (DateTime.tryParse(v.trim()) == null) return 'Formato AAAA-MM-DD';
-                          return null;
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _endCtrl,
-                        decoration: const InputDecoration(labelText: 'Fin (AAAA-MM-DD)'),
-                        validator: (v) {
-                          if (v == null || v.trim().isEmpty) return 'Requerido';
-                          if (DateTime.tryParse(v.trim()) == null) return 'Formato AAAA-MM-DD';
-                          return null;
-                        },
-                      ),
-                    ),
-                  ],
+                PolicyBasicFieldsSection(
+                  numCtrl: _numCtrl,
+                  status: _status,
+                  onStatusChanged: (v) => setState(() => _status = v),
+                  clients: widget.clients,
+                  selectedClientDoc: _selectedClientDoc,
+                  onClientChanged: (v) => setState(() => _selectedClientDoc = v),
+                  brandCtrl: _brandCtrl,
+                  modelCtrl: _modelCtrl,
+                  yearCtrl: _yearCtrl,
+                  plateCtrl: _plateCtrl,
+                  valCtrl: _valCtrl,
+                  primaCtrl: _primaCtrl,
+                  kmCtrl: _kmCtrl,
+                  startCtrl: _startCtrl,
+                  endCtrl: _endCtrl,
                 ),
                 const SizedBox(height: 14),
-                const Text('Coberturas Contratadas:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                ..._allCoverages.map((cov) => CheckboxListTile(
-                  dense: true,
-                  title: Text(cov, style: const TextStyle(fontSize: 13)),
-                  value: _selectedCoverages.contains(cov),
-                  onChanged: (on) => setState(() => on == true ? _selectedCoverages.add(cov) : _selectedCoverages.remove(cov)),
-                )),
+                PolicySchemaSelectorSection(
+                  dynamicFormKey: _dynamicFormKey,
+                  isLoadingSchemas: _isLoadingSchemas,
+                  selectedSchemaId: _selectedSchemaId,
+                  availableSchemas: _availableSchemas,
+                  selectedSchemaDetail: _selectedSchemaDetail,
+                  onSchemaSelected: _onSchemaSelected,
+                  initialDynamicValues: widget.initialRequest?.camposAdicionales ??
+                      widget.initialPolicy?.camposAdicionales ??
+                      const {},
+                ),
+                const SizedBox(height: 14),
+                PolicyCoveragesSection(
+                  allCoverages: _allCoverages,
+                  selectedCoverages: _selectedCoverages,
+                  onCoverageToggled: (cov, isSelected) {
+                    setState(() {
+                      if (isSelected) {
+                        _selectedCoverages.add(cov);
+                      } else {
+                        _selectedCoverages.remove(cov);
+                      }
+                    });
+                  },
+                ),
               ],
             ),
           ),

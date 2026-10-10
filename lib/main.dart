@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:sigad/core/services/notifications_manager.dart';
+import 'package:sigad/core/services/notifications/notifications_manager.dart';
 import 'package:sigad/core/services/session_vault.dart';
 import 'package:sigad/core/theme/app_theme.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_bloc.dart';

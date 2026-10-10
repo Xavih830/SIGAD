@@ -4,6 +4,11 @@ import 'package:sigad/core/models/payment_model.dart';
 import 'package:sigad/core/models/policy_model.dart';
 import 'package:sigad/core/repositories/payments_repository.dart';
 import 'package:sigad/core/theme/app_theme.dart';
+import 'package:sigad/core/utils/date_formatter.dart';
+import 'package:sigad/features/mobile_client/presentation/widgets/policy_detail/policy_coverages_section_card.dart';
+import 'package:sigad/features/mobile_client/presentation/widgets/policy_detail/policy_detail_header_card.dart';
+import 'package:sigad/features/mobile_client/presentation/widgets/policy_detail/policy_info_section_card.dart';
+import 'package:sigad/features/mobile_client/presentation/widgets/policy_detail/policy_installments_section_card.dart';
 
 class PolicyDetailPage extends StatefulWidget {
   final PolicyModel policy;
@@ -60,7 +65,7 @@ class _PolicyDetailPageState extends State<PolicyDetailPage> {
       });
     } catch (e) {
       if (!mounted) return;
-      final msg = e.toString().contains('500') ? 'No se pudieron cargar las cuotas (500)' : 'Error de conexión al cargar cuotas.';
+      final msg = e.toString().contains('500') ? 'No se pudieron cargar las cuotas (500)' : 'Error al cargar cuotas: $e';
       setState(() {
         _paymentsError = msg;
         _isLoadingPayments = false;
@@ -95,55 +100,30 @@ class _PolicyDetailPageState extends State<PolicyDetailPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Card(
-              color: AppTheme.primaryColor,
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('PÓLIZA NRO', style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.7), fontWeight: FontWeight.bold, letterSpacing: 1.0)),
-                    const SizedBox(height: 4),
-                    Text(policy.number, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: Colors.white)),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text('VEHÍCULO ASEGURADO', style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.9), fontWeight: FontWeight.bold)),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(color: isExp ? Colors.red.shade400 : Colors.green.shade400, borderRadius: BorderRadius.circular(8)),
-                          child: Text(isExp ? 'VENCIDA' : 'ACTIVA', style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white)),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            PolicyDetailHeaderCard(policy: policy),
             const SizedBox(height: 16),
-            _buildSection(
+            PolicyInfoSectionCard(
               title: 'Datos del Vehículo',
               icon: Icons.directions_car,
               rows: veh != null
                   ? [
-                      _RowData('Marca', veh.brand),
-                      _RowData('Modelo', veh.model),
-                      _RowData('Año', veh.year.toString()),
-                      _RowData('Placa', veh.plate),
+                      PolicyInfoRowData('Marca', veh.brand),
+                      PolicyInfoRowData('Modelo', veh.model),
+                      PolicyInfoRowData('Año', veh.year.toString()),
+                      PolicyInfoRowData('Placa', veh.plate),
                     ]
                   : [
-                      _RowData('Estado', 'Sin vehículo asignado'),
+                      const PolicyInfoRowData('Estado', 'Sin vehículo asignado'),
                     ],
             ),
             const SizedBox(height: 16),
-            _buildSection(
+            PolicyInfoSectionCard(
               title: 'Vigencia de Cobertura',
               icon: Icons.date_range,
               rows: [
-                _RowData('Inicio', policy.startDate.toIso8601String().substring(0, 10)),
-                _RowData('Fin', policy.endDate.toIso8601String().substring(0, 10)),
-                _RowData(
+                PolicyInfoRowData('Inicio', DateFormatter.toIsoDate(policy.startDate)),
+                PolicyInfoRowData('Fin', DateFormatter.toIsoDate(policy.endDate)),
+                PolicyInfoRowData(
                   'Estado',
                   isExp ? 'Expirada' : 'Quedan $daysLeft días de cobertura',
                   color: isExp ? AppTheme.errorColor : AppTheme.successColor,
@@ -152,20 +132,25 @@ class _PolicyDetailPageState extends State<PolicyDetailPage> {
             ),
             if (policy.coverages.isNotEmpty) ...[
               const SizedBox(height: 16),
-              _buildCoveragesSection(policy.coverages),
+              PolicyCoveragesSectionCard(coverages: policy.coverages),
             ],
             const SizedBox(height: 16),
-            _buildSection(
+            PolicyInfoSectionCard(
               title: 'Detalles Económicos',
               icon: Icons.payment,
               rows: [
-                _RowData('Valor Asegurado', '\$${policy.insuredValue.toStringAsFixed(2)} USD'),
-                _RowData('Prima Mensual', '\$${policy.monthlyPremium.toStringAsFixed(2)} USD'),
-                _RowData('Estado Financiero', _financialStatusText, color: _financialStatusColor),
+                PolicyInfoRowData('Valor Asegurado', '\$${policy.insuredValue.toStringAsFixed(2)} USD'),
+                PolicyInfoRowData('Prima Mensual', '\$${policy.monthlyPremium.toStringAsFixed(2)} USD'),
+                PolicyInfoRowData('Estado Financiero', _financialStatusText, color: _financialStatusColor),
               ],
             ),
             const SizedBox(height: 16),
-            _buildPaymentsSection(),
+            PolicyInstallmentsSectionCard(
+              isLoading: _isLoadingPayments,
+              errorMessage: _paymentsError,
+              payments: _payments,
+              onRetry: _loadPayments,
+            ),
             const SizedBox(height: 24),
             OutlinedButton.icon(
               onPressed: () {
@@ -181,253 +166,4 @@ class _PolicyDetailPageState extends State<PolicyDetailPage> {
       ),
     );
   }
-
-  Widget _buildPaymentsSection() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 4.0, bottom: 8.0),
-          child: Row(
-            children: [
-              Icon(Icons.receipt_long, color: AppTheme.primaryColor, size: 18),
-              SizedBox(width: 8),
-              Text(
-                'Cronograma de Pagos y Cuotas',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textDark),
-              ),
-            ],
-          ),
-        ),
-        if (_isLoadingPayments)
-          const Card(
-            child: Padding(
-              padding: EdgeInsets.all(24.0),
-              child: Center(
-                child: SizedBox(
-                  width: 28,
-                  height: 28,
-                  child: CircularProgressIndicator(strokeWidth: 2.5),
-                ),
-              ),
-            ),
-          )
-        else if (_paymentsError != null)
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      const Icon(Icons.error_outline, color: AppTheme.errorColor, size: 20),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _paymentsError!,
-                          style: const TextStyle(fontSize: 13, color: AppTheme.errorColor),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  ElevatedButton.icon(
-                    onPressed: _loadPayments,
-                    icon: const Icon(Icons.refresh, size: 16),
-                    label: const Text('Reintentar'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primaryColor,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          )
-        else if (_payments.isEmpty)
-          const Card(
-            child: Padding(
-              padding: EdgeInsets.all(20.0),
-              child: Center(
-                child: Text(
-                  'No hay cuotas registradas para esta póliza.',
-                  style: TextStyle(fontSize: 13, color: AppTheme.textMuted),
-                ),
-              ),
-            ),
-          )
-        else
-          ..._payments.map((p) => _buildPaymentItemCard(p)),
-      ],
-    );
-  }
-
-  Widget _buildPaymentItemCard(PaymentModel payment) {
-    Color badgeBg;
-    Color badgeColor;
-    String badgeText = payment.status.toUpperCase();
-
-    if (payment.isPaid) {
-      badgeBg = AppTheme.successColor.withValues(alpha: 0.12);
-      badgeColor = AppTheme.successColor;
-    } else if (payment.isOverdue) {
-      badgeBg = AppTheme.errorColor.withValues(alpha: 0.12);
-      badgeColor = AppTheme.errorColor;
-    } else {
-      badgeBg = AppTheme.warningColor.withValues(alpha: 0.2);
-      badgeColor = Colors.orange.shade800;
-    }
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 10),
-      child: Padding(
-        padding: const EdgeInsets.all(14.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Cuota ${payment.installmentNumber}',
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppTheme.textDark),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: badgeBg,
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: Text(
-                    badgeText,
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: badgeColor),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Text(
-              '\$${payment.amountUsd.toStringAsFixed(2)} USD',
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: AppTheme.primaryColor),
-            ),
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                const Icon(Icons.event_outlined, size: 14, color: AppTheme.textMuted),
-                const SizedBox(width: 4),
-                Text(
-                  'Vence: ${payment.dueDate.toIso8601String().substring(0, 10)}',
-                  style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
-                ),
-                if (payment.paymentDate != null) ...[
-                  const SizedBox(width: 12),
-                  const Icon(Icons.check_circle_outline, size: 14, color: AppTheme.successColor),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Pagado: ${payment.paymentDate!.toIso8601String().substring(0, 10)}',
-                    style: const TextStyle(fontSize: 12, color: AppTheme.successColor, fontWeight: FontWeight.w600),
-                  ),
-                ],
-              ],
-            ),
-            if (payment.paymentMethod != null || payment.receiptRef != null) ...[
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  const Icon(Icons.confirmation_number_outlined, size: 14, color: AppTheme.textMuted),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      [
-                        if (payment.paymentMethod != null) payment.paymentMethod!,
-                        if (payment.receiptRef != null) 'Ref: ${payment.receiptRef}',
-                      ].join(' • '),
-                      style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSection({required String title, required IconData icon, required List<_RowData> rows}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(left: 4.0, bottom: 8.0),
-          child: Row(children: [
-            Icon(icon, color: AppTheme.primaryColor, size: 18),
-            const SizedBox(width: 8),
-            Text(title, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
-          ]),
-        ),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: rows.asMap().entries.map((e) {
-                final row = e.value;
-                return Column(
-                  children: [
-                    if (e.key > 0) const Divider(color: AppTheme.borderLight, height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(row.label, style: const TextStyle(fontSize: 13, color: AppTheme.textMuted)),
-                        Text(row.value, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: row.color ?? AppTheme.textDark)),
-                      ],
-                    ),
-                  ],
-                );
-              }).toList(),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCoveragesSection(List<CoverageModel> coverages) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 4.0, bottom: 8.0),
-          child: Row(children: [
-            Icon(Icons.verified_user, color: AppTheme.primaryColor, size: 18),
-            SizedBox(width: 8),
-            Text('Coberturas Contratadas', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: AppTheme.textDark)),
-          ]),
-        ),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: coverages.map((cov) => Padding(
-                padding: const EdgeInsets.symmetric(vertical: 4.0),
-                child: Row(children: [
-                  const Icon(Icons.check_circle_outline, color: AppTheme.successColor, size: 18),
-                  const SizedBox(width: 10),
-                  Expanded(child: Text(cov.nombre, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppTheme.textDark))),
-                ]),
-              )).toList(),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _RowData {
-  final String label;
-  final String value;
-  final Color? color;
-  const _RowData(this.label, this.value, {this.color});
 }

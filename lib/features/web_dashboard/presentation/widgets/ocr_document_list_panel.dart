@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sigad/core/models/document_model.dart';
 import 'package:sigad/core/theme/app_theme.dart';
+import 'package:sigad/core/utils/date_formatter.dart';
 
 class OcrDocumentListPanel extends StatelessWidget {
   final List<DocumentModel> documentos;
@@ -88,7 +89,7 @@ class OcrDocumentListPanel extends StatelessWidget {
                         final doc = documentos[index];
                         final isSelected = selectedId != null && selectedId == doc.id;
                         final tamKb = (doc.tamanoBytes / 1024).toStringAsFixed(1);
-                        final dateStr = doc.createdAt.toIso8601String().substring(0, 10);
+                        final dateStr = DateFormatter.toIsoDate(doc.createdAt);
                         return ListTile(
                           selected: isSelected,
                           selectedTileColor: AppTheme.primaryColor.withValues(alpha: 0.08),

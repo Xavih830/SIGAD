@@ -94,7 +94,7 @@ class _PoliciesTabViewState extends State<PoliciesTabView> {
       if (!mounted) return;
       final result = await showDialog<CreatePolicyRequest>(
         context: context,
-        builder: (_) => PolicyFormDialog(clients: clients),
+        builder: (_) => PolicyFormDialog(clients: clients, authToken: _getAuthToken()),
       );
       if (result != null && mounted) {
         await _policiesRepo.createPolicy(result, token: _getAuthToken());
@@ -187,6 +187,8 @@ class _PoliciesTabViewState extends State<PoliciesTabView> {
                   items: const [
                     DropdownMenuItem(value: 'all', child: Text('Todos los Estados')),
                     DropdownMenuItem(value: 'activa', child: Text('Activa')),
+                    DropdownMenuItem(value: 'por_vencer', child: Text('Por Vencer')),
+                    DropdownMenuItem(value: 'pendiente', child: Text('Pendiente')),
                     DropdownMenuItem(value: 'vencida', child: Text('Vencida')),
                     DropdownMenuItem(value: 'cancelada', child: Text('Cancelada')),
                   ],

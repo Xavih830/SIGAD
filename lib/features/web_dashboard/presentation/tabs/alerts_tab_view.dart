@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sigad/core/models/policy_model.dart';
 import 'package:sigad/core/repositories/policies_repository.dart';
 import 'package:sigad/core/theme/app_theme.dart';
+import 'package:sigad/core/utils/date_formatter.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_state.dart';
 
@@ -134,7 +135,7 @@ class _AlertsTabViewState extends State<AlertsTabView> {
                                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                                     ),
                                     subtitle: Text(
-                                      'Vence el: ${p.endDate.toIso8601String().substring(0, 10)}',
+                                      'Vence el: ${DateFormatter.toIsoDate(p.endDate)}',
                                       style: const TextStyle(fontSize: 12, color: AppTheme.textMuted),
                                     ),
                                     trailing: Container(

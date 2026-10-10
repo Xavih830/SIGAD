@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:sigad/core/models/policy_model.dart';
 import 'package:sigad/core/theme/app_theme.dart';
+import 'package:sigad/core/utils/date_formatter.dart';
 
 class PoliciesDataTable extends StatefulWidget {
   final List<PolicyModel> policies;
@@ -101,7 +102,7 @@ class _PoliciesDataTableState extends State<PoliciesDataTable> {
                     DataCell(Text(p.number, style: const TextStyle(fontWeight: FontWeight.bold))),
                     DataCell(Text(p.vehicle != null ? p.vehicle!.plate : '-')),
                     DataCell(Text(vehicleParts.isNotEmpty ? vehicleParts : '-')),
-                    DataCell(Text(p.endDate.toIso8601String().substring(0, 10))),
+                    DataCell(Text(DateFormatter.toIsoDate(p.endDate))),
                     DataCell(Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(

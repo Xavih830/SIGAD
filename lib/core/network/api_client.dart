@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:sigad/core/config/api_config.dart';
@@ -74,7 +74,8 @@ class ApiClient {
       } else {
         detail = decoded.toString();
       }
-    } catch (_) {
+    } on FormatException catch (e) {
+      debugPrint('[ApiClient] Respuesta no es JSON válido: $e');
       detail = response.body;
     }
     if (response.statusCode == 403) {
@@ -103,9 +104,12 @@ class ApiClient {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       final decoded = jsonDecode(utf8.decode(response.bodyBytes));
       if (decoded is List) {
-        return decoded.whereType<Map<String, dynamic>>().toList();
+        return decoded.map((e) => e as Map<String, dynamic>).toList();
       }
-      return [];
+      throw ApiException(
+        statusCode: response.statusCode,
+        message: 'Respuesta inesperada: se esperaba una lista JSON pero se recibió ${decoded.runtimeType}',
+      );
     }
     _handleError(response);
   }
@@ -162,7 +166,10 @@ class ApiClient {
       if (decoded is Map<String, dynamic>) {
         return decoded;
       }
-      return {'data': decoded};
+      throw ApiException(
+        statusCode: response.statusCode,
+        message: 'Respuesta inesperada: se esperaba un objeto JSON pero se recibió ${decoded.runtimeType}',
+      );
     }
     _handleError(response);
   }
@@ -185,7 +192,10 @@ class ApiClient {
       if (decoded is Map<String, dynamic>) {
         return decoded;
       }
-      return {'data': decoded};
+      throw ApiException(
+        statusCode: response.statusCode,
+        message: 'Respuesta inesperada: se esperaba un objeto JSON pero se recibió ${decoded.runtimeType}',
+      );
     }
     _handleError(response);
   }
@@ -216,8 +226,10 @@ class ApiClient {
       mediaType = MediaType('image', 'png');
     } else if (ext == 'tif' || ext == 'tiff') {
       mediaType = MediaType('image', 'tiff');
-    } else {
+    } else if (ext == 'jpg' || ext == 'jpeg') {
       mediaType = MediaType('image', 'jpeg');
+    } else {
+      throw ArgumentError('Extensión no permitida: .$ext. Extensiones válidas: ${AppConstants.permittedExtensions.join(', ')}');
     }
 
     request.files.add(http.MultipartFile.fromBytes(
@@ -244,7 +256,8 @@ class ApiClient {
       detail = decoded is Map && decoded.containsKey('detail')
           ? decoded['detail'].toString()
           : responseBody;
-    } catch (_) {
+    } on FormatException catch (e) {
+      debugPrint('[ApiClient] Respuesta multipart no es JSON válido: $e');
       detail = responseBody;
     }
 

@@ -3,6 +3,7 @@ import 'package:sigad/core/models/policy_model.dart';
 import 'package:sigad/core/models/user_model.dart';
 import 'package:sigad/core/repositories/policies_repository.dart';
 import 'package:sigad/core/theme/app_theme.dart';
+import 'package:sigad/core/utils/date_formatter.dart';
 import 'package:sigad/core/widgets/error_view.dart';
 import 'package:sigad/features/mobile_client/presentation/pages/policy_detail_page.dart';
 
@@ -128,7 +129,7 @@ class _MobilePoliciesTabState extends State<MobilePoliciesTab> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Vence: ${p.endDate.toIso8601String().substring(0, 10)}', style: const TextStyle(fontSize: 13, color: AppTheme.textMuted)),
+                  Text('Vence: ${DateFormatter.toIsoDate(p.endDate)}', style: const TextStyle(fontSize: 13, color: AppTheme.textMuted)),
                   Text('\$${p.monthlyPremium.toStringAsFixed(2)} /mes', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: AppTheme.textDark)),
                 ],
               ),

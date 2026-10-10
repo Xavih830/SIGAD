@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sigad/core/models/user_model.dart';
-import 'package:sigad/core/security/authorization_policy.dart';
 import 'package:sigad/core/theme/app_theme.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_event.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_state.dart';
 import 'package:sigad/features/auth/presentation/pages/login_page.dart';
+import 'package:sigad/features/web_dashboard/domain/dashboard_tab_item.dart';
 import 'package:sigad/features/web_dashboard/domain/dashboard_tab_registry.dart';
 import 'package:sigad/features/web_dashboard/presentation/widgets/dashboard_header.dart';
 import 'package:sigad/features/web_dashboard/presentation/widgets/dashboard_sidebar.dart';
@@ -21,21 +21,32 @@ class WebDashboardPage extends StatefulWidget {
 
 class _WebDashboardPageState extends State<WebDashboardPage> {
   String _activeTab = 'policies';
+  late final List<DashboardTabItem> _permittedTabs;
+  late final List<Widget> _tabWidgets;
+
+  @override
+  void initState() {
+    super.initState();
+    _permittedTabs = DashboardTabRegistry.getPermittedTabs(widget.user);
+    _tabWidgets = _permittedTabs.map((t) => t.builder()).toList();
+    if (_permittedTabs.isNotEmpty && !_permittedTabs.any((t) => t.id == _activeTab)) {
+      _activeTab = _permittedTabs.first.id;
+    }
+  }
 
   Widget _tabContent() {
-    final tab = DashboardTabRegistry.findTabById(_activeTab);
-    if (tab != null && AuthorizationPolicy.canUser(widget.user, tab.requiredCapability)) {
-      return tab.builder();
+    if (_permittedTabs.isEmpty) {
+      return const Center(
+        child: Text(
+          'Acceso Restringido: No dispone de permisos para acceder a esta consola.',
+          style: TextStyle(fontSize: 16, color: Colors.grey),
+        ),
+      );
     }
-    final permitted = DashboardTabRegistry.getPermittedTabs(widget.user);
-    if (permitted.isNotEmpty) {
-      return permitted.first.builder();
-    }
-    return const Center(
-      child: Text(
-        'Acceso Restringido: No dispone de permisos para acceder a esta consola.',
-        style: TextStyle(fontSize: 16, color: Colors.grey),
-      ),
+    final activeIndex = _permittedTabs.indexWhere((t) => t.id == _activeTab);
+    return IndexedStack(
+      index: activeIndex >= 0 ? activeIndex : 0,
+      children: _tabWidgets,
     );
   }
 
