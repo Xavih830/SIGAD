@@ -6,7 +6,7 @@ import 'package:sigad/core/services/session_vault.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_event.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_state.dart';
-import 'helpers/test_fixtures.dart';
+import 'package:sigad/core/testing/test_fixtures.dart';
 
 class MockHttpClient extends Mock implements http.Client {}
 

@@ -8,8 +8,9 @@ import 'package:sigad/core/models/user_model.dart';
 import 'package:sigad/core/security/app_capability.dart';
 import 'package:sigad/core/security/authorization_policy.dart';
 import 'package:sigad/core/security/file_security_validator.dart';
+import 'package:sigad/core/utils/numeric_parser.dart';
 import 'package:sigad/features/web_dashboard/domain/dashboard_tab_registry.dart';
-import 'helpers/test_factories.dart';
+import 'package:sigad/core/testing/test_factories.dart';
 
 void main() {
   group('1. Matriz de Autorización y Capacidades (CBAC)', () {
@@ -159,30 +160,34 @@ void main() {
 
   group('5. Estados de Dominio Tipados (DomainStatus Fail-Fast)', () {
     test('ExtractionStatus parsea estados válidos y falla ante desconocidos', () {
-      expect(ExtractionStatus.fromValue('completado'), equals(ExtractionStatus.completado));
       expect(ExtractionStatus.fromValue('pendiente'), equals(ExtractionStatus.pendiente));
       expect(ExtractionStatus.fromValue('procesando'), equals(ExtractionStatus.procesando));
-      expect(ExtractionStatus.fromValue('revision_requerida'), equals(ExtractionStatus.revisionRequerida));
-      expect(ExtractionStatus.fromValue('fallido'), equals(ExtractionStatus.fallido));
+      expect(ExtractionStatus.fromValue('completado'), equals(ExtractionStatus.completado));
+      expect(ExtractionStatus.fromValue('requiere_revision_manual'), equals(ExtractionStatus.requiereRevisionManual));
+      expect(ExtractionStatus.fromValue('error'), equals(ExtractionStatus.error));
+      expect(ExtractionStatus.fromValue('error_permanente'), equals(ExtractionStatus.errorPermanente));
 
       expect(() => ExtractionStatus.fromValue('desconocido_magico'), throwsA(isA<StateError>()));
     });
 
     test('PolicyStatus parsea estados canónicos y falla ante desconocidos', () {
-      expect(PolicyStatus.fromValue('vigente'), equals(PolicyStatus.vigente));
+      expect(PolicyStatus.fromValue('pendiente'), equals(PolicyStatus.pendiente));
+      expect(PolicyStatus.fromValue('activa'), equals(PolicyStatus.activa));
       expect(PolicyStatus.fromValue('por_vencer'), equals(PolicyStatus.porVencer));
       expect(PolicyStatus.fromValue('vencida'), equals(PolicyStatus.vencida));
-      expect(PolicyStatus.fromValue('anulada'), equals(PolicyStatus.anulada));
+      expect(PolicyStatus.fromValue('cancelada'), equals(PolicyStatus.cancelada));
 
+      expect(() => PolicyStatus.fromValue('vigente'), throwsA(isA<StateError>()));
+      expect(() => PolicyStatus.fromValue('anulada'), throwsA(isA<StateError>()));
       expect(() => PolicyStatus.fromValue('estado_invalido'), throwsA(isA<StateError>()));
     });
 
     test('PaymentStatus parsea estados de cuota y falla ante desconocidos', () {
-      expect(PaymentStatus.fromValue('pagado'), equals(PaymentStatus.pagado));
       expect(PaymentStatus.fromValue('pendiente'), equals(PaymentStatus.pendiente));
+      expect(PaymentStatus.fromValue('pagado'), equals(PaymentStatus.pagado));
       expect(PaymentStatus.fromValue('atrasado'), equals(PaymentStatus.atrasado));
-      expect(PaymentStatus.fromValue('parcial'), equals(PaymentStatus.parcial));
 
+      expect(() => PaymentStatus.fromValue('parcial'), throwsA(isA<StateError>()));
       expect(() => PaymentStatus.fromValue('invalido'), throwsA(isA<StateError>()));
     });
   });
@@ -197,6 +202,26 @@ void main() {
     test('Genera rutas de documentos y pagos', () {
       expect(ApiEndpoints.documentoRevision('doc-99'), equals('/api/v1/documentos/doc-99/revision'));
       expect(ApiEndpoints.polizaRegistrarPago('pol-1', 'pay-2'), equals('/api/v1/polizas/pol-1/pagos/pay-2/registrar'));
+    });
+  });
+
+  group('7. Tipado Estricto de Parsers Numéricos (NumericParser Fail-Fast)', () {
+    test('parseRequiredDouble parsea num y String y lanza TypeError ante otros tipos', () {
+      expect(parseRequiredDouble(100), equals(100.0));
+      expect(parseRequiredDouble(12.5), equals(12.5));
+      expect(parseRequiredDouble('45.67'), equals(45.67));
+      expect(() => parseRequiredDouble(null), throwsA(isA<TypeError>()));
+      expect(() => parseRequiredDouble([1, 2]), throwsA(isA<TypeError>()));
+      expect(() => parseRequiredDouble({'a': 1}), throwsA(isA<TypeError>()));
+      expect(() => parseRequiredDouble('invalido'), throwsA(isA<FormatException>()));
+    });
+
+    test('parseOptionalDouble parsea num y String, retorna null ante null y falla ante tipos no válidos', () {
+      expect(parseOptionalDouble(null), isNull);
+      expect(parseOptionalDouble(250), equals(250.0));
+      expect(parseOptionalDouble('300.5'), equals(300.5));
+      expect(() => parseOptionalDouble(true), throwsA(isA<TypeError>()));
+      expect(() => parseOptionalDouble(<String>[]), throwsA(isA<TypeError>()));
     });
   });
 }

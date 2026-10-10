@@ -4,7 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
 import 'package:sigad/features/mobile_client/presentation/pages/policy_detail_page.dart';
-import 'helpers/test_fixtures.dart';
+import 'package:sigad/core/testing/test_fixtures.dart';
 
 class MockHttpClient extends Mock implements http.Client {}
 

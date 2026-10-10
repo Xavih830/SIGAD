@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sigad/core/models/extraction_schema_model.dart';
-import '../helpers/test_factories.dart';
+import 'package:sigad/core/testing/test_factories.dart';
 
 void main() {
   group('ExtractionSchemaModel & DTOs Unit Tests', () {

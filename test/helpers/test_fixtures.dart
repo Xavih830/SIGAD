@@ -7,7 +7,7 @@ import 'package:sigad/core/models/payment_model.dart';
 import 'package:sigad/core/models/policy_model.dart';
 import 'package:sigad/core/models/user_model.dart';
 import 'package:sigad/core/models/vehicle_model.dart';
-import 'test_factories.dart';
+import 'package:sigad/core/testing/test_factories.dart';
 
 class TestFixtures {
   static const String validToken = 'jwt_mock_token_valid';

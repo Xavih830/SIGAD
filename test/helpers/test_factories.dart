@@ -1,4 +1,3 @@
-// ignore_for_file: use_null_aware_elements
 import 'package:sigad/core/models/catalog_model.dart';
 import 'package:sigad/core/models/client_model.dart';
 import 'package:sigad/core/models/deductible_model.dart';
@@ -6,6 +5,7 @@ import 'package:sigad/core/models/document_model.dart';
 import 'package:sigad/core/models/extraction_schema_model.dart';
 import 'package:sigad/core/models/payment_model.dart';
 import 'package:sigad/core/models/policy_model.dart';
+import 'package:sigad/core/models/policy_schema_model.dart';
 import 'package:sigad/core/models/user_model.dart';
 import 'package:sigad/core/models/vehicle_model.dart';
 
@@ -312,10 +312,10 @@ class TestFactories {
       'numero_cuota': installmentNumber ?? 1,
       'monto_usd': asDecimalStrings ? val.toStringAsFixed(2) : val,
       'fecha_vencimiento': dueStr,
-      if (payStr != null) 'fecha_pago': payStr,
+      'fecha_pago': ?payStr,
       'estado': status ?? 'pendiente',
-      if (paymentMethod != null) 'metodo_pago': paymentMethod,
-      if (receiptRef != null) 'comprobante_ref': receiptRef,
+      'metodo_pago': ?paymentMethod,
+      'comprobante_ref': ?receiptRef,
     };
   }
 
@@ -364,8 +364,8 @@ class TestFactories {
       'nombre': name ?? 'Usuario Test $seq',
       'rol': role ?? 'cliente',
       'activo': isActive ?? true,
-      if (accessToken != null) 'access_token': accessToken,
-      if (refreshToken != null) 'refresh_token': refreshToken,
+      'access_token': ?accessToken,
+      'refresh_token': ?refreshToken,
     };
   }
 
@@ -536,7 +536,7 @@ class TestFactories {
     final created = createdAt ?? DateTime.parse('2026-03-15T10:00:00Z');
     return {
       'id': id ?? 'doc-$seq',
-      if (polizaId != null) 'poliza_id': polizaId,
+      'poliza_id': ?polizaId,
       'nombre_archivo': nombreArchivo ?? 'documento_$seq.pdf',
       'tipo_mime': tipoMime ?? 'application/pdf',
       'tamano_bytes': tamanoBytes ?? 102400,
@@ -703,6 +703,128 @@ class TestFactories {
       confianza: confianza,
       camposExtraidos: camposExtraidos,
       textoCompleto: textoCompleto,
+    ).toJson();
+  }
+
+  static PolicySchemaFieldModel createPolicySchemaField({
+    String? nombre,
+    String? tipo,
+    bool? esObligatorio,
+    int? orden,
+    String? formatoFecha,
+  }) {
+    final seq = nextSequence;
+    return PolicySchemaFieldModel(
+      nombre: nombre ?? 'campo_$seq',
+      tipo: tipo ?? 'texto',
+      esObligatorio: esObligatorio ?? false,
+      orden: orden ?? seq,
+      formatoFecha: formatoFecha,
+    );
+  }
+
+  static Map<String, dynamic> createPolicySchemaFieldJson({
+    String? nombre,
+    String? tipo,
+    bool? esObligatorio,
+    int? orden,
+    String? formatoFecha,
+  }) {
+    return createPolicySchemaField(
+      nombre: nombre,
+      tipo: tipo,
+      esObligatorio: esObligatorio,
+      orden: orden,
+      formatoFecha: formatoFecha,
+    ).toJson();
+  }
+
+  static PolicySchemaListItemModel createPolicySchemaListItem({
+    String? id,
+    String? codigo,
+    String? nombre,
+    int? version,
+    bool? esActivo,
+    DateTime? createdAt,
+  }) {
+    final seq = nextSequence;
+    return PolicySchemaListItemModel(
+      id: id ?? 'sch-pol-$seq',
+      codigo: codigo ?? 'ESQ_POL_$seq',
+      nombre: nombre ?? 'Esquema Póliza $seq',
+      version: version ?? 1,
+      esActivo: esActivo ?? true,
+      createdAt: createdAt ?? DateTime.parse('2026-01-01T10:00:00Z'),
+    );
+  }
+
+  static Map<String, dynamic> createPolicySchemaListItemJson({
+    String? id,
+    String? codigo,
+    String? nombre,
+    int? version,
+    bool? esActivo,
+    DateTime? createdAt,
+  }) {
+    return createPolicySchemaListItem(
+      id: id,
+      codigo: codigo,
+      nombre: nombre,
+      version: version,
+      esActivo: esActivo,
+      createdAt: createdAt,
+    ).toJson();
+  }
+
+  static PolicySchemaModel createPolicySchema({
+    String? id,
+    String? codigo,
+    String? nombre,
+    String? descripcion,
+    int? version,
+    bool? esActivo,
+    String? creadoPor,
+    DateTime? createdAt,
+    List<PolicySchemaFieldModel>? campos,
+  }) {
+    final seq = nextSequence;
+    return PolicySchemaModel(
+      id: id ?? 'sch-pol-$seq',
+      codigo: codigo ?? 'ESQ_POL_$seq',
+      nombre: nombre ?? 'Esquema Póliza $seq',
+      descripcion: descripcion ?? 'Descripción Esquema $seq',
+      version: version ?? 1,
+      esActivo: esActivo ?? true,
+      creadoPor: creadoPor ?? 'usr-admin-1',
+      createdAt: createdAt ?? DateTime.parse('2026-01-01T10:00:00Z'),
+      campos: campos ?? [
+        createPolicySchemaField(nombre: 'numero_chasis', tipo: 'texto', esObligatorio: true, orden: 1),
+        createPolicySchemaField(nombre: 'dispositivo_rastreo', tipo: 'booleano', esObligatorio: false, orden: 2),
+      ],
+    );
+  }
+
+  static Map<String, dynamic> createPolicySchemaJson({
+    String? id,
+    String? codigo,
+    String? nombre,
+    String? descripcion,
+    int? version,
+    bool? esActivo,
+    String? creadoPor,
+    DateTime? createdAt,
+    List<PolicySchemaFieldModel>? campos,
+  }) {
+    return createPolicySchema(
+      id: id,
+      codigo: codigo,
+      nombre: nombre,
+      descripcion: descripcion,
+      version: version,
+      esActivo: esActivo,
+      creadoPor: creadoPor,
+      createdAt: createdAt,
+      campos: campos,
     ).toJson();
   }
 }

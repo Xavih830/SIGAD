@@ -1,9 +1,10 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
 import 'package:sigad/core/network/api_client.dart';
-import 'helpers/test_fixtures.dart';
+import 'package:sigad/core/testing/test_fixtures.dart';
 
 class MockHttpClient extends Mock implements http.Client {}
 
@@ -143,6 +144,29 @@ void main() {
       final result = await client.getBytes('/api/v1/download');
 
       expect(result, equals(expectedBytes));
+    });
+
+    test('getList lanza ApiException si el backend devuelve un objeto en vez de lista', () async {
+      when(() => mockHttp.get(
+            Uri.parse('${TestFixtures.testBaseUrl}/api/v1/invalid-list'),
+            headers: any(named: 'headers'),
+          )).thenAnswer((_) async => http.Response(
+            jsonEncode({'mensaje': 'no es una lista'}),
+            200,
+          ));
+
+      expect(() => client.getList('/api/v1/invalid-list'), throwsA(isA<ApiException>()));
+    });
+
+    test('multipart lanza ArgumentError si la extension de archivo no es permitida', () async {
+      expect(
+        () => client.multipart(
+          path: '/api/v1/documentos',
+          bytes: Uint8List.fromList([1, 2, 3]),
+          filename: 'malware.exe',
+        ),
+        throwsA(isA<ArgumentError>()),
+      );
     });
   });
 }

@@ -10,8 +10,8 @@ import 'package:sigad/core/security/app_capability.dart';
 import 'package:sigad/core/security/authorization_policy.dart';
 import 'package:sigad/features/web_dashboard/domain/dashboard_tab_registry.dart';
 import 'package:sigad/features/web_dashboard/presentation/tabs/ocr_schemas_tab_view.dart';
-import '../../helpers/test_factories.dart';
-import '../../helpers/test_fixtures.dart';
+import 'package:sigad/core/testing/test_factories.dart';
+import 'package:sigad/core/testing/test_fixtures.dart';
 
 void main() {
   group('CBAC & OcrSchemasTabView Widget Tests', () {
@@ -89,7 +89,10 @@ void main() {
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
-            body: OcrSchemasTabView(repository: repo),
+            body: OcrSchemasTabView(
+              repository: repo,
+              authToken: TestFixtures.validToken,
+            ),
           ),
         ),
       );

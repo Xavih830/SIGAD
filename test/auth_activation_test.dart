@@ -8,7 +8,7 @@ import 'package:sigad/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:sigad/features/auth/presentation/pages/account_activation_page.dart';
 import 'package:sigad/features/auth/presentation/pages/login_page.dart';
 import 'package:sigad/features/mobile_client/presentation/pages/mobile_dashboard_page.dart';
-import 'helpers/test_fixtures.dart';
+import 'package:sigad/core/testing/test_fixtures.dart';
 
 class MockHttpClient extends Mock implements http.Client {}
 

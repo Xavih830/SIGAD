@@ -6,8 +6,8 @@ import 'package:sigad/core/models/payment_model.dart';
 import 'package:sigad/core/models/policy_model.dart';
 import 'package:sigad/core/models/user_model.dart';
 import 'package:sigad/core/models/vehicle_model.dart';
-import 'helpers/test_factories.dart';
-import 'helpers/test_fixtures.dart';
+import 'package:sigad/core/testing/test_factories.dart';
+import 'package:sigad/core/testing/test_fixtures.dart';
 
 void main() {
   group('Catalog Models Tests (Talleres y Asistencias)', () {
@@ -90,11 +90,10 @@ void main() {
       expect(() => UserModel.fromJson(jsonObsoleto), throwsA(isA<TypeError>()));
     });
 
-    test('UserModel acepta activo como null y aplica default true', () {
+    test('UserModel arroja TypeError si falta campo canonico activo', () {
       final jsonSinActivo = TestFactories.createUserJson();
       jsonSinActivo.remove('activo');
-      final user = UserModel.fromJson(jsonSinActivo);
-      expect(user.isActive, isTrue);
+      expect(() => UserModel.fromJson(jsonSinActivo), throwsA(isA<TypeError>()));
     });
   });
 
@@ -212,6 +211,52 @@ void main() {
           expect((c as Map).containsKey('id'), isFalse);
         }
       }
+    });
+
+    test('PolicyModel y CreatePolicyRequest soportan esquema_id y campos_adicionales opcionales', () {
+      final jsonConEsquema = {
+        'id': 'pol-sch-1',
+        'numero_poliza': 'POL-SCH-001',
+        'cliente_id': 'cli-1',
+        'vehiculo_id': 'veh-1',
+        'fecha_inicio': '2026-04-01T00:00:00.000',
+        'fecha_fin': '2027-04-01T00:00:00.000',
+        'estado': 'activa',
+        'valor_asegurado': 25000.0,
+        'prima_mensual': 75.0,
+        'kilometraje_emision': 15000,
+        'esquema_id': 'sch-pesados-1',
+        'campos_adicionales': {
+          'gps_proveedor': 'Hunter',
+          'radio_km': 100.5,
+        },
+      };
+
+      final model = PolicyModel.fromJson(jsonConEsquema);
+      expect(model.esquemaId, equals('sch-pesados-1'));
+      expect(model.camposAdicionales?['gps_proveedor'], equals('Hunter'));
+      expect(model.camposAdicionales?['radio_km'], equals(100.5));
+
+      final payload = model.toCreatePayloadJson();
+      expect(payload['esquema_id'], equals('sch-pesados-1'));
+      expect(payload['campos_adicionales'], isNotNull);
+      expect(payload['campos_adicionales']['gps_proveedor'], equals('Hunter'));
+
+      final req = CreatePolicyRequest(
+        number: 'POL-SCH-002',
+        clientId: 'cli-1',
+        vehicleId: 'veh-1',
+        startDate: DateTime.parse('2026-04-01'),
+        endDate: DateTime.parse('2027-04-01'),
+        insuredValue: 20000.0,
+        monthlyPremium: 60.0,
+        emissionMileage: 10000,
+        esquemaId: 'sch-pesados-1',
+        camposAdicionales: {'dispositivo_gps': true},
+      );
+      final reqPayload = req.toCreatePayloadJson();
+      expect(reqPayload['esquema_id'], equals('sch-pesados-1'));
+      expect(reqPayload['campos_adicionales']['dispositivo_gps'], isTrue);
     });
   });
 

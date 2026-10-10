@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sigad/core/utils/ecuadorian_id_validator.dart';
 import 'package:sigad/core/utils/plate_validator.dart';
-import 'helpers/test_fixtures.dart';
+import 'package:sigad/core/testing/test_fixtures.dart';
 
 void main() {
   group('Ecuadorian ID Validator Tests (Módulo 10)', () {

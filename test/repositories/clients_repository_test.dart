@@ -6,8 +6,8 @@ import 'package:sigad/core/constants/api_endpoints.dart';
 import 'package:sigad/core/models/client_model.dart';
 import 'package:sigad/core/network/api_client.dart';
 import 'package:sigad/core/repositories/clients_repository.dart';
-import '../helpers/test_factories.dart';
-import '../helpers/test_fixtures.dart';
+import 'package:sigad/core/testing/test_factories.dart';
+import 'package:sigad/core/testing/test_fixtures.dart';
 
 void main() {
   group('ClientsRepository Unit Tests', () {

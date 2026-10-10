@@ -3,12 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
-import 'package:sigad/core/constants/app_constants.dart';
 import 'package:sigad/core/network/api_client.dart';
 import 'package:sigad/core/repositories/documents_repository.dart';
 import 'package:sigad/features/web_dashboard/presentation/widgets/ocr_document_detail_card.dart';
-import 'helpers/test_factories.dart';
-import 'helpers/test_fixtures.dart';
+import 'package:sigad/core/testing/test_factories.dart';
+import 'package:sigad/core/testing/test_fixtures.dart';
 
 void main() {
   group('HU-06: OcrDocumentDetailCard Widget & Revision Tests', () {
@@ -101,20 +100,17 @@ void main() {
         'numero_poliza': 'POL-EC-2026-001',
       };
 
-      final double valorAsegurado = double.tryParse(
-            rawCampos['valor_asegurado']?.toString().replaceAll(RegExp(r'[^0-9.]'), '') ?? '',
-          ) ??
-          AppConstants.ocrDefaultInsuredValue;
+      final double valorAsegurado = double.parse(
+        rawCampos['valor_asegurado']!.toString().replaceAll(RegExp(r'[^0-9.]'), ''),
+      );
 
-      final double primaMensual = double.tryParse(
-            rawCampos['prima_mensual']?.toString().replaceAll(RegExp(r'[^0-9.]'), '') ?? '',
-          ) ??
-          AppConstants.ocrDefaultMonthlyPremium;
+      final double primaMensual = double.parse(
+        rawCampos['prima_mensual']!.toString().replaceAll(RegExp(r'[^0-9.]'), ''),
+      );
 
-      final int kilometraje = int.tryParse(
-            rawCampos['kilometraje']?.toString().replaceAll(RegExp(r'[^0-9]'), '') ?? '',
-          ) ??
-          AppConstants.ocrDefaultEmissionMileage;
+      final int kilometraje = int.parse(
+        rawCampos['kilometraje']!.toString().replaceAll(RegExp(r'[^0-9]'), ''),
+      );
 
       final String numeroPoliza = rawCampos['numero_poliza']!.toString();
 

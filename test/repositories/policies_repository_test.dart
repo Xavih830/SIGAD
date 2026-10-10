@@ -5,8 +5,8 @@ import 'package:http/testing.dart';
 import 'package:sigad/core/constants/api_endpoints.dart';
 import 'package:sigad/core/network/api_client.dart';
 import 'package:sigad/core/repositories/policies_repository.dart';
-import '../helpers/test_factories.dart';
-import '../helpers/test_fixtures.dart';
+import 'package:sigad/core/testing/test_factories.dart';
+import 'package:sigad/core/testing/test_fixtures.dart';
 
 void main() {
   group('PoliciesRepository Unit Tests', () {
