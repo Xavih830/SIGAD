@@ -8,6 +8,7 @@ from app.models.cobertura import Cobertura
 from app.models.deducible import Deducible, TipoSiniestroEnum
 from app.models.documento import Documento, EstadoExtraccionEnum
 from app.models.esquema_extraccion import EsquemaExtraccion
+from app.models.esquema_poliza import EsquemaPoliza
 from app.models.historial_cambio import HistorialCambio
 from app.models.inspeccion import Inspeccion
 from app.models.pago import Pago
@@ -39,6 +40,7 @@ __all__ = [
     "EstadoExtraccionEnum",
     "ResultadoExtraccion",
     "EsquemaExtraccion",
+    "EsquemaPoliza",
 ]
 
 

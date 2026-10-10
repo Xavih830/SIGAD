@@ -26,6 +26,7 @@ from app.domain.poliza_evaluator import (
 from app.models.cliente import Cliente
 from app.models.cobertura import Cobertura
 from app.models.deducible import Deducible, TipoSiniestroEnum
+from app.models.esquema_poliza import EsquemaPoliza
 from app.models.pago import Pago
 from app.models.poliza import Poliza
 from app.models.usuario import RolEnum, Usuario
@@ -79,17 +80,64 @@ async def crear_poliza(
 
     validar_limite_vigencia_maxima(payload.fecha_inicio, payload.fecha_fin)
 
+    if payload.esquema_id:
+        esquema_res = await db.execute(
+            select(EsquemaPoliza).where(EsquemaPoliza.id == payload.esquema_id)
+        )
+        esquema_poliza = esquema_res.scalar_one_or_none()
+        if not esquema_poliza:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Esquema de póliza con ID {payload.esquema_id} no existe.",
+            )
+        campos_dict = payload.campos_adicionales or {}
+        for regla in esquema_poliza.campos:
+            nombre_campo = regla["nombre"]
+            es_obligatorio = regla.get("es_obligatorio", False)
+            tipo_campo = regla.get("tipo", "texto")
+
+            if es_obligatorio and (nombre_campo not in campos_dict or campos_dict[nombre_campo] is None or campos_dict[nombre_campo] == ""):
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"Campo obligatorio '{nombre_campo}' requerido por el esquema '{esquema_poliza.codigo}' no fue suministrado.",
+                )
+
+            if nombre_campo in campos_dict and campos_dict[nombre_campo] is not None:
+                val = campos_dict[nombre_campo]
+                if tipo_campo in ("numero", "entero"):
+                    if not isinstance(val, int) and not (isinstance(val, str) and val.isdigit()):
+                        raise HTTPException(
+                            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                            detail=f"El campo '{nombre_campo}' debe ser de tipo numérico entero.",
+                        )
+                elif tipo_campo == "decimal":
+                    try:
+                        float(val)
+                    except (ValueError, TypeError):
+                        raise HTTPException(
+                            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                            detail=f"El campo '{nombre_campo}' debe ser de tipo decimal.",
+                        )
+                elif tipo_campo == "booleano":
+                    if not isinstance(val, bool) and str(val).lower() not in ("true", "false", "1", "0"):
+                        raise HTTPException(
+                            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                            detail=f"El campo '{nombre_campo}' debe ser de tipo booleano.",
+                        )
+
     poliza = Poliza(
         numero_poliza=payload.numero_poliza,
         cliente_id=payload.cliente_id,
         vehiculo_id=payload.vehiculo_id,
         inspeccion_id=payload.inspeccion_id,
+        esquema_id=payload.esquema_id,
         fecha_inicio=payload.fecha_inicio,
         fecha_fin=payload.fecha_fin,
         estado=estado_inicial,
         valor_asegurado=payload.valor_asegurado,
         prima_mensual=payload.prima_mensual,
         kilometraje_emision=payload.kilometraje_emision,
+        campos_adicionales=payload.campos_adicionales,
     )
     db.add(poliza)
     await db.flush()

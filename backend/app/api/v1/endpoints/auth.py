@@ -99,6 +99,7 @@ async def login(
             "email": user.email,
             "nombre": user.nombre,
             "rol": user.rol.value,
+            "activo": user.activo,
         },
     )
 
@@ -242,6 +243,7 @@ async def vincular_cliente(
             "email": nuevo_usuario.email,
             "nombre": nuevo_usuario.nombre,
             "rol": nuevo_usuario.rol.value,
+            "activo": nuevo_usuario.activo,
         },
     )
 

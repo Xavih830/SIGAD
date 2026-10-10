@@ -37,6 +37,7 @@ from app.models.codigo_vinculacion import CodigoVinculacion
 from app.models.cobertura import Cobertura
 from app.models.deducible import Deducible, TipoSiniestroEnum
 from app.models.esquema_extraccion import EsquemaExtraccion
+from app.models.esquema_poliza import EsquemaPoliza
 from app.models.inspeccion import Inspeccion
 from app.models.pago import Pago
 from app.models.poliza import Poliza
@@ -67,6 +68,7 @@ async def clean_database(session: AsyncSession) -> None:
         "clientes",
         "talleres",
         "asistencias",
+        "esquemas_poliza",
         "esquemas_extraccion",
         "usuarios",
     ]
@@ -688,6 +690,62 @@ async def _seed_esquemas(session: AsyncSession) -> None:
             logger.info("  + Esquema creado: %s v1 (activo=%s)", e_data["codigo"], e_data["es_activo"])
 
 
+async def _seed_esquemas_poliza(session: AsyncSession) -> None:
+    """Poblar esquemas de póliza dinámicos."""
+    logger.info("Seeding dynamic policy schemas...")
+    admin_res = await session.execute(select(Usuario).where(Usuario.email == "admin@sigad.ec"))
+    admin_user = admin_res.scalar_one_or_none()
+    admin_id = admin_user.id if admin_user else None
+
+    esquemas_poliza_seed = [
+        {
+            "codigo": "VEHICULAR_ESTANDAR",
+            "nombre": "Póliza Vehicular Liviana Estándar",
+            "descripcion": "Esquema canónico para seguros de vehículos particulares y livianos.",
+            "es_activo": True,
+            "campos": [
+                {"nombre": "tipo_uso", "tipo": "texto", "es_obligatorio": True, "orden": 1},
+                {"nombre": "conductor_habitual_edad", "tipo": "numero", "es_obligatorio": False, "orden": 2},
+                {"nombre": "asistencia_vial_km", "tipo": "numero", "es_obligatorio": False, "orden": 3},
+                {"nombre": "auto_sustituto_dias", "tipo": "numero", "es_obligatorio": False, "orden": 4},
+            ],
+        },
+        {
+            "codigo": "VEHICULAR_PESADOS",
+            "nombre": "Póliza Carga Pesada y Mercancías",
+            "descripcion": "Esquema para tractocamiones, volquetas y transporte de carga pesada.",
+            "es_activo": False,
+            "campos": [
+                {"nombre": "tipo_carga", "tipo": "texto", "es_obligatorio": True, "orden": 1},
+                {"nombre": "dispositivo_gps", "tipo": "booleano", "es_obligatorio": True, "orden": 2},
+                {"nombre": "proveedor_gps", "tipo": "texto", "es_obligatorio": False, "orden": 3},
+                {"nombre": "placa_remolque", "tipo": "texto", "es_obligatorio": False, "orden": 4},
+                {"nombre": "radio_operacion_km", "tipo": "decimal", "es_obligatorio": False, "orden": 5},
+            ],
+        },
+    ]
+
+    for p_data in esquemas_poliza_seed:
+        res_p = await session.execute(
+            select(EsquemaPoliza).where(
+                EsquemaPoliza.codigo == p_data["codigo"],
+                EsquemaPoliza.version == 1,
+            )
+        )
+        if not res_p.scalar_one_or_none():
+            esquema = EsquemaPoliza(
+                codigo=p_data["codigo"],
+                version=1,
+                nombre=p_data["nombre"],
+                descripcion=p_data["descripcion"],
+                es_activo=p_data["es_activo"],
+                campos=p_data["campos"],
+                creado_por=admin_id,
+            )
+            session.add(esquema)
+            logger.info("  + Esquema Póliza creado: %s v1 (activo=%s)", p_data["codigo"], p_data["es_activo"])
+
+
 async def seed_data(session: AsyncSession, clean: bool = False) -> None:
     """Seed production-grade realistic data for local development and testing."""
     if settings.ENVIRONMENT == "production":
@@ -718,6 +776,7 @@ async def seed_data(session: AsyncSession, clean: bool = False) -> None:
     await _seed_talleres(session)
     await _seed_asistencias(session)
     await _seed_esquemas(session)
+    await _seed_esquemas_poliza(session)
 
     await session.commit()
     logger.info("Seeding process completed successfully!")

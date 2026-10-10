@@ -5,7 +5,7 @@ from decimal import Decimal
 import uuid
 
 from sqlalchemy import Date, DateTime, Enum, ForeignKey, Integer, Numeric, String, text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -51,6 +51,13 @@ class Poliza(Base):
     valor_asegurado: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     prima_mensual: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
     kilometraje_emision: Mapped[int] = mapped_column(Integer, nullable=False)
+    esquema_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True),
+        ForeignKey("esquemas_poliza.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
+    campos_adicionales: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
@@ -69,6 +76,7 @@ class Poliza(Base):
     cliente = relationship("Cliente", back_populates="polizas")
     vehiculo = relationship("Vehiculo", back_populates="polizas")
     inspeccion = relationship("Inspeccion")
+    esquema = relationship("EsquemaPoliza")
     deducibles = relationship(
         "Deducible",
         back_populates="poliza",

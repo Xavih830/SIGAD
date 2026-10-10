@@ -6,6 +6,8 @@ import uuid
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+ValorCampoPoliza = str | int | float | bool
+
 from app.domain.poliza_evaluator import (
     EstadoPoliza,
     validar_limite_vigencia_maxima,
@@ -49,6 +51,8 @@ class PolizaCreate(StrictBaseSchema):
     valor_asegurado: Decimal = Field(gt=0, strict=False, description="Valor comercial asegurado")
     prima_mensual: Decimal = Field(gt=0, strict=False, description="Prima mensual calculada")
     kilometraje_emision: int = Field(ge=0, description="Snapshot contractual inmutable al emitir")
+    esquema_id: uuid.UUID | None = Field(None, strict=False)
+    campos_adicionales: dict[str, ValorCampoPoliza] | None = None
     deducibles: list[DeducibleCreate] | None = None
     coberturas: list[CoberturaCreate] | None = None
 
@@ -73,12 +77,14 @@ class PolizaResponse(BaseModel):
     cliente_id: uuid.UUID
     vehiculo_id: uuid.UUID
     inspeccion_id: uuid.UUID | None
+    esquema_id: uuid.UUID | None = None
     fecha_inicio: date
     fecha_fin: date
     estado: EstadoPoliza
     valor_asegurado: Decimal
     prima_mensual: Decimal
     kilometraje_emision: int
+    campos_adicionales: dict[str, ValorCampoPoliza] | None = None
     created_at: datetime
     updated_at: datetime
     vehiculo: VehiculoResponse | None = None

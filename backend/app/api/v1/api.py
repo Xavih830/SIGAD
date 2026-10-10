@@ -8,6 +8,7 @@ from app.api.v1.endpoints import (
     clientes,
     documentos,
     esquemas,
+    esquemas_poliza,
     pagos,
     polizas,
     talleres,
@@ -24,5 +25,6 @@ api_router.include_router(talleres.router)
 api_router.include_router(asistencias.router)
 api_router.include_router(documentos.router)
 api_router.include_router(esquemas.router)
+api_router.include_router(esquemas_poliza.router)
 
 

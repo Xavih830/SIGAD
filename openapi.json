@@ -1667,6 +1667,180 @@
         }
       }
     },
+    "/api/v1/esquemas-poliza": {
+      "get": {
+        "tags": [
+          "Esquemas de Póliza"
+        ],
+        "summary": "Listar Esquemas Poliza",
+        "description": "Lista todos los esquemas de póliza (todas las versiones). Solo ADMIN y AGENTE.",
+        "operationId": "listar_esquemas_poliza_api_v1_esquemas_poliza_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EsquemaPolizaListItem"
+                  },
+                  "type": "array",
+                  "title": "Response Listar Esquemas Poliza Api V1 Esquemas Poliza Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Esquemas de Póliza"
+        ],
+        "summary": "Crear Esquema Poliza",
+        "description": "Crea una nueva versión del esquema de póliza (append-only).\n\n- Si el código no existe, crea versión 1.\n- Si ya existe, incrementa la versión. La versión nueva inicia inactiva.",
+        "operationId": "crear_esquema_poliza_api_v1_esquemas_poliza_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EsquemaPolizaCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EsquemaPolizaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/esquemas-poliza/{esquema_id}": {
+      "get": {
+        "tags": [
+          "Esquemas de Póliza"
+        ],
+        "summary": "Obtener Esquema Poliza",
+        "description": "Detalle de un esquema de póliza con sus definiciones de campos.",
+        "operationId": "obtener_esquema_poliza_api_v1_esquemas_poliza__esquema_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "esquema_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Esquema Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EsquemaPolizaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/esquemas-poliza/{esquema_id}/activar": {
+      "patch": {
+        "tags": [
+          "Esquemas de Póliza"
+        ],
+        "summary": "Activar Esquema Poliza",
+        "description": "Activa una versión de esquema de póliza y desactiva las demás del mismo código.",
+        "operationId": "activar_esquema_poliza_api_v1_esquemas_poliza__esquema_id__activar_patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "esquema_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Esquema Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EsquemaPolizaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/health/live": {
       "get": {
         "tags": [
@@ -1870,6 +2044,59 @@
           "file"
         ],
         "title": "Body_probar_esquema_api_v1_esquemas__esquema_id__probar_post"
+      },
+      "CampoPolizaDefinicion": {
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Nombre"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "texto",
+              "numero",
+              "decimal",
+              "fecha",
+              "booleano"
+            ],
+            "title": "Tipo",
+            "default": "texto"
+          },
+          "es_obligatorio": {
+            "type": "boolean",
+            "title": "Es Obligatorio",
+            "default": false
+          },
+          "orden": {
+            "type": "integer",
+            "maximum": 999.0,
+            "minimum": 0.0,
+            "title": "Orden",
+            "default": 0
+          },
+          "formato_fecha": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Formato Fecha"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "nombre"
+        ],
+        "title": "CampoPolizaDefinicion",
+        "description": "Definición declarativa de un campo para esquema de póliza."
       },
       "CampoReglaCreate": {
         "properties": {
@@ -2385,7 +2612,25 @@
       "DocumentoRevisionRequest": {
         "properties": {
           "campos_extraidos": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
             "type": "object",
             "title": "Campos Extraidos",
             "description": "Claves y valores extraídos validados por el agente."
@@ -2424,7 +2669,25 @@
             "title": "Estado Extraccion"
           },
           "campos_extraidos": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
             "type": "object",
             "title": "Campos Extraidos"
           },
@@ -2532,6 +2795,171 @@
         ],
         "title": "EsquemaListItem",
         "description": "Item de lista — sin campos para reducir tamaño del payload."
+      },
+      "EsquemaPolizaCreate": {
+        "properties": {
+          "codigo": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "pattern": "^[A-Z0-9_]+$",
+            "title": "Codigo",
+            "description": "Identificador en MAYUSCULAS_GUION_BAJO (ej. VEHICULAR_PESADOS)"
+          },
+          "nombre": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Nombre"
+          },
+          "descripcion": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Descripcion"
+          },
+          "campos": {
+            "items": {
+              "$ref": "#/components/schemas/CampoPolizaDefinicion"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Campos"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "codigo",
+          "nombre",
+          "campos"
+        ],
+        "title": "EsquemaPolizaCreate",
+        "description": "Payload para crear una nueva versión de esquema de póliza."
+      },
+      "EsquemaPolizaListItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "codigo": {
+            "type": "string",
+            "title": "Codigo"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "es_activo": {
+            "type": "boolean",
+            "title": "Es Activo"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "codigo",
+          "nombre",
+          "version",
+          "es_activo",
+          "created_at"
+        ],
+        "title": "EsquemaPolizaListItem",
+        "description": "Item de lista ligera para esquemas de póliza."
+      },
+      "EsquemaPolizaResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "codigo": {
+            "type": "string",
+            "title": "Codigo"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "descripcion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Descripcion"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "es_activo": {
+            "type": "boolean",
+            "title": "Es Activo"
+          },
+          "creado_por": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Creado Por"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "campos": {
+            "items": {
+              "$ref": "#/components/schemas/CampoPolizaDefinicion"
+            },
+            "type": "array",
+            "title": "Campos"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "codigo",
+          "nombre",
+          "descripcion",
+          "version",
+          "es_activo",
+          "creado_por",
+          "created_at",
+          "campos"
+        ],
+        "title": "EsquemaPolizaResponse",
+        "description": "Detalle completo del esquema de póliza incluyendo sus campos."
       },
       "EsquemaResponse": {
         "properties": {
@@ -2805,6 +3233,45 @@
             "title": "Kilometraje Emision",
             "description": "Snapshot contractual inmutable al emitir"
           },
+          "esquema_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Esquema Id"
+          },
+          "campos_adicionales": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "boolean"
+                    }
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Campos Adicionales"
+          },
           "deducibles": {
             "anyOf": [
               {
@@ -2882,6 +3349,18 @@
             ],
             "title": "Inspeccion Id"
           },
+          "esquema_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Esquema Id"
+          },
           "fecha_inicio": {
             "type": "string",
             "format": "date",
@@ -2906,6 +3385,33 @@
           "kilometraje_emision": {
             "type": "integer",
             "title": "Kilometraje Emision"
+          },
+          "campos_adicionales": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "boolean"
+                    }
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Campos Adicionales"
           },
           "created_at": {
             "type": "string",
@@ -3066,7 +3572,25 @@
             "title": "Texto Completo"
           },
           "campos_extraidos": {
-            "additionalProperties": true,
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
             "type": "object",
             "title": "Campos Extraidos"
           }
