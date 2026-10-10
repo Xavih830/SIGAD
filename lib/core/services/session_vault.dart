@@ -47,7 +47,9 @@ class SessionVault {
   static Future<void> init() async {
     try {
       await getSession();
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[SessionVault] Error al inicializar bóveda: $e');
+    }
   }
 
   static Future<void> saveSession(Map<String, dynamic> sessionData) async {
@@ -59,7 +61,8 @@ class SessionVault {
     try {
       final jsonStr = jsonEncode(sessionData);
       await _storage.write(key: _sessionKey, value: jsonStr);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[SessionVault] Error al persistir en almacenamiento seguro: $e');
       _inMemorySession = Map<String, dynamic>.from(sessionData);
     }
   }
@@ -79,7 +82,8 @@ class SessionVault {
       final map = Map<String, dynamic>.from(decoded as Map);
       _cachedAccessToken = map['access_token'] as String?;
       return map;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[SessionVault] Error al leer de almacenamiento seguro: $e');
       _cachedAccessToken = _inMemorySession?['access_token'] as String?;
       return _inMemorySession;
     }
@@ -98,7 +102,9 @@ class SessionVault {
     if (_useInMemory) return;
     try {
       await _storage.delete(key: _sessionKey);
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[SessionVault] Error al eliminar sesión segura: $e');
+    }
   }
 
   static Future<bool> getFlag(String key, {bool defaultValue = false}) async {
@@ -108,7 +114,8 @@ class SessionVault {
     try {
       final prefs = await SharedPreferences.getInstance();
       return prefs.getBool(key) ?? defaultValue;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[SessionVault] Error al leer preferencia $key: $e');
       return _inMemoryFlags[key] ?? defaultValue;
     }
   }
@@ -119,6 +126,8 @@ class SessionVault {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(key, value);
-    } catch (_) {}
+    } catch (e) {
+      debugPrint('[SessionVault] Error al guardar preferencia $key: $e');
+    }
   }
 }

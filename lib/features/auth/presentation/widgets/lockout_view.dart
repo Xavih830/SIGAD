@@ -144,20 +144,24 @@ class _LockoutViewState extends State<LockoutView> {
               ),
               const SizedBox(height: 32),
               OutlinedButton(
-                onPressed: () {
-                  context.read<AuthBloc>().add(ResetLockout());
-                },
+                onPressed: _remaining.inSeconds <= 0
+                    ? () {
+                        context.read<AuthBloc>().add(ResetLockout());
+                      }
+                    : null,
                 style: OutlinedButton.styleFrom(
                   minimumSize: const Size(double.infinity, 50),
-                  side: const BorderSide(color: AppTheme.primaryColor),
+                  side: BorderSide(
+                    color: _remaining.inSeconds <= 0 ? AppTheme.primaryColor : AppTheme.borderLight,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                child: const Text(
-                  'Volver a intentar',
+                child: Text(
+                  _remaining.inSeconds <= 0 ? 'Volver a intentar' : 'Bloqueado temporalmente',
                   style: TextStyle(
-                    color: AppTheme.primaryColor,
+                    color: _remaining.inSeconds <= 0 ? AppTheme.primaryColor : AppTheme.textMuted,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

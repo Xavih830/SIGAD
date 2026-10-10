@@ -4,6 +4,7 @@ import 'package:timezone/data/latest_10y.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:sigad/core/models/policy_model.dart';
 import 'package:sigad/core/services/session_vault.dart';
+import 'package:sigad/core/utils/date_formatter.dart';
 
 class NotificationsManagerImpl {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
@@ -78,7 +79,7 @@ class NotificationsManagerImpl {
     await schedulePolicyNotifications({
       'numero_poliza': policy.number,
       'placa': vehicle.plate,
-      'fecha_fin': policy.endDate.toIso8601String().substring(0, 10),
+      'fecha_fin': DateFormatter.toIsoDate(policy.endDate),
       'estado': policy.status,
     });
   }
