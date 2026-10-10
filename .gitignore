@@ -83,6 +83,8 @@ scratch/
 .agents/
 .gemini/
 .desloppify/
+.codegraph*/
+.codegraph/
 scorecard.png
 plan/
 AGENTS.md
