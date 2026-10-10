@@ -21,11 +21,11 @@ class ExtractionFieldModel {
     return ExtractionFieldModel(
       nombre: json['nombre'] as String,
       regex: json['regex'] as String,
-      tipo: json['tipo'] as String? ?? 'texto',
-      grupoCaptura: (json['grupo_captura'] as num?)?.toInt() ?? 1,
+      tipo: json['tipo'] as String,
+      grupoCaptura: (json['grupo_captura'] as num).toInt(),
       formatoFecha: json['formato_fecha'] as String?,
-      esObligatorio: json['es_obligatorio'] as bool? ?? false,
-      orden: (json['orden'] as num?)?.toInt() ?? 0,
+      esObligatorio: json['es_obligatorio'] as bool,
+      orden: (json['orden'] as num).toInt(),
     );
   }
 
@@ -102,7 +102,7 @@ class ExtractionSchemaModel {
   });
 
   factory ExtractionSchemaModel.fromJson(Map<String, dynamic> json) {
-    final camposRaw = json['campos'] as List<dynamic>? ?? [];
+    final camposRaw = json['campos'] as List<dynamic>;
     return ExtractionSchemaModel(
       id: json['id'] as String,
       codigo: json['codigo'] as String,
@@ -113,8 +113,7 @@ class ExtractionSchemaModel {
       creadoPor: json['creado_por'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       campos: camposRaw
-          .whereType<Map<String, dynamic>>()
-          .map((c) => ExtractionFieldModel.fromJson(c))
+          .map((c) => ExtractionFieldModel.fromJson(c as Map<String, dynamic>))
           .toList(),
     );
   }

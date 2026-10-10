@@ -48,7 +48,7 @@ class UserModel {
       role: UserRole.fromValue(rawRole),
       accessToken: json['access_token'] as String?,
       refreshToken: json['refresh_token'] as String?,
-      isActive: json['activo'] as bool? ?? true,
+      isActive: json['activo'] as bool,
     );
   }
 

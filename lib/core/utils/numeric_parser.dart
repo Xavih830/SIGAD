@@ -1,4 +1,4 @@
-double parseRequiredDouble(dynamic value) {
+double parseRequiredDouble(Object? value) {
   if (value == null) {
     throw TypeError();
   }
@@ -11,7 +11,7 @@ double parseRequiredDouble(dynamic value) {
   throw TypeError();
 }
 
-double? parseOptionalDouble(dynamic value) {
+double? parseOptionalDouble(Object? value) {
   if (value == null) {
     return null;
   }

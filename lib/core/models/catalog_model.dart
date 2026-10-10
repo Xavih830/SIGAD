@@ -52,7 +52,7 @@ class WorkshopModel {
       address: json['direccion'] as String,
       phone: json['telefono'] as String,
       city: json['ciudad'] as String,
-      active: json['activo'] as bool? ?? true,
+      active: json['activo'] as bool,
     );
   }
 
@@ -90,7 +90,7 @@ class AssistanceModel {
       description: json['descripcion'] as String,
       emergencyPhone: json['telefono_emergencia'] as String,
       icon: json['icono'] as String,
-      active: json['activo'] as bool? ?? true,
+      active: json['activo'] as bool,
     );
   }
 

@@ -1,14 +1,16 @@
 library;
 
 enum ExtractionStatus {
-  pendiente('pendiente'),
-  procesando('procesando'),
-  completado('completado'),
-  revisionRequerida('revision_requerida'),
-  fallido('fallido');
+  pendiente('pendiente', 'Pendiente'),
+  procesando('procesando', 'Procesando'),
+  completado('completado', 'Completado'),
+  requiereRevisionManual('requiere_revision_manual', 'Requiere Revisión Manual'),
+  error('error', 'Error'),
+  errorPermanente('error_permanente', 'Error Permanente');
 
   final String value;
-  const ExtractionStatus(this.value);
+  final String label;
+  const ExtractionStatus(this.value, this.label);
 
   static ExtractionStatus fromValue(String value) {
     for (final status in ExtractionStatus.values) {
@@ -19,13 +21,15 @@ enum ExtractionStatus {
 }
 
 enum PolicyStatus {
-  vigente('vigente'),
-  porVencer('por_vencer'),
-  vencida('vencida'),
-  anulada('anulada');
+  pendiente('pendiente', 'Pendiente'),
+  activa('activa', 'Activa'),
+  porVencer('por_vencer', 'Por Vencer'),
+  vencida('vencida', 'Vencida'),
+  cancelada('cancelada', 'Cancelada');
 
   final String value;
-  const PolicyStatus(this.value);
+  final String label;
+  const PolicyStatus(this.value, this.label);
 
   static PolicyStatus fromValue(String value) {
     for (final status in PolicyStatus.values) {
@@ -36,13 +40,13 @@ enum PolicyStatus {
 }
 
 enum PaymentStatus {
-  pagado('pagado'),
-  pendiente('pendiente'),
-  atrasado('atrasado'),
-  parcial('parcial');
+  pendiente('pendiente', 'Pendiente'),
+  pagado('pagado', 'Pagado'),
+  atrasado('atrasado', 'Atrasado');
 
   final String value;
-  const PaymentStatus(this.value);
+  final String label;
+  const PaymentStatus(this.value, this.label);
 
   static PaymentStatus fromValue(String value) {
     for (final status in PaymentStatus.values) {

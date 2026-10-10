@@ -21,10 +21,6 @@ abstract class AppConstants {
   static const int maxPolicyYears = 5;
   static const int defaultPolicyDurationDays = 365;
 
-  static const double ocrDefaultInsuredValue = 15000.0;
-  static const double ocrDefaultMonthlyPremium = 35.0;
-  static const int ocrDefaultEmissionMileage = 5000;
-
   static const int minPolicyInstallments = 1;
   static const int maxAnnualPolicyInstallments = 12;
   static const int monthlyInstallmentPeriodDays = 30;

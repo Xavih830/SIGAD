@@ -31,6 +31,10 @@ abstract class ApiEndpoints {
   static String esquemaActivar(String id) => '/api/v1/esquemas/$id/activar';
   static String esquemaProbar(String id) => '/api/v1/esquemas/$id/probar';
 
+  static const String esquemasPoliza = '/api/v1/esquemas-poliza';
+  static String esquemaPoliza(String id) => '$esquemasPoliza/$id';
+  static String esquemaPolizaActivar(String id) => '$esquemasPoliza/$id/activar';
+
   static const String talleres = '/api/v1/talleres';
   static String taller(String id) => '/api/v1/talleres/$id';
   static const String asistencias = '/api/v1/asistencias';

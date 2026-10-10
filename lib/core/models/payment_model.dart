@@ -1,3 +1,4 @@
+import 'package:sigad/core/utils/date_formatter.dart';
 import 'package:sigad/core/utils/numeric_parser.dart';
 
 class PaymentModel {
@@ -62,9 +63,9 @@ class PaymentModel {
       'poliza_id': policyId,
       'numero_cuota': installmentNumber,
       'monto_usd': amountUsd,
-      'fecha_vencimiento': dueDate.toIso8601String().substring(0, 10),
+      'fecha_vencimiento': DateFormatter.toIsoDate(dueDate),
       if (paymentDate != null)
-        'fecha_pago': paymentDate!.toIso8601String().substring(0, 10),
+        'fecha_pago': DateFormatter.toIsoDate(paymentDate!),
       'estado': status,
       if (paymentMethod != null) 'metodo_pago': paymentMethod,
       if (receiptRef != null) 'comprobante_ref': receiptRef,

@@ -2,6 +2,7 @@ import 'package:http/http.dart' as http;
 import 'package:sigad/core/constants/api_endpoints.dart';
 import 'package:sigad/core/models/payment_model.dart';
 import 'package:sigad/core/network/api_client.dart';
+import 'package:sigad/core/utils/date_formatter.dart';
 
 class PaymentsRepository {
   final ApiClient _client;
@@ -28,7 +29,7 @@ class PaymentsRepository {
       'metodo_pago': paymentMethod,
       'comprobante_ref': receiptRef,
       if (paymentDate != null)
-        'fecha_pago': paymentDate.toIso8601String().substring(0, 10),
+        'fecha_pago': DateFormatter.toIsoDate(paymentDate),
     };
 
     final data = await _client.post(
