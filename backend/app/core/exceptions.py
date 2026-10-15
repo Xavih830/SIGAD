@@ -1,0 +1,52 @@
+"""Domain and business logic exceptions for SIGAD."""
+
+
+class SIGADException(Exception):
+    """Base exception for all domain errors."""
+
+    def __init__(self, message: str) -> None:
+        super().__init__(message)
+        self.message = message
+
+
+class FechaInvalidaException(SIGADException):
+    """Raised when policy dates are chronologically incoherent (fecha_fin <= fecha_inicio)."""
+
+    def __init__(self, message: str = "La fecha de fin debe ser estrictamente posterior a la fecha de inicio.") -> None:
+        super().__init__(message)
+
+
+class VigenciaExcedidaException(SIGADException):
+    """Raised when policy duration exceeds the maximum contractual period (5 years)."""
+
+    def __init__(self, message: str = "La vigencia de la póliza no puede superar los 5 años contractuales.") -> None:
+        super().__init__(message)
+
+
+class EmailDuplicadoException(SIGADException):
+    """Raised when client email already exists in usuarios table during vinculacion (HTTP 409)."""
+
+    def __init__(self, message: str = "El correo electrónico ya se encuentra registrado") -> None:
+        super().__init__(message)
+
+
+class RecursoNoEncontradoException(SIGADException):
+    """Raised when an entity is not found by ID or filters (HTTP 404)."""
+
+    def __init__(self, message: str = "Recurso no encontrado.") -> None:
+        super().__init__(message)
+
+
+class IdentificacionDuplicadaException(SIGADException):
+    """Raised when identification already exists (HTTP 409 without PII leak)."""
+
+    def __init__(self, message: str = "Ya existe un cliente registrado con la identificación ingresada.") -> None:
+        super().__init__(message)
+
+
+class ConflictoDominioException(SIGADException):
+    """Raised when domain rule violation prevents the requested action (HTTP 409)."""
+
+    def __init__(self, message: str = "Conflicto en la operación de dominio.") -> None:
+        super().__init__(message)
+
