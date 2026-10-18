@@ -1,0 +1,4416 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "SIGAD API",
+    "description": "Sistema Integral de Gestión de Asegurados — Backend",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/v1/auth/login": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Login",
+        "description": "Polymorphic login: email → direct lookup, cédula → join through clientes.",
+        "operationId": "login_api_v1_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/refresh": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Refresh Session",
+        "description": "Rota un refresh token válido emitiendo un nuevo par access/refresh.",
+        "operationId": "refresh_session_api_v1_auth_refresh_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Logout",
+        "description": "Revoca la familia de sesiones asociada al refresh token para cerrar sesión.",
+        "operationId": "logout_api_v1_auth_logout_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RefreshRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/vinculacion": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "Vincular Cliente",
+        "description": "Flujo de vinculación móvil para clientes asegurados.",
+        "operationId": "vincular_cliente_api_v1_auth_vinculacion_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VinculacionRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/clientes": {
+      "post": {
+        "tags": [
+          "Clientes"
+        ],
+        "summary": "Registrar Cliente",
+        "description": "Registra un nuevo cliente asegurado y genera su código OTP de vinculación inicial.",
+        "operationId": "registrar_cliente_api_v1_clientes_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClienteCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClienteResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Clientes"
+        ],
+        "summary": "Listar Clientes",
+        "description": "Lista todos los clientes registrados de forma paginada.",
+        "operationId": "listar_clientes_api_v1_clientes_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Búsqueda por nombre o identificación",
+              "title": "Q"
+            },
+            "description": "Búsqueda por nombre o identificación"
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Skip"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "default": 10,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse_ClienteResponse_"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/clientes/{cliente_id}": {
+      "get": {
+        "tags": [
+          "Clientes"
+        ],
+        "summary": "Obtener Cliente",
+        "description": "Obtiene el detalle de un cliente asegurado.",
+        "operationId": "obtener_cliente_api_v1_clientes__cliente_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cliente_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Cliente Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClienteResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Clientes"
+        ],
+        "summary": "Actualizar Cliente",
+        "description": "Actualiza datos de contacto de un cliente asegurado (ADMIN y AGENTE).",
+        "operationId": "actualizar_cliente_api_v1_clientes__cliente_id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cliente_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Cliente Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClienteUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClienteResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Clientes"
+        ],
+        "summary": "Eliminar Cliente",
+        "description": "Elimina un cliente si no tiene registros asociados (Solo ADMIN).",
+        "operationId": "eliminar_cliente_api_v1_clientes__cliente_id__delete",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cliente_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Cliente Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/clientes/{cliente_id}/otp": {
+      "post": {
+        "tags": [
+          "Clientes"
+        ],
+        "summary": "Regenerar Otp Cliente",
+        "description": "Regenera un nuevo código OTP de vinculación para un cliente existente.",
+        "operationId": "regenerar_otp_cliente_api_v1_clientes__cliente_id__otp_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cliente_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Cliente Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClienteResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/polizas": {
+      "post": {
+        "tags": [
+          "Pólizas"
+        ],
+        "summary": "Crear Poliza",
+        "description": "Emisión formal de póliza con snapshot inmutable de kilometraje y cálculo de estado inicial.",
+        "operationId": "crear_poliza_api_v1_polizas_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PolizaCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PolizaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Pólizas"
+        ],
+        "summary": "Listar Polizas",
+        "description": "Listar pólizas con paginación y protección Anti-BOLA estricta a nivel de consulta SQL.",
+        "operationId": "listar_polizas_api_v1_polizas_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Número de registros a omitir.",
+              "default": 0,
+              "title": "Skip"
+            },
+            "description": "Número de registros a omitir."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Límite máximo de registros a retornar.",
+              "default": 50,
+              "title": "Limit"
+            },
+            "description": "Límite máximo de registros a retornar."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PolizaResponse"
+                  },
+                  "title": "Response Listar Polizas Api V1 Polizas Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/polizas/{id}": {
+      "get": {
+        "tags": [
+          "Pólizas"
+        ],
+        "summary": "Obtener Poliza",
+        "description": "Detalle de una póliza con Anti-BOLA en SQL.",
+        "operationId": "obtener_poliza_api_v1_polizas__id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PolizaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/polizas/{id}/deducibles": {
+      "get": {
+        "tags": [
+          "Pólizas"
+        ],
+        "summary": "Consultar Deducibles",
+        "operationId": "consultar_deducibles_api_v1_polizas__id__deducibles_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DeducibleResponse"
+                  },
+                  "title": "Response Consultar Deducibles Api V1 Polizas  Id  Deducibles Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/polizas/{id}/estado": {
+      "patch": {
+        "tags": [
+          "Pólizas"
+        ],
+        "summary": "Actualizar Estado Poliza",
+        "description": "Actualizar estado de póliza. Dispara triggers de auditoría en PostgreSQL.",
+        "operationId": "actualizar_estado_poliza_api_v1_polizas__id__estado_patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PolizaUpdateEstado"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PolizaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/polizas/{poliza_id}/pagos": {
+      "get": {
+        "tags": [
+          "Pagos"
+        ],
+        "summary": "Listar Pagos Poliza",
+        "description": "Listar cronograma de pagos y cuotas de una póliza.",
+        "operationId": "listar_pagos_poliza_api_v1_polizas__poliza_id__pagos_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "poliza_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Poliza Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PagoResponse"
+                  },
+                  "title": "Response Listar Pagos Poliza Api V1 Polizas  Poliza Id  Pagos Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/polizas/{poliza_id}/pagos/{pago_id}/registrar": {
+      "post": {
+        "tags": [
+          "Pagos"
+        ],
+        "summary": "Registrar Pago Cuota",
+        "description": "Registrar el pago de una cuota de póliza.",
+        "operationId": "registrar_pago_cuota_api_v1_polizas__poliza_id__pagos__pago_id__registrar_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "poliza_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Poliza Id"
+            }
+          },
+          {
+            "name": "pago_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Pago Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegistrarPagoRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PagoResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/vehiculos": {
+      "post": {
+        "tags": [
+          "Vehículos"
+        ],
+        "summary": "Crear Vehiculo",
+        "description": "Registrar un nuevo vehículo con validación de placa ANT.",
+        "operationId": "crear_vehiculo_api_v1_vehiculos_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VehiculoCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehiculoResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Vehículos"
+        ],
+        "summary": "Listar Vehiculos",
+        "description": "Listar vehículos con paginación y filtro opcional por cliente.",
+        "operationId": "listar_vehiculos_api_v1_vehiculos_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "cliente_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtrar por ID de cliente.",
+              "title": "Cliente Id"
+            },
+            "description": "Filtrar por ID de cliente."
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Número de registros a omitir.",
+              "default": 0,
+              "title": "Skip"
+            },
+            "description": "Número de registros a omitir."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Límite máximo de registros a retornar.",
+              "default": 50,
+              "title": "Limit"
+            },
+            "description": "Límite máximo de registros a retornar."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/VehiculoResponse"
+                  },
+                  "title": "Response Listar Vehiculos Api V1 Vehiculos Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/vehiculos/{id}": {
+      "patch": {
+        "tags": [
+          "Vehículos"
+        ],
+        "summary": "Actualizar Vehiculo",
+        "description": "Actualizar parcialmente los datos de un vehículo (excepto placa).",
+        "operationId": "actualizar_vehiculo_api_v1_vehiculos__id__patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VehiculoUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehiculoResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Vehículos"
+        ],
+        "summary": "Obtener Vehiculo",
+        "description": "Obtener detalle de vehículo por ID.",
+        "operationId": "obtener_vehiculo_api_v1_vehiculos__id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VehiculoResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/talleres": {
+      "get": {
+        "tags": [
+          "Talleres"
+        ],
+        "summary": "Listar Talleres",
+        "description": "Obtiene el catálogo de talleres autorizados.",
+        "operationId": "listar_talleres_api_v1_talleres_get",
+        "parameters": [
+          {
+            "name": "ciudad",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtrar por ciudad",
+              "title": "Ciudad"
+            },
+            "description": "Filtrar por ciudad"
+          },
+          {
+            "name": "solo_activos",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Mostrar solo talleres activos",
+              "default": true,
+              "title": "Solo Activos"
+            },
+            "description": "Mostrar solo talleres activos"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TallerResponse"
+                  },
+                  "title": "Response Listar Talleres Api V1 Talleres Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Talleres"
+        ],
+        "summary": "Crear Taller",
+        "description": "Registra un nuevo taller autorizado.",
+        "operationId": "crear_taller_api_v1_talleres_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TallerCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TallerResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/talleres/{taller_id}": {
+      "get": {
+        "tags": [
+          "Talleres"
+        ],
+        "summary": "Obtener Taller",
+        "description": "Obtiene un taller por su ID.",
+        "operationId": "obtener_taller_api_v1_talleres__taller_id__get",
+        "parameters": [
+          {
+            "name": "taller_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Taller Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TallerResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/asistencias": {
+      "get": {
+        "tags": [
+          "Asistencias"
+        ],
+        "summary": "Listar Asistencias",
+        "description": "Obtiene el catálogo de servicios de asistencia en carretera y emergencias.",
+        "operationId": "listar_asistencias_api_v1_asistencias_get",
+        "parameters": [
+          {
+            "name": "solo_activas",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Mostrar solo asistencias activas",
+              "default": true,
+              "title": "Solo Activas"
+            },
+            "description": "Mostrar solo asistencias activas"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AsistenciaResponse"
+                  },
+                  "title": "Response Listar Asistencias Api V1 Asistencias Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Asistencias"
+        ],
+        "summary": "Crear Asistencia",
+        "description": "Registra un nuevo servicio de asistencia.",
+        "operationId": "crear_asistencia_api_v1_asistencias_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AsistenciaCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AsistenciaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/asistencias/{asistencia_id}": {
+      "get": {
+        "tags": [
+          "Asistencias"
+        ],
+        "summary": "Obtener Asistencia",
+        "description": "Obtiene el detalle de un servicio de asistencia por ID.",
+        "operationId": "obtener_asistencia_api_v1_asistencias__asistencia_id__get",
+        "parameters": [
+          {
+            "name": "asistencia_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Asistencia Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AsistenciaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/documentos": {
+      "post": {
+        "tags": [
+          "Documentos"
+        ],
+        "summary": "Cargar Documento",
+        "description": "Canonical Single Ingress endpoint for document upload with 15MB limit and <=10 page validation.",
+        "operationId": "cargar_documento_api_v1_documentos_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_cargar_documento_api_v1_documentos_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentoResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Documentos"
+        ],
+        "summary": "Listar Documentos",
+        "description": "List documents accessible to current user.",
+        "operationId": "listar_documentos_api_v1_documentos_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "poliza_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Poliza Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DocumentoListItemResponse"
+                  },
+                  "title": "Response Listar Documentos Api V1 Documentos Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/documentos/{documento_id}/descargar": {
+      "get": {
+        "tags": [
+          "Documentos"
+        ],
+        "summary": "Descargar Documento",
+        "description": "Anti-IDOR authorized download endpoint.",
+        "operationId": "descargar_documento_api_v1_documentos__documento_id__descargar_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "documento_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Documento Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/documentos/{documento_id}": {
+      "get": {
+        "tags": [
+          "Documentos"
+        ],
+        "summary": "Obtener Documento",
+        "description": "Retrieves document processing status and extracted results.",
+        "operationId": "obtener_documento_api_v1_documentos__documento_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "documento_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Documento Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentoResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/documentos/{documento_id}/revision": {
+      "patch": {
+        "tags": [
+          "Documentos"
+        ],
+        "summary": "Revisar Campos Documento",
+        "description": "Permite a agentes y administradores corregir y confirmar campos extraídos.",
+        "operationId": "revisar_campos_documento_api_v1_documentos__documento_id__revision_patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "documento_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Documento Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DocumentoRevisionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DocumentoRevisionResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/esquemas": {
+      "get": {
+        "tags": [
+          "Esquemas de Extracción"
+        ],
+        "summary": "Listar Esquemas",
+        "description": "Lista todos los esquemas (todas las versiones). Solo ADMIN y AGENTE.",
+        "operationId": "listar_esquemas_api_v1_esquemas_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EsquemaListItem"
+                  },
+                  "type": "array",
+                  "title": "Response Listar Esquemas Api V1 Esquemas Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Esquemas de Extracción"
+        ],
+        "summary": "Crear Esquema",
+        "description": "Crea una nueva versión del esquema (append-only).\n\n- Si el `codigo` no existe, crea versión 1.\n- Si ya existe, incrementa la versión. La versión nueva empieza inactiva.",
+        "operationId": "crear_esquema_api_v1_esquemas_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EsquemaCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EsquemaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/esquemas/{esquema_id}": {
+      "get": {
+        "tags": [
+          "Esquemas de Extracción"
+        ],
+        "summary": "Obtener Esquema",
+        "description": "Detalle de un esquema con sus campos. Solo ADMIN y AGENTE.",
+        "operationId": "obtener_esquema_api_v1_esquemas__esquema_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "esquema_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Esquema Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EsquemaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/esquemas/{esquema_id}/activar": {
+      "patch": {
+        "tags": [
+          "Esquemas de Extracción"
+        ],
+        "summary": "Activar Esquema",
+        "description": "Activa una versión y desactiva las demás del mismo codigo.\n\nSin body — previene over-posting (OWASP API3).\nOperación atómica: desactivación masiva + activación en la misma transacción.",
+        "operationId": "activar_esquema_api_v1_esquemas__esquema_id__activar_patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "esquema_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Esquema Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EsquemaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/esquemas/{esquema_id}/probar": {
+      "post": {
+        "tags": [
+          "Esquemas de Extracción"
+        ],
+        "summary": "Probar Esquema",
+        "description": "Aplica el esquema a un archivo sin persistir ningún resultado.\n\nPermite verificar reglas regex antes de activar la versión.\nLímite: mismo MAX_DOCUMENT_SIZE_BYTES que el endpoint /documentos.",
+        "operationId": "probar_esquema_api_v1_esquemas__esquema_id__probar_post",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "esquema_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Esquema Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_probar_esquema_api_v1_esquemas__esquema_id__probar_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProbarEsquemaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/esquemas-poliza": {
+      "get": {
+        "tags": [
+          "Esquemas de Póliza"
+        ],
+        "summary": "Listar Esquemas Poliza",
+        "description": "Lista todos los esquemas de póliza (todas las versiones). Solo ADMIN y AGENTE.",
+        "operationId": "listar_esquemas_poliza_api_v1_esquemas_poliza_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/EsquemaPolizaListItem"
+                  },
+                  "type": "array",
+                  "title": "Response Listar Esquemas Poliza Api V1 Esquemas Poliza Get"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      },
+      "post": {
+        "tags": [
+          "Esquemas de Póliza"
+        ],
+        "summary": "Crear Esquema Poliza",
+        "description": "Crea una nueva versión del esquema de póliza (append-only).\n\n- Si el código no existe, crea versión 1.\n- Si ya existe, incrementa la versión. La versión nueva inicia inactiva.",
+        "operationId": "crear_esquema_poliza_api_v1_esquemas_poliza_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EsquemaPolizaCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EsquemaPolizaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ]
+      }
+    },
+    "/api/v1/esquemas-poliza/{esquema_id}": {
+      "get": {
+        "tags": [
+          "Esquemas de Póliza"
+        ],
+        "summary": "Obtener Esquema Poliza",
+        "description": "Detalle de un esquema de póliza con sus definiciones de campos.",
+        "operationId": "obtener_esquema_poliza_api_v1_esquemas_poliza__esquema_id__get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "esquema_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Esquema Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EsquemaPolizaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/esquemas-poliza/{esquema_id}/activar": {
+      "patch": {
+        "tags": [
+          "Esquemas de Póliza"
+        ],
+        "summary": "Activar Esquema Poliza",
+        "description": "Activa una versión de esquema de póliza y desactiva las demás del mismo código.",
+        "operationId": "activar_esquema_poliza_api_v1_esquemas_poliza__esquema_id__activar_patch",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "esquema_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Esquema Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EsquemaPolizaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/live": {
+      "get": {
+        "tags": [
+          "Infra"
+        ],
+        "summary": "Liveness",
+        "description": "Liveness probe: verifies process event-loop responsiveness without hitting DB.",
+        "operationId": "liveness_health_live_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "type": "object",
+                  "title": "Response Liveness Health Live Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health/ready": {
+      "get": {
+        "tags": [
+          "Infra"
+        ],
+        "summary": "Health",
+        "description": "Deep readiness probe: validates PostgreSQL connectivity with bounded timeout and rate-cache.",
+        "operationId": "health_health_ready_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Health Health Ready Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/health": {
+      "get": {
+        "tags": [
+          "Infra"
+        ],
+        "summary": "Health",
+        "description": "Deep readiness probe: validates PostgreSQL connectivity with bounded timeout and rate-cache.",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "type": "object",
+                  "title": "Response Health Health Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AsistenciaCreate": {
+        "properties": {
+          "titulo": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 2,
+            "title": "Titulo"
+          },
+          "descripcion": {
+            "type": "string",
+            "minLength": 5,
+            "title": "Descripcion"
+          },
+          "telefono_emergencia": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 3,
+            "title": "Telefono Emergencia"
+          },
+          "icono": {
+            "type": "string",
+            "maxLength": 100,
+            "title": "Icono",
+            "default": "phone"
+          },
+          "activo": {
+            "type": "boolean",
+            "title": "Activo",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "titulo",
+          "descripcion",
+          "telefono_emergencia"
+        ],
+        "title": "AsistenciaCreate",
+        "description": "Schema para registrar un nuevo servicio de asistencia."
+      },
+      "AsistenciaResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "titulo": {
+            "type": "string",
+            "title": "Titulo"
+          },
+          "descripcion": {
+            "type": "string",
+            "title": "Descripcion"
+          },
+          "telefono_emergencia": {
+            "type": "string",
+            "title": "Telefono Emergencia"
+          },
+          "icono": {
+            "type": "string",
+            "title": "Icono"
+          },
+          "activo": {
+            "type": "boolean",
+            "title": "Activo"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "titulo",
+          "descripcion",
+          "telefono_emergencia",
+          "icono",
+          "activo",
+          "created_at"
+        ],
+        "title": "AsistenciaResponse",
+        "description": "Schema de respuesta para servicio de asistencia."
+      },
+      "Body_cargar_documento_api_v1_documentos_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          },
+          "poliza_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poliza Id"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_cargar_documento_api_v1_documentos_post"
+      },
+      "Body_probar_esquema_api_v1_esquemas__esquema_id__probar_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_probar_esquema_api_v1_esquemas__esquema_id__probar_post"
+      },
+      "CampoPolizaDefinicion": {
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Nombre"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "texto",
+              "numero",
+              "decimal",
+              "fecha",
+              "booleano"
+            ],
+            "title": "Tipo",
+            "default": "texto"
+          },
+          "es_obligatorio": {
+            "type": "boolean",
+            "title": "Es Obligatorio",
+            "default": false
+          },
+          "orden": {
+            "type": "integer",
+            "maximum": 999.0,
+            "minimum": 0.0,
+            "title": "Orden",
+            "default": 0
+          },
+          "formato_fecha": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Formato Fecha"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "nombre"
+        ],
+        "title": "CampoPolizaDefinicion",
+        "description": "Definición declarativa de un campo para esquema de póliza."
+      },
+      "CampoReglaCreate": {
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Nombre"
+          },
+          "regex": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Regex"
+          },
+          "tipo": {
+            "type": "string",
+            "enum": [
+              "texto",
+              "numero",
+              "decimal",
+              "fecha"
+            ],
+            "title": "Tipo",
+            "default": "texto"
+          },
+          "grupo_captura": {
+            "type": "integer",
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Grupo Captura",
+            "default": 1
+          },
+          "formato_fecha": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Formato Fecha"
+          },
+          "es_obligatorio": {
+            "type": "boolean",
+            "title": "Es Obligatorio",
+            "default": false
+          },
+          "orden": {
+            "type": "integer",
+            "maximum": 999.0,
+            "minimum": 0.0,
+            "title": "Orden",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "nombre",
+          "regex"
+        ],
+        "title": "CampoReglaCreate",
+        "description": "Una regla de extracción con validación Fail-Fast de regex y tipo."
+      },
+      "ClienteCreate": {
+        "properties": {
+          "identificacion": {
+            "type": "string",
+            "title": "Identificacion",
+            "description": "Cédula (10 dígitos) o RUC (13 dígitos) ecuatoriano"
+          },
+          "nombres": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 2,
+            "title": "Nombres"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "email"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "telefono": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Telefono"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "identificacion",
+          "nombres"
+        ],
+        "title": "ClienteCreate",
+        "description": "Schema para creación y onboarding de un cliente por un agente."
+      },
+      "ClienteResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "identificacion": {
+            "type": "string",
+            "title": "Identificacion"
+          },
+          "nombres": {
+            "type": "string",
+            "title": "Nombres"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "telefono": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Telefono"
+          },
+          "usuario_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usuario Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "codigo_vinculacion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Codigo Vinculacion"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "identificacion",
+          "nombres",
+          "created_at"
+        ],
+        "title": "ClienteResponse",
+        "description": "Schema de respuesta para cliente registrado."
+      },
+      "ClienteUpdate": {
+        "properties": {
+          "nombres": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nombres"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "email"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "telefono": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 20
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Telefono"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "ClienteUpdate",
+        "description": "Schema para actualización parcial de datos de contacto de cliente."
+      },
+      "CoberturaCreate": {
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 2,
+            "title": "Nombre"
+          },
+          "monto": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Monto",
+            "description": "Monto asegurado para la cobertura"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "nombre",
+          "monto"
+        ],
+        "title": "CoberturaCreate"
+      },
+      "CoberturaResponse": {
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "monto": {
+            "type": "string",
+            "title": "Monto",
+            "description": "Monto asegurado para la cobertura"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "poliza_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Poliza Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "nombre",
+          "monto",
+          "id",
+          "poliza_id",
+          "created_at"
+        ],
+        "title": "CoberturaResponse"
+      },
+      "DeducibleCreate": {
+        "properties": {
+          "tipo_siniestro": {
+            "$ref": "#/components/schemas/TipoSiniestroEnum",
+            "description": "Tipo de siniestro cubierto (general, robo, choque, perdida_total)",
+            "default": "general"
+          },
+          "porcentaje_valor": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Porcentaje Valor",
+            "description": "Porcentaje aplicable sobre el valor asegurado"
+          },
+          "monto_minimo_usd": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Monto Minimo Usd",
+            "description": "Monto mínimo en USD a pagar"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "porcentaje_valor",
+          "monto_minimo_usd"
+        ],
+        "title": "DeducibleCreate",
+        "description": "Schema para creación de deducible."
+      },
+      "DeducibleResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "poliza_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Poliza Id"
+          },
+          "tipo_siniestro": {
+            "$ref": "#/components/schemas/TipoSiniestroEnum"
+          },
+          "porcentaje_valor": {
+            "type": "string",
+            "title": "Porcentaje Valor"
+          },
+          "monto_minimo_usd": {
+            "type": "string",
+            "title": "Monto Minimo Usd"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "poliza_id",
+          "tipo_siniestro",
+          "porcentaje_valor",
+          "monto_minimo_usd",
+          "created_at"
+        ],
+        "title": "DeducibleResponse",
+        "description": "Schema de respuesta con identificadores y auditoría."
+      },
+      "DocumentoListItemResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "poliza_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poliza Id"
+          },
+          "nombre_archivo": {
+            "type": "string",
+            "title": "Nombre Archivo"
+          },
+          "tipo_mime": {
+            "type": "string",
+            "title": "Tipo Mime"
+          },
+          "tamano_bytes": {
+            "type": "integer",
+            "title": "Tamano Bytes"
+          },
+          "estado_extraccion": {
+            "type": "string",
+            "title": "Estado Extraccion"
+          },
+          "has_resultado": {
+            "type": "boolean",
+            "title": "Has Resultado"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "nombre_archivo",
+          "tipo_mime",
+          "tamano_bytes",
+          "estado_extraccion",
+          "has_resultado",
+          "created_at"
+        ],
+        "title": "DocumentoListItemResponse"
+      },
+      "DocumentoResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "poliza_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Poliza Id"
+          },
+          "nombre_archivo": {
+            "type": "string",
+            "title": "Nombre Archivo"
+          },
+          "tipo_mime": {
+            "type": "string",
+            "title": "Tipo Mime"
+          },
+          "tamano_bytes": {
+            "type": "integer",
+            "title": "Tamano Bytes"
+          },
+          "hash_sha256": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Hash Sha256"
+          },
+          "estado_extraccion": {
+            "type": "string",
+            "title": "Estado Extraccion"
+          },
+          "intentos": {
+            "type": "integer",
+            "title": "Intentos",
+            "default": 0
+          },
+          "error_motivo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error Motivo"
+          },
+          "paginas": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paginas"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          },
+          "resultado": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ResultadoExtraccionResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "nombre_archivo",
+          "tipo_mime",
+          "tamano_bytes",
+          "estado_extraccion",
+          "created_at"
+        ],
+        "title": "DocumentoResponse",
+        "description": "Serialized document representation."
+      },
+      "DocumentoRevisionRequest": {
+        "properties": {
+          "campos_extraidos": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Campos Extraidos",
+            "description": "Claves y valores extraídos validados por el agente."
+          },
+          "estado_extraccion": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 30
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estado Extraccion",
+            "description": "Nuevo estado de extracción (completado, requiere_revision_manual)."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "campos_extraidos"
+        ],
+        "title": "DocumentoRevisionRequest",
+        "description": "Payload to review and correct OCR extracted fields."
+      },
+      "DocumentoRevisionResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "estado_extraccion": {
+            "type": "string",
+            "title": "Estado Extraccion"
+          },
+          "campos_extraidos": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Campos Extraidos"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "estado_extraccion",
+          "campos_extraidos",
+          "updated_at"
+        ],
+        "title": "DocumentoRevisionResponse"
+      },
+      "EsquemaCreate": {
+        "properties": {
+          "codigo": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "pattern": "^[A-Z0-9_]+$",
+            "title": "Codigo",
+            "description": "Identificador en MAYUSCULAS_GUION_BAJO (ej. EQUINOCCIAL_VEHICULAR)"
+          },
+          "nombre": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Nombre"
+          },
+          "descripcion": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Descripcion"
+          },
+          "campos": {
+            "items": {
+              "$ref": "#/components/schemas/CampoReglaCreate"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Campos"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "codigo",
+          "nombre",
+          "campos"
+        ],
+        "title": "EsquemaCreate",
+        "description": "Payload para crear una nueva versión de esquema de extracción."
+      },
+      "EsquemaListItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "codigo": {
+            "type": "string",
+            "title": "Codigo"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "es_activo": {
+            "type": "boolean",
+            "title": "Es Activo"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "codigo",
+          "nombre",
+          "version",
+          "es_activo",
+          "created_at"
+        ],
+        "title": "EsquemaListItem",
+        "description": "Item de lista — sin campos para reducir tamaño del payload."
+      },
+      "EsquemaPolizaCreate": {
+        "properties": {
+          "codigo": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "pattern": "^[A-Z0-9_]+$",
+            "title": "Codigo",
+            "description": "Identificador en MAYUSCULAS_GUION_BAJO (ej. VEHICULAR_PESADOS)"
+          },
+          "nombre": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Nombre"
+          },
+          "descripcion": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Descripcion"
+          },
+          "campos": {
+            "items": {
+              "$ref": "#/components/schemas/CampoPolizaDefinicion"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "minItems": 1,
+            "title": "Campos"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "codigo",
+          "nombre",
+          "campos"
+        ],
+        "title": "EsquemaPolizaCreate",
+        "description": "Payload para crear una nueva versión de esquema de póliza."
+      },
+      "EsquemaPolizaListItem": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "codigo": {
+            "type": "string",
+            "title": "Codigo"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "es_activo": {
+            "type": "boolean",
+            "title": "Es Activo"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "codigo",
+          "nombre",
+          "version",
+          "es_activo",
+          "created_at"
+        ],
+        "title": "EsquemaPolizaListItem",
+        "description": "Item de lista ligera para esquemas de póliza."
+      },
+      "EsquemaPolizaResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "codigo": {
+            "type": "string",
+            "title": "Codigo"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "descripcion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Descripcion"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "es_activo": {
+            "type": "boolean",
+            "title": "Es Activo"
+          },
+          "creado_por": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Creado Por"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "campos": {
+            "items": {
+              "$ref": "#/components/schemas/CampoPolizaDefinicion"
+            },
+            "type": "array",
+            "title": "Campos"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "codigo",
+          "nombre",
+          "descripcion",
+          "version",
+          "es_activo",
+          "creado_por",
+          "created_at",
+          "campos"
+        ],
+        "title": "EsquemaPolizaResponse",
+        "description": "Detalle completo del esquema de póliza incluyendo sus campos."
+      },
+      "EsquemaResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "codigo": {
+            "type": "string",
+            "title": "Codigo"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "descripcion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Descripcion"
+          },
+          "version": {
+            "type": "integer",
+            "title": "Version"
+          },
+          "es_activo": {
+            "type": "boolean",
+            "title": "Es Activo"
+          },
+          "creado_por": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Creado Por"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "campos": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "type": "array",
+            "title": "Campos"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "id",
+          "codigo",
+          "nombre",
+          "descripcion",
+          "version",
+          "es_activo",
+          "creado_por",
+          "created_at",
+          "campos"
+        ],
+        "title": "EsquemaResponse",
+        "description": "Detalle completo del esquema incluyendo las reglas de campos."
+      },
+      "EstadoPoliza": {
+        "type": "string",
+        "enum": [
+          "pendiente",
+          "activa",
+          "por_vencer",
+          "vencida",
+          "cancelada"
+        ],
+        "title": "EstadoPoliza",
+        "description": "Ciclo de vida formal de cinco estados para una póliza."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "LoginRequest": {
+        "properties": {
+          "identificador": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Identificador",
+            "description": "Email or cédula"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Password"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "identificador",
+          "password"
+        ],
+        "title": "LoginRequest",
+        "description": "Login payload — accepts email (contains @) or cédula (numeric)."
+      },
+      "PaginatedResponse_ClienteResponse_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/ClienteResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "skip": {
+            "type": "integer",
+            "title": "Skip"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "skip",
+          "limit"
+        ],
+        "title": "PaginatedResponse[ClienteResponse]"
+      },
+      "PagoResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "poliza_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Poliza Id"
+          },
+          "numero_cuota": {
+            "type": "integer",
+            "title": "Numero Cuota"
+          },
+          "monto_usd": {
+            "type": "number",
+            "title": "Monto Usd"
+          },
+          "fecha_vencimiento": {
+            "type": "string",
+            "format": "date",
+            "title": "Fecha Vencimiento"
+          },
+          "fecha_pago": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fecha Pago"
+          },
+          "estado": {
+            "type": "string",
+            "title": "Estado"
+          },
+          "metodo_pago": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metodo Pago"
+          },
+          "comprobante_ref": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Comprobante Ref"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "poliza_id",
+          "numero_cuota",
+          "monto_usd",
+          "fecha_vencimiento",
+          "estado"
+        ],
+        "title": "PagoResponse"
+      },
+      "PolizaCreate": {
+        "properties": {
+          "numero_poliza": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 3,
+            "title": "Numero Poliza"
+          },
+          "cliente_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Cliente Id"
+          },
+          "vehiculo_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Vehiculo Id"
+          },
+          "inspeccion_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inspeccion Id"
+          },
+          "fecha_inicio": {
+            "type": "string",
+            "format": "date",
+            "title": "Fecha Inicio"
+          },
+          "fecha_fin": {
+            "type": "string",
+            "format": "date",
+            "title": "Fecha Fin"
+          },
+          "valor_asegurado": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Valor Asegurado",
+            "description": "Valor comercial asegurado"
+          },
+          "prima_mensual": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Prima Mensual",
+            "description": "Prima mensual calculada"
+          },
+          "kilometraje_emision": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Kilometraje Emision",
+            "description": "Snapshot contractual inmutable al emitir"
+          },
+          "esquema_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Esquema Id"
+          },
+          "campos_adicionales": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "boolean"
+                    }
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Campos Adicionales"
+          },
+          "deducibles": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/DeducibleCreate"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deducibles"
+          },
+          "coberturas": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/CoberturaCreate"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coberturas"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "numero_poliza",
+          "cliente_id",
+          "vehiculo_id",
+          "fecha_inicio",
+          "fecha_fin",
+          "valor_asegurado",
+          "prima_mensual",
+          "kilometraje_emision"
+        ],
+        "title": "PolizaCreate",
+        "description": "Schema para emisión de una nueva póliza.\n\nExige snapshot inmutable de kilometraje_emision y valida vigencia."
+      },
+      "PolizaResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "numero_poliza": {
+            "type": "string",
+            "title": "Numero Poliza"
+          },
+          "cliente_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Cliente Id"
+          },
+          "vehiculo_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Vehiculo Id"
+          },
+          "inspeccion_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inspeccion Id"
+          },
+          "esquema_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Esquema Id"
+          },
+          "fecha_inicio": {
+            "type": "string",
+            "format": "date",
+            "title": "Fecha Inicio"
+          },
+          "fecha_fin": {
+            "type": "string",
+            "format": "date",
+            "title": "Fecha Fin"
+          },
+          "estado": {
+            "$ref": "#/components/schemas/EstadoPoliza"
+          },
+          "valor_asegurado": {
+            "type": "string",
+            "title": "Valor Asegurado"
+          },
+          "prima_mensual": {
+            "type": "string",
+            "title": "Prima Mensual"
+          },
+          "kilometraje_emision": {
+            "type": "integer",
+            "title": "Kilometraje Emision"
+          },
+          "campos_adicionales": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "boolean"
+                    }
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Campos Adicionales"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Updated At"
+          },
+          "vehiculo": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VehiculoResponse"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "deducibles": {
+            "items": {
+              "$ref": "#/components/schemas/DeducibleResponse"
+            },
+            "type": "array",
+            "title": "Deducibles",
+            "default": []
+          },
+          "coberturas": {
+            "items": {
+              "$ref": "#/components/schemas/CoberturaResponse"
+            },
+            "type": "array",
+            "title": "Coberturas",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "numero_poliza",
+          "cliente_id",
+          "vehiculo_id",
+          "inspeccion_id",
+          "fecha_inicio",
+          "fecha_fin",
+          "estado",
+          "valor_asegurado",
+          "prima_mensual",
+          "kilometraje_emision",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "PolizaResponse",
+        "description": "Schema de respuesta completo para una póliza."
+      },
+      "PolizaUpdateEstado": {
+        "properties": {
+          "estado": {
+            "$ref": "#/components/schemas/EstadoPoliza"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "estado"
+        ],
+        "title": "PolizaUpdateEstado",
+        "description": "Schema para transición de estado de póliza."
+      },
+      "ProbarEsquemaResponse": {
+        "properties": {
+          "metodo": {
+            "type": "string",
+            "title": "Metodo"
+          },
+          "confianza": {
+            "type": "number",
+            "title": "Confianza"
+          },
+          "campos_extraidos": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Campos Extraidos"
+          },
+          "texto_completo": {
+            "type": "string",
+            "title": "Texto Completo"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "metodo",
+          "confianza",
+          "campos_extraidos",
+          "texto_completo"
+        ],
+        "title": "ProbarEsquemaResponse",
+        "description": "Resultado de prueba sin persistir."
+      },
+      "RefreshRequest": {
+        "properties": {
+          "refresh_token": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Refresh Token",
+            "description": "Refresh token para rotación o cierre de sesión"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "refresh_token"
+        ],
+        "title": "RefreshRequest",
+        "description": "Payload de rotación y revocación de sesión — refresh token."
+      },
+      "RegistrarPagoRequest": {
+        "properties": {
+          "metodo_pago": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 3,
+            "title": "Metodo Pago",
+            "description": "transferencia, tarjeta, debito_bancario"
+          },
+          "comprobante_ref": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 3,
+            "title": "Comprobante Ref"
+          },
+          "fecha_pago": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fecha Pago"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "metodo_pago",
+          "comprobante_ref"
+        ],
+        "title": "RegistrarPagoRequest"
+      },
+      "ResultadoExtraccionResponse": {
+        "properties": {
+          "metodo": {
+            "type": "string",
+            "title": "Metodo"
+          },
+          "confianza": {
+            "type": "number",
+            "title": "Confianza"
+          },
+          "texto_completo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Texto Completo"
+          },
+          "campos_extraidos": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "type": "object",
+            "title": "Campos Extraidos"
+          }
+        },
+        "type": "object",
+        "required": [
+          "metodo",
+          "confianza",
+          "campos_extraidos"
+        ],
+        "title": "ResultadoExtraccionResponse"
+      },
+      "TallerCreate": {
+        "properties": {
+          "nombre": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 2,
+            "title": "Nombre"
+          },
+          "direccion": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 5,
+            "title": "Direccion"
+          },
+          "telefono": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 5,
+            "title": "Telefono"
+          },
+          "ciudad": {
+            "type": "string",
+            "maxLength": 100,
+            "minLength": 2,
+            "title": "Ciudad"
+          },
+          "activo": {
+            "type": "boolean",
+            "title": "Activo",
+            "default": true
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "nombre",
+          "direccion",
+          "telefono",
+          "ciudad"
+        ],
+        "title": "TallerCreate",
+        "description": "Schema para registrar un nuevo taller mecánico autorizado."
+      },
+      "TallerResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "nombre": {
+            "type": "string",
+            "title": "Nombre"
+          },
+          "direccion": {
+            "type": "string",
+            "title": "Direccion"
+          },
+          "telefono": {
+            "type": "string",
+            "title": "Telefono"
+          },
+          "ciudad": {
+            "type": "string",
+            "title": "Ciudad"
+          },
+          "activo": {
+            "type": "boolean",
+            "title": "Activo"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "nombre",
+          "direccion",
+          "telefono",
+          "ciudad",
+          "activo",
+          "created_at"
+        ],
+        "title": "TallerResponse",
+        "description": "Schema de respuesta para taller mecánico."
+      },
+      "TipoPlacaEnum": {
+        "type": "string",
+        "enum": [
+          "PARTICULAR",
+          "MOTO",
+          "SERVICIO_PUBLICO",
+          "GUBERNAMENTAL"
+        ],
+        "title": "TipoPlacaEnum"
+      },
+      "TipoSiniestroEnum": {
+        "type": "string",
+        "enum": [
+          "general",
+          "robo",
+          "choque",
+          "perdida_total"
+        ],
+        "title": "TipoSiniestroEnum",
+        "description": "Categorías formales de siniestro para deducibles diferenciados (SC-2026-001)."
+      },
+      "TokenResponse": {
+        "properties": {
+          "access_token": {
+            "type": "string",
+            "title": "Access Token"
+          },
+          "refresh_token": {
+            "type": "string",
+            "title": "Refresh Token"
+          },
+          "token_type": {
+            "type": "string",
+            "title": "Token Type",
+            "default": "bearer"
+          },
+          "user": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "User"
+          }
+        },
+        "type": "object",
+        "required": [
+          "access_token",
+          "refresh_token",
+          "user"
+        ],
+        "title": "TokenResponse",
+        "description": "JWT token pair returned on successful login."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "VehiculoCreate": {
+        "properties": {
+          "placa": {
+            "type": "string",
+            "maxLength": 8,
+            "minLength": 6,
+            "title": "Placa"
+          },
+          "marca": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 2,
+            "title": "Marca"
+          },
+          "modelo": {
+            "type": "string",
+            "maxLength": 50,
+            "minLength": 2,
+            "title": "Modelo"
+          },
+          "anio": {
+            "type": "integer",
+            "maximum": 2100.0,
+            "minimum": 1900.0,
+            "title": "Anio"
+          },
+          "motor": {
+            "type": "string",
+            "maxLength": 30,
+            "minLength": 5,
+            "title": "Motor"
+          },
+          "chasis": {
+            "type": "string",
+            "maxLength": 17,
+            "minLength": 17,
+            "title": "Chasis"
+          },
+          "color": {
+            "type": "string",
+            "maxLength": 30,
+            "minLength": 3,
+            "title": "Color"
+          },
+          "cliente_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Cliente Id"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "placa",
+          "marca",
+          "modelo",
+          "anio",
+          "motor",
+          "chasis",
+          "color",
+          "cliente_id"
+        ],
+        "title": "VehiculoCreate",
+        "description": "Schema para registrar un nuevo vehículo."
+      },
+      "VehiculoResponse": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "placa": {
+            "type": "string",
+            "title": "Placa"
+          },
+          "marca": {
+            "type": "string",
+            "title": "Marca"
+          },
+          "modelo": {
+            "type": "string",
+            "title": "Modelo"
+          },
+          "anio": {
+            "type": "integer",
+            "title": "Anio"
+          },
+          "motor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motor"
+          },
+          "chasis": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chasis"
+          },
+          "color": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Color"
+          },
+          "cliente_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Cliente Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "tipo_placa": {
+            "$ref": "#/components/schemas/TipoPlacaEnum",
+            "readOnly": true
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "placa",
+          "marca",
+          "modelo",
+          "anio",
+          "cliente_id",
+          "created_at",
+          "tipo_placa"
+        ],
+        "title": "VehiculoResponse",
+        "description": "Schema de respuesta de vehículo."
+      },
+      "VehiculoUpdate": {
+        "properties": {
+          "marca": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Marca"
+          },
+          "modelo": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 50,
+                "minLength": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Modelo"
+          },
+          "anio": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 2100.0,
+                "minimum": 1900.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Anio"
+          },
+          "motor": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 30,
+                "minLength": 5
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Motor"
+          },
+          "chasis": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 17,
+                "minLength": 17
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chasis"
+          },
+          "color": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 30,
+                "minLength": 3
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Color"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "VehiculoUpdate",
+        "description": "Schema para actualizar parcialmente un vehículo (la placa no se edita)."
+      },
+      "VinculacionRequest": {
+        "properties": {
+          "identificacion": {
+            "type": "string",
+            "title": "Identificacion"
+          },
+          "codigo": {
+            "type": "string",
+            "title": "Codigo"
+          },
+          "password": {
+            "type": "string",
+            "title": "Password"
+          },
+          "password_confirmacion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Password Confirmacion"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "identificacion",
+          "codigo",
+          "password"
+        ],
+        "title": "VinculacionRequest",
+        "description": "Payload para el flujo de vinculación móvil con OTP y contraseña."
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "type": "http",
+        "scheme": "bearer"
+      }
+    }
+  }
+}
