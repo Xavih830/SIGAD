@@ -72,3 +72,13 @@
 - **Integración en Pantallas de Acceso:** Adición del banner en `LoginPage` y `AccountActivationPage`, junto a un aviso proactivo si la variable `API_BASE_URL` no fue inyectada.
 - **Suite de Pruebas:** Implementación de `test/widgets/backend_error_banner_test.dart` y certificación exitosa de todas las 153 pruebas de Flutter (`flutter test`).
 
+## [2.0.2] - 2026-10-20
+### Resolución de Pantalla en Blanco en Flutter Web y Empaquetado Local de CanvasKit
+- **Diagnóstico de Pantalla en Blanco:** Se identificó mediante inspección de consola de navegador que la política estricta de Content-Security-Policy (CSP) de Caddy y del navegador bloqueaba la carga dinámica de módulos de CanvasKit procedentes de `https://www.gstatic.com/flutter-canvaskit/...`.
+- **Empaquetado Offline Local de CanvasKit (`--no-web-resources-cdn`):** Se configuró la compilación de Flutter Web para empaquetar los binarios de CanvasKit (`canvaskit.js` y `canvaskit.wasm`) localmente en `./build/web/canvaskit/`, eliminando la dependencia externa de CDNs de Google.
+- **Plantilla de Bootstrap (`web/flutter_bootstrap.js`):** Inyección de configuración `canvasKitBaseUrl: "canvaskit/"` para que el cargador web apunte sin excepción a los recursos locales del servidor Caddy.
+- **Limpieza Automática de Service Workers y Caché (`web/index.html`):** Inclusión de script en el `<head>` que desregistra Service Workers obsoletos y vacía el `CacheStorage` del navegador para evitar que Chrome sirva bundles desactualizados de versiones previas.
+- **Ajuste de CSP en Caddyfile e index.html:** Se incorporaron los orígenes del backend local (`http://localhost:8000`) y fuentes autorizadas en `connect-src` y `script-src`.
+- **Verificación Visual:** Comprobación automatizada con navegador que certifica la renderización limpia de la interfaz de acceso de SIGAD en `http://localhost:8085` sin pantallas en blanco ni excepciones de JavaScript.
+
+

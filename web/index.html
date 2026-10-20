@@ -5,8 +5,7 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://www.gstatic.com https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://www.gstatic.com; connect-src 'self' http: https: ws: wss: https://www.gstatic.com https://fonts.gstatic.com; object-src 'none'; base-uri 'self';">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://www.gstatic.com https://fonts.gstatic.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com https://www.gstatic.com; img-src 'self' data: blob: https://www.gstatic.com; connect-src 'self' http://localhost:8000 http://127.0.0.1:8000 http: https: ws: wss: https://www.gstatic.com https://fonts.gstatic.com; object-src 'none'; base-uri 'self';">
   <meta name="description" content="SIGAD - Sistema Integral de Gestión y Análisis Documental de Pólizas Vehiculares.">
 
   <meta name="mobile-web-app-capable" content="yes">
@@ -18,6 +17,22 @@
 
   <title>SIGAD - Gestión de Pólizas Vehiculares</title>
   <link rel="manifest" href="manifest.json">
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(function(registrations) {
+        for (var i = 0; i < registrations.length; i++) {
+          registrations[i].unregister();
+        }
+      });
+    }
+    if ('caches' in window) {
+      caches.keys().then(function(names) {
+        for (var i = 0; i < names.length; i++) {
+          caches.delete(names[i]);
+        }
+      });
+    }
+  </script>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>
