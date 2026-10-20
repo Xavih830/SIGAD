@@ -191,12 +191,8 @@ def aplicar_esquema(texto: str, campos: list[dict]) -> tuple[dict, float]:
     aciertos = 0
 
     for regla in sorted(campos, key=lambda r: int(r.get("orden", 0))):
-        nombre = regla.get("nombre") or regla.get("nombre_campo")
-        patron = regla.get("regex") or regla.get("patron_regex")
-        if not nombre:
-            raise KeyError("nombre")
-        if not patron:
-            raise KeyError("regex")
+        nombre = regla["nombre"]
+        patron = regla["regex"]
         grupo = int(regla.get("grupo_captura", 1))
 
         match = re.search(patron, texto, re.IGNORECASE)

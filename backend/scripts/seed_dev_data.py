@@ -635,13 +635,13 @@ async def _seed_esquemas(session: AsyncSession) -> None:
             "descripcion": "Extracción OCR para pólizas de seguro vehicular liviano y pesado.",
             "es_activo": True,
             "campos": [
-                {"nombre": "numero_poliza", "nombre_campo": "numero_poliza", "regex": r"(?:P[OÓ]LIZA|No\.?)\s*[:#]?\s*([A-Z0-9-]+)", "tipo": "texto", "es_obligatorio": True, "requerido": True, "grupo_captura": 1, "orden": 1},
-                {"nombre": "placa", "nombre_campo": "placa", "regex": r"PLACA:\s*([A-Z]{3}-\d{3,4})", "tipo": "texto", "es_obligatorio": True, "requerido": True, "grupo_captura": 1, "orden": 2},
-                {"nombre": "marca", "nombre_campo": "marca", "regex": r"MARCA:\s*([A-Z0-9]+)", "tipo": "texto", "es_obligatorio": True, "requerido": True, "grupo_captura": 1, "orden": 3},
-                {"nombre": "modelo", "nombre_campo": "modelo", "regex": r"MODELO:\s*([A-Z0-9]+)", "tipo": "texto", "es_obligatorio": True, "requerido": True, "grupo_captura": 1, "orden": 4},
-                {"nombre": "anio", "nombre_campo": "anio", "regex": r"(?:A[ÑN]O|MODELO)\s*[:#]?\s*(\d{4})", "tipo": "entero", "es_obligatorio": False, "requerido": False, "grupo_captura": 1, "orden": 5},
-                {"nombre": "ramo", "nombre_campo": "ramo", "regex": r"RAMO:\s*([A-Z ]+)", "tipo": "texto", "es_obligatorio": False, "requerido": False, "grupo_captura": 1, "orden": 6},
-                {"nombre": "prima_neta", "nombre_campo": "prima_neta", "regex": r"PRIMA\s+NETA\s*[:$]?\s*([\d,.]+)", "tipo": "decimal", "es_obligatorio": False, "requerido": False, "grupo_captura": 1, "orden": 7},
+                {"nombre": "numero_poliza", "regex": r"(?:P[OÓ]LIZA|No\.?)\s*[:#]?\s*([A-Z0-9-]+)", "tipo": "texto", "grupo_captura": 1, "es_obligatorio": True, "orden": 1},
+                {"nombre": "placa", "regex": r"PLACA:\s*([A-Z]{3}-\d{3,4})", "tipo": "texto", "grupo_captura": 1, "es_obligatorio": True, "orden": 2},
+                {"nombre": "marca", "regex": r"MARCA:\s*([A-Z0-9]+)", "tipo": "texto", "grupo_captura": 1, "es_obligatorio": True, "orden": 3},
+                {"nombre": "modelo", "regex": r"MODELO:\s*([A-Z0-9]+)", "tipo": "texto", "grupo_captura": 1, "es_obligatorio": True, "orden": 4},
+                {"nombre": "anio", "regex": r"(?:A[ÑN]O|MODELO)\s*[:#]?\s*(\d{4})", "tipo": "numero", "grupo_captura": 1, "es_obligatorio": False, "orden": 5},
+                {"nombre": "ramo", "regex": r"RAMO:\s*([A-Z ]+)", "tipo": "texto", "grupo_captura": 1, "es_obligatorio": False, "orden": 6},
+                {"nombre": "prima_neta", "regex": r"PRIMA\s+NETA\s*[:$]?\s*([\d,.]+)", "tipo": "decimal", "grupo_captura": 1, "es_obligatorio": False, "orden": 7},
             ],
         },
         {
@@ -650,10 +650,10 @@ async def _seed_esquemas(session: AsyncSession) -> None:
             "descripcion": "Extracción OCR para pólizas de accidentes personales y vida grupal.",
             "es_activo": False,
             "campos": [
-                {"nombre": "numero_poliza", "nombre_campo": "numero_poliza", "regex": r"(?:P[OÓ]LIZA|No\.?)\s*[:#]?\s*([A-Z0-9-]+)", "tipo": "texto", "es_obligatorio": True, "requerido": True, "grupo_captura": 1, "orden": 1},
-                {"nombre": "titular", "nombre_campo": "titular", "regex": r"ASEGURADO:\s*([A-Z ]+)", "tipo": "texto", "es_obligatorio": True, "requerido": True, "grupo_captura": 1, "orden": 2},
-                {"nombre": "suma_asegurada", "nombre_campo": "suma_asegurada", "regex": r"SUMA\s+ASEGURADA\s*[:$]?\s*([\d,.]+)", "tipo": "decimal", "es_obligatorio": True, "requerido": True, "grupo_captura": 1, "orden": 3},
-                {"nombre": "beneficiario", "nombre_campo": "beneficiario", "regex": r"BENEFICIARIO:\s*([A-Z ]+)", "tipo": "texto", "es_obligatorio": False, "requerido": False, "grupo_captura": 1, "orden": 4},
+                {"nombre": "numero_poliza", "regex": r"(?:P[OÓ]LIZA|No\.?)\s*[:#]?\s*([A-Z0-9-]+)", "tipo": "texto", "grupo_captura": 1, "es_obligatorio": True, "orden": 1},
+                {"nombre": "titular", "regex": r"ASEGURADO:\s*([A-Z ]+)", "tipo": "texto", "grupo_captura": 1, "es_obligatorio": True, "orden": 2},
+                {"nombre": "suma_asegurada", "regex": r"SUMA\s+ASEGURADA\s*[:$]?\s*([\d,.]+)", "tipo": "decimal", "grupo_captura": 1, "es_obligatorio": True, "orden": 3},
+                {"nombre": "beneficiario", "regex": r"BENEFICIARIO:\s*([A-Z ]+)", "tipo": "texto", "grupo_captura": 1, "es_obligatorio": False, "orden": 4},
             ],
         },
         {
@@ -662,9 +662,9 @@ async def _seed_esquemas(session: AsyncSession) -> None:
             "descripcion": "Extracción OCR para pólizas de cobertura domiciliaria e incendios.",
             "es_activo": False,
             "campos": [
-                {"nombre": "numero_poliza", "nombre_campo": "numero_poliza", "regex": r"(?:P[OÓ]LIZA|No\.?)\s*[:#]?\s*([A-Z0-9-]+)", "tipo": "texto", "es_obligatorio": True, "requerido": True, "grupo_captura": 1, "orden": 1},
-                {"nombre": "direccion_riesgo", "nombre_campo": "direccion_riesgo", "regex": r"DIRECCI[OÓ]N\s*:\s*([A-Z0-9 -]+)", "tipo": "texto", "es_obligatorio": True, "requerido": True, "grupo_captura": 1, "orden": 2},
-                {"nombre": "valor_inmueble", "nombre_campo": "valor_inmueble", "regex": r"AVAL[UÚ]O\s*:\s*\$?([\d,.]+)", "tipo": "decimal", "es_obligatorio": True, "requerido": True, "grupo_captura": 1, "orden": 3},
+                {"nombre": "numero_poliza", "regex": r"(?:P[OÓ]LIZA|No\.?)\s*[:#]?\s*([A-Z0-9-]+)", "tipo": "texto", "grupo_captura": 1, "es_obligatorio": True, "orden": 1},
+                {"nombre": "direccion_riesgo", "regex": r"DIRECCI[OÓ]N\s*:\s*([A-Z0-9 -]+)", "tipo": "texto", "grupo_captura": 1, "es_obligatorio": True, "orden": 2},
+                {"nombre": "valor_inmueble", "regex": r"AVAL[UÚ]O\s*:\s*\$?([\d,.]+)", "tipo": "decimal", "grupo_captura": 1, "es_obligatorio": True, "orden": 3},
             ],
         },
     ]

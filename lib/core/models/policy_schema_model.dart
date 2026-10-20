@@ -15,11 +15,11 @@ class PolicySchemaFieldModel {
 
   factory PolicySchemaFieldModel.fromJson(Map<String, dynamic> json) {
     return PolicySchemaFieldModel(
-      nombre: (json['nombre'] ?? json['nombre_campo'] ?? '').toString(),
-      tipo: (json['tipo'] ?? 'texto').toString(),
-      esObligatorio: (json['es_obligatorio'] ?? json['requerido'] ?? false) as bool,
-      orden: (json['orden'] as num?)?.toInt() ?? 0,
-      formatoFecha: json['formato_fecha']?.toString(),
+      nombre: json['nombre'] as String,
+      tipo: json['tipo'] as String,
+      esObligatorio: json['es_obligatorio'] as bool,
+      orden: (json['orden'] as num).toInt(),
+      formatoFecha: json['formato_fecha'] as String?,
     );
   }
 

@@ -98,5 +98,19 @@
   - Validación completa con `flutter test` en frontend (154 pruebas unitarias y de widgets aprobadas).
   - Recompilación limpia de Flutter Web y reinicio de servicios en Docker (`sigad-worker`, `sigad-api`, `sigad-caddy`).
 
+## [2.0.4] - 2026-10-20
+### Normalización Estricta de Contratos Backend-Frontend y Eliminación de Fallbacks en Modelos
+- **Depuración de Modelos Dart (`policy_schema_model.dart` y `extraction_schema_model.dart`):**
+  - Se eliminaron los fallbacks hardcodeados (`nombre_campo`, `requerido`, conversiones a string permisivas) en `PolicySchemaFieldModel.fromJson` y `ExtractionFieldModel.fromJson`.
+  - Se restauró el tipado fuerte y canónico que consume directamente los contratos OpenAPI (`CampoPolizaDefinicion` y `CampoReglaCreate`), respetando la arquitectura del proyecto sin acoplar parches ad-hoc en la capa de presentación.
+- **Normalización Canónica en Backend (`seed_dev_data.py` y `extraccion_service.py`):**
+  - Se corrigieron las definiciones de semillas en `_seed_esquemas()` para que utilicen exclusivamente las claves oficiales de `CampoReglaCreate` (`nombre`, `regex`, `tipo`, `grupo_captura`, `es_obligatorio`, `orden`), eliminando claves obsoletas (`nombre_campo`, `requerido`) y tipando `'numero'` en lugar de `'entero'`.
+  - Se restableció el acceso estricto `regla["nombre"]` y `regla["regex"]` en `aplicar_esquema()`.
+  - Se ejecutó la migración y sanitización de datos en la tabla `esquemas_extraccion` de PostgreSQL para garantizar que el 100% de los registros almacenados cumplan con la estructura canónica.
+- **Verificación sin Pruebas Invasivas de Navegador:**
+  - Se prescindió por completo de subagentes y pruebas de navegador.
+  - Validación directa en terminal: 35 pruebas en backend (`pytest`) y 154 pruebas en frontend (`flutter test`), seguidas de la compilación de producción de Flutter Web y reinicio de contenedores Docker.
+
+
 
 
