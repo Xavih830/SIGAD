@@ -8,6 +8,7 @@ class OcrSchemaDetailPanel extends StatelessWidget {
   final bool isActivating;
   final VoidCallback onTestSchema;
   final VoidCallback onActivateVersion;
+  final VoidCallback onEditSchema;
 
   const OcrSchemaDetailPanel({
     super.key,
@@ -16,6 +17,7 @@ class OcrSchemaDetailPanel extends StatelessWidget {
     required this.isActivating,
     required this.onTestSchema,
     required this.onActivateVersion,
+    required this.onEditSchema,
   });
 
   @override
@@ -70,6 +72,11 @@ class OcrSchemaDetailPanel extends StatelessWidget {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
+                  OutlinedButton.icon(
+                    onPressed: onEditSchema,
+                    icon: const Icon(Icons.edit_outlined, size: 16),
+                    label: const Text('Editar Esquema'),
+                  ),
                   OutlinedButton.icon(
                     onPressed: onTestSchema,
                     icon: const Icon(Icons.science_outlined, size: 16),

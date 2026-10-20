@@ -97,6 +97,50 @@ class _OcrDocumentDetailCardState extends State<OcrDocumentDetailCard> {
     if (widget.document == null || _selectedExtractionSchemaId == null) return;
     final doc = widget.document!;
 
+    ExtractionSchemaListItemModel? selectedSchema;
+    for (final s in _extractionSchemas) {
+      if (s.id == _selectedExtractionSchemaId) {
+        selectedSchema = s;
+        break;
+      }
+    }
+
+    final schemaName = selectedSchema != null
+        ? '${selectedSchema.nombre} (${selectedSchema.codigo} v${selectedSchema.version})'
+        : 'el esquema seleccionado';
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: AppTheme.warningColor),
+            SizedBox(width: 8),
+            Text('Confirmar Re-extracción'),
+          ],
+        ),
+        content: Text(
+          '¿Está seguro de re-extraer el documento "${doc.nombreArchivo}" con $schemaName?\n\n'
+          'Advertencia: Si el esquema o versión actual difiere del utilizado originalmente, '
+          'esta acción aplicará las nuevas reglas y sobrescribirá los campos en pantalla, '
+          'pudiendo alterar datos previamente auditados o corregidos.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppTheme.warningColor),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: const Text('Confirmar y Re-extraer', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm != true) return;
+
     setState(() => _isReExtracting = true);
     try {
       final repo = widget.documentsRepository ?? DocumentsRepository();

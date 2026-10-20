@@ -102,8 +102,25 @@ void main() {
       expect(find.text('Póliza Automotriz 2026'), findsWidgets);
       expect(find.text('POLIZA_VEHICULO • v1'), findsOneWidget);
       expect(find.text('ACTIVO'), findsOneWidget);
+      expect(find.text('Editar Esquema'), findsOneWidget);
       expect(find.text('Probar con Documento'), findsOneWidget);
       expect(find.text('Versión Activa'), findsOneWidget);
+
+      // Abrir diálogo de edición
+      await tester.tap(find.text('Editar Esquema'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Editar Esquema: Póliza Automotriz 2026'), findsOneWidget);
+      expect(find.text('Código: POLIZA_VEHICULO • Creando Versión: 2 (Append-Only)'), findsOneWidget);
+      expect(find.text('Agregar Campo'), findsOneWidget);
+      expect(find.text('Guardar Versión 2'), findsOneWidget);
+      expect(find.text('Cancelar'), findsOneWidget);
+
+      // Cancelar diálogo
+      await tester.tap(find.text('Cancelar'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Editar Esquema: Póliza Automotriz 2026'), findsNothing);
     });
   });
 }

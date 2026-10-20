@@ -6,6 +6,7 @@ import 'package:sigad/core/theme/app_theme.dart';
 import 'package:sigad/core/widgets/error_view.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_state.dart';
+import 'package:sigad/features/web_dashboard/presentation/dialogs/schema_edit_dialog.dart';
 import 'package:sigad/features/web_dashboard/presentation/dialogs/schema_test_dialog.dart';
 import 'package:sigad/features/web_dashboard/presentation/widgets/ocr/ocr_schema_detail_panel.dart';
 import 'package:sigad/features/web_dashboard/presentation/widgets/ocr/ocr_schemas_list_panel.dart';
@@ -148,6 +149,29 @@ class _OcrSchemasTabViewState extends State<OcrSchemasTabView> {
     }
   }
 
+  Future<void> _abrirDialogoEdicion() async {
+    if (_selectedSchema == null) return;
+    final nuevoEsquema = await showDialog<ExtractionSchemaModel>(
+      context: context,
+      builder: (_) => SchemaEditDialog(
+        schema: _selectedSchema!,
+        repository: _repo,
+        authToken: _getAuthToken(),
+      ),
+    );
+
+    if (nuevoEsquema != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Nueva versión ${nuevoEsquema.version} de "${nuevoEsquema.codigo}" creada con éxito.'),
+          backgroundColor: AppTheme.successColor,
+        ),
+      );
+      await _cargarEsquemas();
+      await _seleccionarEsquema(nuevoEsquema.id);
+    }
+  }
+
   void _abrirDialogoPrueba() {
     if (_selectedSchema == null) return;
     showDialog(
@@ -191,6 +215,7 @@ class _OcrSchemasTabViewState extends State<OcrSchemasTabView> {
                   isActivating: _isActivating,
                   onTestSchema: _abrirDialogoPrueba,
                   onActivateVersion: _activarVersion,
+                  onEditSchema: _abrirDialogoEdicion,
                 ),
               ),
             ],
@@ -230,6 +255,7 @@ class _OcrSchemasTabViewState extends State<OcrSchemasTabView> {
                   isActivating: _isActivating,
                   onTestSchema: _abrirDialogoPrueba,
                   onActivateVersion: _activarVersion,
+                  onEditSchema: _abrirDialogoEdicion,
                 ),
               ),
             ),

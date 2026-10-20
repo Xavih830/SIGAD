@@ -110,7 +110,23 @@
 - **Verificación sin Pruebas Invasivas de Navegador:**
   - Se prescindió por completo de subagentes y pruebas de navegador.
   - Validación directa en terminal: 35 pruebas en backend (`pytest`) y 154 pruebas en frontend (`flutter test`), seguidas de la compilación de producción de Flutter Web y reinicio de contenedores Docker.
-
-
-
+## [2.0.5] - 2026-10-20
+### Edición Dinámica de Esquemas OCR y Diálogo de Advertencia en Re-extracción Controlada
+- **Implementación de Edición de Esquemas (`SchemaEditDialog`):**
+  - Se incorporó el botón **"Editar Esquema"** en `OcrSchemaDetailPanel`.
+  - Se construyó el componente interactivo `SchemaEditDialog`, que permite a los administradores:
+    - Modificar el nombre y descripción del esquema.
+    - Añadir nuevas reglas y campos dinámicos (`+ Agregar Campo`), configurando nombre, expresión regular, tipo de dato (`texto`, `numero`, `decimal`, `fecha`) y obligatoriedad.
+    - Editar o eliminar reglas existentes mediante el botón de papelera.
+    - Validar en tiempo real la unicidad de nombres y no vacuidad de expresiones regulares (Fail-Fast).
+  - Respetando el principio de inmutabilidad y auditoría legal del backend (Append-Only), la edición genera una nueva versión (`version = max_version + 1`) mediante `POST /api/v1/esquemas` preservando el código (`codigo`), lo que garantiza que los documentos procesados históricamente no sufran alteraciones silenciosas en sus datos extraídos.
+  - Se ofrece la opción de activar automáticamente la nueva versión tras guardar o dejarla inactiva para probarla previamente con documentos de muestra.
+- **Diálogo de Confirmación con Advertencia en Re-extracción (`_reprocesarConEsquema`):**
+  - Al solicitar una re-extracción desde la ficha de revisión documental (`OcrDocumentDetailCard`), el sistema ahora presenta un diálogo modal de confirmación con advertencia explícita.
+  - Alerta al administrador que la re-extracción aplicará la versión activa o seleccionada del esquema, lo cual sobrescribirá los campos en pantalla y podría alterar datos que ya habían sido auditados o corregidos por operadores humanos.
+- **Saneamiento en Descarga Web (`file_downloader_helper.dart`):**
+  - Se actualizó la importación condicional para utilizar `dart.library.js_interop` en lugar del deprecado `dart.library.html`, garantizando la resolución correcta de `file_downloader_web.dart` en compilaciones modernas de Flutter Web.
+- **Verificación:**
+  - 154 pruebas unitarias y de widgets aprobadas en frontend (`flutter test`).
+  - Recompilación de producción de Flutter Web.
 
