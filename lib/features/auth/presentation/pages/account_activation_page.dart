@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:sigad/core/constants/app_constants.dart';
 import 'package:sigad/core/theme/app_theme.dart';
 import 'package:sigad/core/utils/ecuadorian_id_validator.dart';
+import 'package:sigad/core/widgets/backend_error_banner.dart';
 import 'package:sigad/core/widgets/sigad_logo.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_event.dart';
@@ -126,21 +127,9 @@ class _AccountActivationPageState extends State<AccountActivationPage> {
                       ),
                       const SizedBox(height: 20),
                       if (errorMsg != null) ...[
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: AppTheme.errorColor.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: AppTheme.errorColor.withValues(alpha: 0.3)),
-                          ),
-                          child: Text(
-                            errorMsg,
-                            style: const TextStyle(
-                              color: AppTheme.errorColor,
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                        BackendErrorBanner(
+                          errorMessage: errorMsg,
+                          onRetry: _submit,
                         ),
                         const SizedBox(height: 16),
                       ],

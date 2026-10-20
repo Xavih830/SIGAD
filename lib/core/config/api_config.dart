@@ -9,6 +9,23 @@ class ApiConfig {
     _testOverrideBaseUrl = url;
   }
 
+  static bool get isConfigured {
+    if (_testOverrideBaseUrl != null && _testOverrideBaseUrl!.isNotEmpty) {
+      return true;
+    }
+    return _envBaseUrl.isNotEmpty;
+  }
+
+  static String get safeBaseUrl {
+    if (_testOverrideBaseUrl != null && _testOverrideBaseUrl!.isNotEmpty) {
+      return _testOverrideBaseUrl!;
+    }
+    if (_envBaseUrl.isNotEmpty) {
+      return _envBaseUrl;
+    }
+    return 'http://localhost:8000';
+  }
+
   static String get baseUrl {
     if (_testOverrideBaseUrl != null && _testOverrideBaseUrl!.isNotEmpty) {
       return _testOverrideBaseUrl!;

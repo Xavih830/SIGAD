@@ -60,3 +60,15 @@
 - **Certificación de Calidad:** Ejecución exitosa de la suite completa de 152 pruebas unitarias y de widgets (`flutter test`).
 - **Documentación de Nuevas Capacidades:** Creación de `docs/funcionalidades_nuevas_v2.md` con el detalle de las nuevas funcionalidades para clientes (activación con OTP, cronograma de cuotas HU-20) y administradores (esquemas OCR HU-06/07, tablas paginadas, formularios dinámicos).
 - **Diagnóstico de Ejecución Web:** Análisis del requisito de configuración fail-fast de variables de entorno (`.env.client` y `API_BASE_URL`) para la correcta inicialización de la UI en Chrome.
+
+## [2.0.1] - 2026-10-20
+### Diagnóstico de Conectividad con el Backend y Retroalimentación Visual en UI
+- **Resolución de Variables de Entorno en Docker:** Aprovisionamiento del archivo canónico `.env` en la raíz del repositorio a partir de `.env.example`, resolviendo la ausencia de la variable requerida `UPLOAD_DIR=uploads` que bloqueaba `docker compose up`.
+- **Configuración de Cliente Frontend:** Creación de `.env.client` con `API_BASE_URL=http://localhost:8000` para la comunicación del cliente Flutter con el backend FastAPI y Caddy.
+- **Componente Visual de Error de Conexión (`BackendErrorBanner`):**
+  - Implementación del widget interactivo `BackendErrorBanner` (`lib/core/widgets/backend_error_banner.dart`) que detecta fallos de conectividad, servidor no iniciado o parámetros faltantes.
+  - Ofrece instrucciones visuales claras para el usuario y desarrollador: levantar `docker compose up` y ejecutar Flutter Web con el puerto CORS autorizado (`--web-port=8085`).
+  - Incluye botón reactivo "Comprobar backend" para enviar una solicitud de verificación a `/health` y notificar inmediatamente si el backend ya está disponible.
+- **Integración en Pantallas de Acceso:** Adición del banner en `LoginPage` y `AccountActivationPage`, junto a un aviso proactivo si la variable `API_BASE_URL` no fue inyectada.
+- **Suite de Pruebas:** Implementación de `test/widgets/backend_error_banner_test.dart` y certificación exitosa de todas las 153 pruebas de Flutter (`flutter test`).
+

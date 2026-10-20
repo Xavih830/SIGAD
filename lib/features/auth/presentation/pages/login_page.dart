@@ -1,9 +1,11 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:sigad/core/config/api_config.dart';
 import 'package:sigad/core/security/app_capability.dart';
 import 'package:sigad/core/security/authorization_policy.dart';
 import 'package:sigad/core/theme/app_theme.dart';
+import 'package:sigad/core/widgets/backend_error_banner.dart';
 import 'package:sigad/core/widgets/sigad_logo.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_event.dart';
@@ -101,11 +103,33 @@ class _LoginPageState extends State<LoginPage> {
                       const SizedBox(height: 8),
                       Text('Ingresa tus credenciales para acceder a SIGAD\n(correo electrónico o cédula)', textAlign: TextAlign.center, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: AppTheme.textMuted)),
                       const SizedBox(height: 24),
-                      if (errorMsg != null) ...[
+                      if (!ApiConfig.isConfigured) ...[
                         Container(
                           padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(color: AppTheme.errorColor.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12), border: Border.all(color: AppTheme.errorColor.withValues(alpha: 0.3))),
-                          child: Row(children: [const Icon(Icons.error_outline, color: AppTheme.errorColor), const SizedBox(width: 12), Expanded(child: Text(errorMsg, style: const TextStyle(color: AppTheme.errorColor, fontWeight: FontWeight.w600, fontSize: 13)))]),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFFFFBEB),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: const Color(0xFFFDE68A)),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.info_outline, color: Color(0xFFD97706), size: 20),
+                              SizedBox(width: 10),
+                              Expanded(
+                                child: Text(
+                                  'Aviso de entorno: Ejecuta con --dart-define-from-file=.env.client para conectar con el backend.',
+                                  style: TextStyle(fontSize: 12, color: Color(0xFF92400E), fontWeight: FontWeight.w500),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                      if (errorMsg != null) ...[
+                        BackendErrorBanner(
+                          errorMessage: errorMsg,
+                          onRetry: _submit,
                         ),
                         const SizedBox(height: 16),
                       ],
