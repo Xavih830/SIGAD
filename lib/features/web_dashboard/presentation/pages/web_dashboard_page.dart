@@ -1,9 +1,7 @@
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:sigad/core/services/hive_helper.dart';
 import 'package:sigad/core/services/notifications_manager.dart';
 import 'package:sigad/core/theme/app_theme.dart';
@@ -50,6 +48,31 @@ class _WebDashboardPageState extends State<WebDashboardPage> {
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  String _getTypeLabel(String type) {
+    switch (type) {
+      case 'liviano':
+        return 'Vehículo Liviano';
+      case 'pesado':
+        return 'Vehículo Pesado';
+      default:
+        return type;
+    }
+  }
+
+  List<String> _getCoveragesForType(String policyType) {
+    return [
+      'Daños propios',
+      'Responsabilidad civil',
+      'Accidentes personales',
+      'Asistencia en carretera',
+      'Robo total',
+      if (policyType == 'pesado') ...[
+        'Carga transportada',
+        'Responsabilidad civil ampliada',
+      ],
+    ];
   }
 
   void _triggerPrint() {
@@ -294,7 +317,7 @@ class _WebDashboardPageState extends State<WebDashboardPage> {
             ),
             const SizedBox(height: 4),
             Text(
-              'Panel de control de RJ Seguros (Persistencia Local)',
+              'Panel de control de RJ Seguros',
               style: TextStyle(color: AppTheme.textMuted, fontSize: 14),
             ),
           ],
@@ -401,74 +424,77 @@ class _WebDashboardPageState extends State<WebDashboardPage> {
                   ? const Center(child: Text('No se encontraron pólizas.'))
                   : SingleChildScrollView(
                       scrollDirection: Axis.vertical,
-                      child: DataTable(
-                        headingRowColor: MaterialStateProperty.all(AppTheme.lightBg),
-                        columns: const [
-                          DataColumn(label: Text('Nro. Póliza', style: TextStyle(fontWeight: FontWeight.bold))),
-                          DataColumn(label: Text('Asegurado', style: TextStyle(fontWeight: FontWeight.bold))),
-                          DataColumn(label: Text('Placa', style: TextStyle(fontWeight: FontWeight.bold))),
-                          DataColumn(label: Text('Tipo', style: TextStyle(fontWeight: FontWeight.bold))),
-                          DataColumn(label: Text('Fin Vigencia', style: TextStyle(fontWeight: FontWeight.bold))),
-                          DataColumn(label: Text('Estado', style: TextStyle(fontWeight: FontWeight.bold))),
-                          DataColumn(label: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold))),
-                        ],
-                        rows: filteredPolicies.map((p) {
-                          return DataRow(cells: [
-                            DataCell(Text(p['number'], style: const TextStyle(fontWeight: FontWeight.bold))),
-                            DataCell(Text(p['clientName'])),
-                            DataCell(Text(p['plate'])),
-                            DataCell(Text(p['type'] == 'pesado' ? 'Pesado' : 'Liviano')),
-                            DataCell(Text(p['endDate'])),
-                            DataCell(Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: p['status'] == 'activa'
-                                    ? Colors.green.shade50
-                                    : p['status'] == 'vencida'
-                                        ? Colors.red.shade50
-                                        : Colors.grey.shade100,
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                p['status'].toString().toUpperCase(),
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: DataTable(
+                          headingRowColor: MaterialStateProperty.all(AppTheme.lightBg),
+                          columns: const [
+                            DataColumn(label: Text('Nro. Póliza', style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(label: Text('Asegurado', style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(label: Text('Placa', style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(label: Text('Tipo', style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(label: Text('Fin Vigencia', style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(label: Text('Estado', style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(label: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold))),
+                          ],
+                          rows: filteredPolicies.map((p) {
+                            return DataRow(cells: [
+                              DataCell(Text(p['number'], style: const TextStyle(fontWeight: FontWeight.bold))),
+                              DataCell(Text(p['clientName'])),
+                              DataCell(Text(p['plate'].toString().isEmpty ? '-' : p['plate'])),
+                              DataCell(Text(_getTypeLabel(p['type']))),
+                              DataCell(Text(p['endDate'])),
+                              DataCell(Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
                                   color: p['status'] == 'activa'
-                                      ? Colors.green.shade700
+                                      ? Colors.green.shade50
                                       : p['status'] == 'vencida'
-                                          ? Colors.red.shade700
-                                          : Colors.grey.shade700,
+                                          ? Colors.red.shade50
+                                          : Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(6),
                                 ),
-                              ),
-                            )),
-                            DataCell(Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.info_outline, color: AppTheme.accentColor),
-                                  tooltip: 'Detalle e Historial',
-                                  onPressed: () => _showPolicyDetailsDialog(p),
+                                child: Text(
+                                  p['status'].toString().toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: p['status'] == 'activa'
+                                        ? Colors.green.shade700
+                                        : p['status'] == 'vencida'
+                                            ? Colors.red.shade700
+                                            : Colors.grey.shade700,
+                                  ),
                                 ),
-                                IconButton(
-                                  icon: const Icon(Icons.edit_outlined, color: Colors.blue),
-                                  tooltip: 'Editar',
-                                  onPressed: () => _showPolicyFormDialog(policy: p),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.copy_outlined, color: Colors.purple),
-                                  tooltip: 'Duplicar',
-                                  onPressed: () => _duplicatePolicy(p),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.delete_outline, color: AppTheme.errorColor),
-                                  tooltip: 'Eliminar',
-                                  onPressed: () => _confirmDeletePolicy(p['number']),
-                                ),
-                              ],
-                            )),
-                          ]);
-                        }).toList(),
+                              )),
+                              DataCell(Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.info_outline, color: AppTheme.accentColor),
+                                    tooltip: 'Detalle e Historial',
+                                    onPressed: () => _showPolicyDetailsDialog(p),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.edit_outlined, color: Colors.blue),
+                                    tooltip: 'Editar',
+                                    onPressed: () => _showPolicyFormDialog(policy: p),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.copy_outlined, color: Colors.purple),
+                                    tooltip: 'Duplicar',
+                                    onPressed: () => _duplicatePolicy(p),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.delete_outline, color: AppTheme.errorColor),
+                                    tooltip: 'Eliminar',
+                                    onPressed: () => _confirmDeletePolicy(p['number']),
+                                  ),
+                                ],
+                              )),
+                            ]);
+                          }).toList(),
+                        ),
                       ),
                     ),
             ),
@@ -503,15 +529,6 @@ class _WebDashboardPageState extends State<WebDashboardPage> {
     String? selectedClientDoc = isEditing ? policy['clientDoc'] : (clients.isNotEmpty ? clients.first['id'] : null);
 
     // Coverages Setup
-    final List<String> availableCoverages = [
-      'Daños propios',
-      'Responsabilidad civil',
-      'Accidentes personales',
-      'Asistencia en carretera',
-      'Robo total',
-      'Carga transportada',
-      'Responsabilidad civil ampliada',
-    ];
     List<String> selectedCoverages = isEditing ? List<String>.from(policy['coverages']) : [];
 
     showDialog(
@@ -520,7 +537,7 @@ class _WebDashboardPageState extends State<WebDashboardPage> {
       builder: (ctx) {
         return StatefulBuilder(builder: (context, setDialogState) {
           return AlertDialog(
-            title: Text(isEditing ? 'Editar Póliza Vehicular' : 'Crear Póliza Vehicular',
+            title: Text(isEditing ? 'Editar Póliza' : 'Crear Póliza',
                 style: const TextStyle(fontWeight: FontWeight.bold)),
             content: SizedBox(
               width: 700,
@@ -535,7 +552,7 @@ class _WebDashboardPageState extends State<WebDashboardPage> {
                         TextFormField(
                           controller: numberController,
                           style: const TextStyle(color: AppTheme.textDark),
-                          decoration: const InputDecoration(labelText: 'Número de Póliza (Ej: POL-VL-2024-001)'),
+                          decoration: const InputDecoration(labelText: 'Número de Póliza (Ej: POL-2024-001)'),
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) return 'El número de póliza es requerido';
                             if (HiveHelper.policiesBox.containsKey(value.trim())) {
@@ -564,20 +581,17 @@ class _WebDashboardPageState extends State<WebDashboardPage> {
                           Expanded(
                             child: DropdownButtonFormField<String>(
                               value: type,
-                              decoration: const InputDecoration(labelText: 'Tipo de Vehículo'),
+                              decoration: const InputDecoration(labelText: 'Tipo de Póliza'),
                               items: const [
                                 DropdownMenuItem(value: 'liviano', child: Text('Vehículo Liviano')),
                                 DropdownMenuItem(value: 'pesado', child: Text('Vehículo Pesado')),
                               ],
                               onChanged: isEditing
-                                  ? null // Type cannot be modified in edit according to standard systems, or we can lock it
+                                  ? null
                                   : (v) {
                                       setDialogState(() {
                                         type = v!;
-                                        if (type == 'liviano') {
-                                          selectedCoverages.remove('Carga transportada');
-                                          selectedCoverages.remove('Responsabilidad civil ampliada');
-                                        }
+                                        selectedCoverages.clear();
                                       });
                                     },
                             ),
@@ -605,7 +619,7 @@ class _WebDashboardPageState extends State<WebDashboardPage> {
                               controller: brandController,
                               style: const TextStyle(color: AppTheme.textDark),
                               decoration: const InputDecoration(labelText: 'Marca'),
-                              validator: (v) => v!.isEmpty ? 'Campo requerido' : null,
+                              validator: (v) => (v == null || v.isEmpty) ? 'Campo requerido' : null,
                             ),
                           ),
                           const SizedBox(width: 16),
@@ -614,7 +628,7 @@ class _WebDashboardPageState extends State<WebDashboardPage> {
                               controller: modelController,
                               style: const TextStyle(color: AppTheme.textDark),
                               decoration: const InputDecoration(labelText: 'Modelo'),
-                              validator: (v) => v!.isEmpty ? 'Campo requerido' : null,
+                              validator: (v) => (v == null || v.isEmpty) ? 'Campo requerido' : null,
                             ),
                           ),
                         ],
@@ -637,7 +651,7 @@ class _WebDashboardPageState extends State<WebDashboardPage> {
                               controller: colorController,
                               style: const TextStyle(color: AppTheme.textDark),
                               decoration: const InputDecoration(labelText: 'Color'),
-                              validator: (v) => v!.isEmpty ? 'Campo requerido' : null,
+                              validator: (v) => (v == null || v.isEmpty) ? 'Campo requerido' : null,
                             ),
                           ),
                           const SizedBox(width: 16),
@@ -648,7 +662,6 @@ class _WebDashboardPageState extends State<WebDashboardPage> {
                               decoration: const InputDecoration(labelText: 'Placa (Ej: GPA-1234)'),
                               validator: (value) {
                                 if (value == null || value.trim().isEmpty) return 'Placa requerida';
-                                // Plate uniqueness for ACTIVE policies
                                 final trimmedPlate = value.trim().toUpperCase();
                                 final activePlates = HiveHelper.policiesBox.values
                                     .map((pol) => Map<String, dynamic>.from(pol))
@@ -659,7 +672,7 @@ class _WebDashboardPageState extends State<WebDashboardPage> {
                                         (!isEditing || pol['number'] != policy['number']))
                                     .toList();
                                 if (activePlates.isNotEmpty) {
-                                  return 'Ya existe una póliza activa asociada a esta placa';
+                                    return 'Ya existe una póliza activa asociada a esta placa';
                                 }
                                 return null;
                               },
@@ -737,12 +750,7 @@ class _WebDashboardPageState extends State<WebDashboardPage> {
                       const Text('Coberturas Contratadas', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                       const SizedBox(height: 8),
                       // List of coverage checkboxes
-                      ...availableCoverages.map((cov) {
-                        // Hide heavy specific coverages if type is light
-                        if (type == 'liviano' &&
-                            (cov == 'Carga transportada' || cov == 'Responsabilidad civil ampliada')) {
-                          return const SizedBox();
-                        }
+                      ..._getCoveragesForType(type).map((cov) {
                         return CheckboxListTile(
                           title: Text(cov, style: const TextStyle(fontSize: 14)),
                           value: selectedCoverages.contains(cov),
@@ -784,7 +792,7 @@ class _WebDashboardPageState extends State<WebDashboardPage> {
                         'clientDoc': selectedClient['id'],
                         'vehicleBrand': brandController.text,
                         'vehicleModel': modelController.text,
-                        'vehicleYear': int.parse(yearController.text),
+                        'vehicleYear': int.tryParse(yearController.text) ?? 0,
                         'vehicleColor': colorController.text,
                         'plate': plateController.text.toUpperCase(),
                         'coverages': selectedCoverages,
@@ -828,7 +836,7 @@ class _WebDashboardPageState extends State<WebDashboardPage> {
                         'clientDoc': selectedClient['id'],
                         'vehicleBrand': brandController.text,
                         'vehicleModel': modelController.text,
-                        'vehicleYear': int.parse(yearController.text),
+                        'vehicleYear': int.tryParse(yearController.text) ?? 0,
                         'vehicleColor': colorController.text,
                         'plate': plateController.text.toUpperCase(),
                         'type': type,
@@ -1034,7 +1042,7 @@ class _WebDashboardPageState extends State<WebDashboardPage> {
                                           return ListTile(
                                             leading: const Icon(Icons.insert_drive_file, color: Colors.red),
                                             title: Text(attachments[idx], style: const TextStyle(fontSize: 13)),
-                                            trailing: const Text('Local Path', style: TextStyle(fontSize: 11, color: AppTheme.textMuted)),
+                                            trailing: const Text('Documento', style: TextStyle(fontSize: 11, color: AppTheme.textMuted)),
                                           );
                                         },
                                       ),
@@ -1120,49 +1128,52 @@ class _WebDashboardPageState extends State<WebDashboardPage> {
                   ? const Center(child: Text('No se encontraron clientes.'))
                   : SingleChildScrollView(
                       scrollDirection: Axis.vertical,
-                      child: DataTable(
-                        headingRowColor: MaterialStateProperty.all(AppTheme.lightBg),
-                        columns: const [
-                          DataColumn(label: Text('Nombre Completo', style: TextStyle(fontWeight: FontWeight.bold))),
-                          DataColumn(label: Text('Cédula / RUC', style: TextStyle(fontWeight: FontWeight.bold))),
-                          DataColumn(label: Text('Teléfono', style: TextStyle(fontWeight: FontWeight.bold))),
-                          DataColumn(label: Text('Email', style: TextStyle(fontWeight: FontWeight.bold))),
-                          DataColumn(label: Text('Pólizas Activas', style: TextStyle(fontWeight: FontWeight.bold))),
-                          DataColumn(label: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold))),
-                        ],
-                        rows: filteredClients.map((c) {
-                          // Calculate active policy count
-                          final policyCount = HiveHelper.policiesBox.values
-                              .map((pol) => Map<String, dynamic>.from(pol))
-                              .where((pol) =>
-                                  pol['clientDoc'] == c['id'] &&
-                                  pol['status'] == 'activa' &&
-                                  pol['isDeleted'] != true)
-                              .length;
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: DataTable(
+                          headingRowColor: MaterialStateProperty.all(AppTheme.lightBg),
+                          columns: const [
+                            DataColumn(label: Text('Nombre Completo', style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(label: Text('Cédula / RUC', style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(label: Text('Teléfono', style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(label: Text('Email', style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(label: Text('Pólizas Activas', style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(label: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold))),
+                          ],
+                          rows: filteredClients.map((c) {
+                            // Calculate active policy count
+                            final policyCount = HiveHelper.policiesBox.values
+                                .map((pol) => Map<String, dynamic>.from(pol))
+                                .where((pol) =>
+                                    pol['clientDoc'] == c['id'] &&
+                                    pol['status'] == 'activa' &&
+                                    pol['isDeleted'] != true)
+                                .length;
 
-                          return DataRow(cells: [
-                            DataCell(Text(c['name'], style: const TextStyle(fontWeight: FontWeight.bold))),
-                            DataCell(Text(c['id'])),
-                            DataCell(Text(c['phone'])),
-                            DataCell(Text(c['email'])),
-                            DataCell(Text(policyCount.toString())),
-                            DataCell(Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(
-                                  icon: const Icon(Icons.account_box_outlined, color: AppTheme.accentColor),
-                                  tooltip: 'Perfil y Pólizas',
-                                  onPressed: () => _showClientProfileDialog(c),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.edit_outlined, color: Colors.blue),
-                                  tooltip: 'Editar Contacto',
-                                  onPressed: () => _showClientFormDialog(client: c),
-                                ),
-                              ],
-                            )),
-                          ]);
-                        }).toList(),
+                            return DataRow(cells: [
+                              DataCell(Text(c['name'], style: const TextStyle(fontWeight: FontWeight.bold))),
+                              DataCell(Text(c['id'])),
+                              DataCell(Text(c['phone'])),
+                              DataCell(Text(c['email'])),
+                              DataCell(Text(policyCount.toString())),
+                              DataCell(Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    icon: const Icon(Icons.account_box_outlined, color: AppTheme.accentColor),
+                                    tooltip: 'Perfil y Pólizas',
+                                    onPressed: () => _showClientProfileDialog(c),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.edit_outlined, color: Colors.blue),
+                                    tooltip: 'Editar Contacto',
+                                    onPressed: () => _showClientFormDialog(client: c),
+                                  ),
+                                ],
+                              )),
+                            ]);
+                          }).toList(),
+                        ),
                       ),
                     ),
             ),
@@ -1422,28 +1433,31 @@ class _WebDashboardPageState extends State<WebDashboardPage> {
                   ? const Center(child: Text('No se encontraron usuarios.'))
                   : SingleChildScrollView(
                       scrollDirection: Axis.vertical,
-                      child: DataTable(
-                        headingRowColor: MaterialStateProperty.all(AppTheme.lightBg),
-                        columns: const [
-                          DataColumn(label: Text('Nombre', style: TextStyle(fontWeight: FontWeight.bold))),
-                          DataColumn(label: Text('Correo electrónico', style: TextStyle(fontWeight: FontWeight.bold))),
-                          DataColumn(label: Text('Rol', style: TextStyle(fontWeight: FontWeight.bold))),
-                          DataColumn(label: Text('Estado', style: TextStyle(fontWeight: FontWeight.bold))),
-                          DataColumn(label: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold))),
-                        ],
-                        rows: filteredUsers.map((u) {
-                          return DataRow(cells: [
-                            DataCell(Text(u['name'], style: const TextStyle(fontWeight: FontWeight.bold))),
-                            DataCell(Text(u['email'])),
-                            DataCell(Text(u['role'])),
-                            DataCell(Text(u['isActive'] == true ? 'Activo' : 'Inactivo')),
-                            DataCell(IconButton(
-                              icon: const Icon(Icons.edit_outlined, color: Colors.blue),
-                              tooltip: 'Editar',
-                              onPressed: () => _showUserFormDialog(user: u),
-                            )),
-                          ]);
-                        }).toList(),
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: DataTable(
+                          headingRowColor: MaterialStateProperty.all(AppTheme.lightBg),
+                          columns: const [
+                            DataColumn(label: Text('Nombre', style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(label: Text('Correo electrónico', style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(label: Text('Rol', style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(label: Text('Estado', style: TextStyle(fontWeight: FontWeight.bold))),
+                            DataColumn(label: Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold))),
+                          ],
+                          rows: filteredUsers.map((u) {
+                            return DataRow(cells: [
+                              DataCell(Text(u['name'], style: const TextStyle(fontWeight: FontWeight.bold))),
+                              DataCell(Text(u['email'])),
+                              DataCell(Text(u['role'])),
+                              DataCell(Text(u['isActive'] == true ? 'Activo' : 'Inactivo')),
+                              DataCell(IconButton(
+                                icon: const Icon(Icons.edit_outlined, color: Colors.blue),
+                                tooltip: 'Editar',
+                                onPressed: () => _showUserFormDialog(user: u),
+                              )),
+                            ]);
+                          }).toList(),
+                        ),
                       ),
                     ),
             ),
@@ -1586,7 +1600,7 @@ class _WebDashboardPageState extends State<WebDashboardPage> {
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                   const SizedBox(height: 8),
                   const Text(
-                    'Seleccione una de las siguientes pólizas de demostración para simular la digitalización y extracción por procesamiento de texto OCR local:',
+                    'Seleccione una de las siguientes pólizas de demostración para simular la digitalización y extracción por procesamiento de texto OCR:',
                     style: TextStyle(fontSize: 13, color: AppTheme.textMuted),
                   ),
                   const SizedBox(height: 24),
@@ -1836,7 +1850,7 @@ class _WebDashboardPageState extends State<WebDashboardPage> {
                     Expanded(
                       child: DropdownButtonFormField<String>(
                         value: _ocrExtractedData!['type'],
-                        decoration: const InputDecoration(labelText: 'Tipo de Vehículo'),
+                        decoration: const InputDecoration(labelText: 'Tipo de Póliza'),
                         items: const [
                           DropdownMenuItem(value: 'liviano', child: Text('Vehículo Liviano')),
                           DropdownMenuItem(value: 'pesado', child: Text('Vehículo Pesado')),
@@ -2004,7 +2018,6 @@ class _WebDashboardPageState extends State<WebDashboardPage> {
   }
 
   Widget _buildOcrInputField(String label, String key) {
-    final conf = _ocrConfidence[key] ?? 'high';
     final val = _ocrExtractedData![key];
 
     return TextFormField(
@@ -2058,23 +2071,23 @@ class _WebDashboardPageState extends State<WebDashboardPage> {
     // Check validation of fields
     if (data['number'].toString().isEmpty ||
         data['clientDoc'].toString().isEmpty ||
-        data['plate'].toString().isEmpty ||
-        data['vehicleBrand'].toString().isEmpty ||
-        data['vehicleModel'].toString().isEmpty ||
         data['value'].toString().isEmpty ||
         data['prima'].toString().isEmpty ||
         data['startDate'].toString().isEmpty ||
-        data['endDate'].toString().isEmpty) {
+        data['endDate'].toString().isEmpty ||
+        data['plate'].toString().isEmpty ||
+        data['vehicleBrand'].toString().isEmpty ||
+        data['vehicleModel'].toString().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Por favor complete todos los campos obligatorios antes de guardar.')),
       );
       return;
     }
 
-    final double value = double.tryParse(data['value']) ?? 0.0;
-    final double prima = double.tryParse(data['prima']) ?? 0.0;
-    final int year = int.tryParse(data['vehicleYear']) ?? 2026;
-    final double tonnage = double.tryParse(data['tonnage'] ?? '0.0') ?? 0.0;
+    final double value = double.tryParse(data['value'].toString()) ?? 0.0;
+    final double prima = double.tryParse(data['prima'].toString()) ?? 0.0;
+    final int year = int.tryParse(data['vehicleYear'].toString()) ?? 2026;
+    final double tonnage = (data['type'] == 'pesado') ? (double.tryParse(data['tonnage']?.toString() ?? '0.0') ?? 0.0) : 0.0;
 
     final newPol = {
       'number': data['number'],
@@ -2193,8 +2206,9 @@ class _WebDashboardPageState extends State<WebDashboardPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildReportStatRow('Vehículos Livianos', '$lightCount ($lightPct%)'),
-                          _buildReportStatRow('Vehículos Pesados', '$heavyCount ($heavyPct%)'),
+                          _buildReportStatRow('Vehículos Livianos', '$lightCount (${lightPct.toStringAsFixed(1)}%)'),
+                          _buildReportStatRow('Vehículos Pesados', '$heavyCount (${heavyPct.toStringAsFixed(1)}%)'),
+                          const Divider(height: 12),
                           _buildReportStatRow('Total Registrados', '$totalCount pólizas'),
                         ],
                       ),

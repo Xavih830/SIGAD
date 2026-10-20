@@ -29,6 +29,28 @@ class _MobileDashboardPageState extends State<MobileDashboardPage> {
     NotificationsManager.showWelcomeNotification(widget.user['email']);
   }
 
+  String _getPolicyTypeLabel(String type) {
+    switch (type) {
+      case 'liviano':
+        return 'Vehículo Liviano';
+      case 'pesado':
+        return 'Vehículo Pesado';
+      default:
+        return 'Vehículo';
+    }
+  }
+
+  Color _getPolicyTypeColor(String type) {
+    switch (type) {
+      case 'liviano':
+        return Colors.blue;
+      case 'pesado':
+        return Colors.orange;
+      default:
+        return Colors.blue;
+    }
+  }
+
   // Get current client's policies from Hive
   List<Map<String, dynamic>> _getClientPolicies() {
     final email = widget.user['email'] as String;
@@ -226,7 +248,7 @@ class _MobileDashboardPageState extends State<MobileDashboardPage> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  'Tienes $activeCount póliza(s) vehicular(es) activa(s).',
+                  'Tienes $activeCount póliza(s) activa(s).',
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.white.withOpacity(0.9),
@@ -282,21 +304,15 @@ class _MobileDashboardPageState extends State<MobileDashboardPage> {
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                       decoration: BoxDecoration(
-                                        color: p['type'] == 'pesado'
-                                            ? Colors.orange.shade50
-                                            : Colors.blue.shade50,
+                                        color: _getPolicyTypeColor(p['type']).withOpacity(0.1),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Text(
-                                        p['type'] == 'pesado'
-                                            ? 'Vehículo Pesado'
-                                            : 'Vehículo Liviano',
+                                        _getPolicyTypeLabel(p['type']),
                                         style: TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.bold,
-                                          color: p['type'] == 'pesado'
-                                              ? Colors.orange.shade800
-                                              : AppTheme.primaryColor,
+                                          color: _getPolicyTypeColor(p['type']),
                                         ),
                                       ),
                                     ),
@@ -320,21 +336,39 @@ class _MobileDashboardPageState extends State<MobileDashboardPage> {
                                   ],
                                 ),
                                 const SizedBox(height: 12),
-                                Text(
-                                  '${p['vehicleBrand']} ${p['vehicleModel']} (${p['vehicleYear']})',
-                                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Placa: ${p['plate']}',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: AppTheme.textDark,
-                                    fontWeight: FontWeight.w500,
+                                if (p['type'] == 'liviano' || p['type'] == 'pesado') ...[
+                                  Text(
+                                    '${p['vehicleBrand']} ${p['vehicleModel']} (${p['vehicleYear']})',
+                                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                   ),
-                                ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Placa: ${p['plate']}',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: AppTheme.textDark,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ] else ...[
+                                  Text(
+                                    _getPolicyTypeLabel(p['type']),
+                                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Asegurado: ${widget.user['name']}',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      color: AppTheme.textDark,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
                                 const SizedBox(height: 12),
                                 const Divider(color: AppTheme.borderLight, height: 1),
                                 const SizedBox(height: 12),

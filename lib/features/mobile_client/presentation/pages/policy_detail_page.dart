@@ -11,6 +11,17 @@ class PolicyDetailPage extends StatelessWidget {
     required this.onReportError,
   });
 
+  String _getPolicyTypeLabel(String type) {
+    switch (type) {
+      case 'liviano':
+        return 'VEHÍCULO LIVIANO';
+      case 'pesado':
+        return 'VEHÍCULO PESADO';
+      default:
+        return 'VEHÍCULO';
+    }
+  }
+
   int _calculateDaysLeft(String endDateStr) {
     try {
       final endDate = DateTime.parse(endDateStr);
@@ -73,7 +84,7 @@ class PolicyDetailPage extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          policy['type'] == 'pesado' ? 'VEHÍCULO PESADO' : 'VEHÍCULO LIVIANO',
+                          _getPolicyTypeLabel(policy['type']),
                           style: TextStyle(
                             fontSize: 13,
                             color: Colors.white.withOpacity(0.9),
@@ -101,8 +112,6 @@ class PolicyDetailPage extends StatelessWidget {
                 ),
               ),
             ),
-            const SizedBox(height: 16),
-            
             // Section 1: Vehicle Data
             _buildSectionHeader(context, 'Datos del Vehículo', Icons.directions_car),
             Card(
@@ -110,15 +119,15 @@ class PolicyDetailPage extends StatelessWidget {
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   children: [
-                    _buildDetailRow('Marca', policy['vehicleBrand']),
+                    _buildDetailRow('Marca', policy['vehicleBrand'] ?? ''),
                     _buildDetailDivider(),
-                    _buildDetailRow('Modelo', policy['vehicleModel']),
+                    _buildDetailRow('Modelo', policy['vehicleModel'] ?? ''),
                     _buildDetailDivider(),
-                    _buildDetailRow('Año', policy['vehicleYear'].toString()),
+                    _buildDetailRow('Año', (policy['vehicleYear'] ?? '').toString()),
                     _buildDetailDivider(),
-                    _buildDetailRow('Color', policy['vehicleColor']),
+                    _buildDetailRow('Color', policy['vehicleColor'] ?? ''),
                     _buildDetailDivider(),
-                    _buildDetailRow('Placa', policy['plate']),
+                    _buildDetailRow('Placa', policy['plate'] ?? ''),
                     if (policy['type'] == 'pesado' && policy['tonnage'] != null) ...[
                       _buildDetailDivider(),
                       _buildDetailRow('Tonelaje', '${policy['tonnage']} t'),
