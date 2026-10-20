@@ -81,4 +81,22 @@
 - **Ajuste de CSP en Caddyfile e index.html:** Se incorporaron los orígenes del backend local (`http://localhost:8000`) y fuentes autorizadas en `connect-src` y `script-src`.
 - **Verificación Visual:** Comprobación automatizada con navegador que certifica la renderización limpia de la interfaz de acceso de SIGAD en `http://localhost:8085` sin pantallas en blanco ni excepciones de JavaScript.
 
+## [2.0.3] - 2026-10-20
+### Corrección del Lector OCR, Deserialización de Esquemas Dinámicos y Descarga Web Segura
+- **Corrección de Extracción OCR en Worker (`extraccion_service.py`):**
+  - Se diagnosticó que el fallo en segundo plano de las imágenes cargadas (`Documento en estado "error"`) se debía a un `KeyError: 'nombre'` en `aplicar_esquema()`. Los esquemas creados por la semilla de base de datos definían las claves como `nombre_campo` y `requerido`, mientras que el motor de extracción intentaba acceder rígidamente a `regla["nombre"]`.
+  - Se adaptó `aplicar_esquema()` para soportar transparentemente tanto `nombre` como `nombre_campo` y `regex` como `patron_regex`, manteniendo la validación Fail-Fast si ninguna de las claves está presente.
+  - Se actualizaron las semillas y los registros existentes en PostgreSQL (`esquemas_extraccion`), logrando que los documentos encolados transicionaran exitosamente a estado `completado` con campos extraídos.
+- **Resolución de Error de Tipo en Sidebar (`minified:wm is not a subtype of type 'String'`):**
+  - Al inspeccionar el detalle de los esquemas en `OcrSchemasTabView`, `ExtractionFieldModel.fromJson()` intentaba castear estrictamente campos nulos (`json['nombre'] as String`, `json['grupo_captura'] as num`), fallando en modo minificado de Dart Web.
+  - Se implementó un mapeo tolerante y seguro con valores por defecto en `ExtractionFieldModel` y `PolicySchemaFieldModel`, eliminando las excepciones de tipo en la UI.
+- **Solución al Flujo de Descargas en Flutter Web (`file_downloader_web.dart`):**
+  - Se identificó la causa de que los archivos se guardasen con nombres UUID crudos (ej. `7d4e5ea0-...`) sin extensión en la carpeta de descargas: `web.URL.revokeObjectURL(url)` se ejecutaba de forma síncrona en el mismo microtask que `anchor.click()`, impidiendo que Chromium resolviera el nombre sugerido y el tipo MIME antes de que la URL en memoria fuese destruida.
+  - Se asignó explícitamente el tipo MIME en el `BlobPropertyBag` (`application/pdf`, `image/jpeg`, `image/png`), se adjuntó temporalmente el elemento `<a>` al `document.body` y se difirió la revocación del Object URL mediante un retardo asíncrono seguro de 15 segundos con `Future.delayed()`.
+- **Certificación de Pruebas y Despliegue:**
+  - Validación completa con `pytest` en backend (35 pruebas de esquemas aprobadas).
+  - Validación completa con `flutter test` en frontend (154 pruebas unitarias y de widgets aprobadas).
+  - Recompilación limpia de Flutter Web y reinicio de servicios en Docker (`sigad-worker`, `sigad-api`, `sigad-caddy`).
+
+
 

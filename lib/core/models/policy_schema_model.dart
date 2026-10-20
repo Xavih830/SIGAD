@@ -15,11 +15,11 @@ class PolicySchemaFieldModel {
 
   factory PolicySchemaFieldModel.fromJson(Map<String, dynamic> json) {
     return PolicySchemaFieldModel(
-      nombre: json['nombre'] as String,
-      tipo: json['tipo'] as String,
-      esObligatorio: json['es_obligatorio'] as bool,
-      orden: (json['orden'] as num).toInt(),
-      formatoFecha: json['formato_fecha'] as String?,
+      nombre: (json['nombre'] ?? json['nombre_campo'] ?? '').toString(),
+      tipo: (json['tipo'] ?? 'texto').toString(),
+      esObligatorio: (json['es_obligatorio'] ?? json['requerido'] ?? false) as bool,
+      orden: (json['orden'] as num?)?.toInt() ?? 0,
+      formatoFecha: json['formato_fecha']?.toString(),
     );
   }
 
@@ -105,7 +105,8 @@ class PolicySchemaModel {
       creadoPor: json['creado_por'] as String?,
       createdAt: DateTime.parse(json['created_at'] as String),
       campos: camposList
-          .map((c) => PolicySchemaFieldModel.fromJson(c as Map<String, dynamic>))
+          .whereType<Map<String, dynamic>>()
+          .map((c) => PolicySchemaFieldModel.fromJson(c))
           .toList(),
     );
   }
