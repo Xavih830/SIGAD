@@ -68,10 +68,10 @@ class _LogoPainter extends CustomPainter {
     double w = size.width;
     double h = size.height;
     
-    path.moveTo(w * 0.5, 0);
-    path.lineTo(w * 0.9, h * 0.15);
-    path.quadraticBezierTo(w * 0.9, h * 0.6, w * 0.5, h * 0.95);
-    path.quadraticBezierTo(w * 0.1, h * 0.6, w * 0.1, h * 0.15);
+    path.moveTo(w * 0.5, h * 0.05); // Top center
+    path.lineTo(w * 0.88, h * 0.18); // Top right
+    path.quadraticBezierTo(w * 0.88, h * 0.6, w * 0.5, h * 0.92); // Right side curve to pointed bottom
+    path.quadraticBezierTo(w * 0.12, h * 0.6, w * 0.12, h * 0.18); // Pointed bottom to left curve
     path.close();
     
     canvas.drawPath(path, paint);
