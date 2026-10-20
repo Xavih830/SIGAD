@@ -75,6 +75,8 @@ class Settings(BaseSettings):
         "http://127.0.0.1",
         "http://127.0.0.1:8000",
         "http://127.0.0.1:8085",
+        "http://localhost:54804",
+        "http://127.0.0.1:54804",
     ]
 
     @model_validator(mode="after")
