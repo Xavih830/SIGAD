@@ -126,7 +126,16 @@
   - Alerta al administrador que la re-extracción aplicará la versión activa o seleccionada del esquema, lo cual sobrescribirá los campos en pantalla y podría alterar datos que ya habían sido auditados o corregidos por operadores humanos.
 - **Saneamiento en Descarga Web (`file_downloader_helper.dart`):**
   - Se actualizó la importación condicional para utilizar `dart.library.js_interop` en lugar del deprecado `dart.library.html`, garantizando la resolución correcta de `file_downloader_web.dart` en compilaciones modernas de Flutter Web.
-- **Verificación:**
-  - 154 pruebas unitarias y de widgets aprobadas en frontend (`flutter test`).
-  - Recompilación de producción de Flutter Web.
-
+## [2.0.6] - 2026-10-21
+### Soporte CORS para Loopback IPv6 y Desbloqueo de Conexión en Flutter Web
+- **Diagnóstico de Conectividad Frontend-Backend:**
+  - Se identificó que en entornos Windows modernos (10/11), Chromium resuelve `localhost` prioritariamente a la dirección de loopback IPv6 `[::1]`, enviando el encabezado de origen HTTP `Origin: http://[::1]:8085`.
+  - La configuración previa del middleware CORS de Starlette/FastAPI solo admitía explícitamente orígenes IPv4 (`localhost` y `127.0.0.1`), provocando que las solicitudes de preflight (`OPTIONS /api/v1/auth/login`) fuesen rechazadas inmediatamente con código `400 Bad Request` (`Disallowed CORS origin`), lo que disparaba la alerta de desconexión en el frontend (`BackendErrorBanner`).
+- **Ampliación de Orígenes y Patrón Regex Permisivo para Desarrollo:**
+  - En `backend/app/core/config.py`, se agregaron a `CORS_ORIGINS` las variantes IPv6 canónicas: `http://[::1]`, `http://[::1]:80`, `http://[::1]:8000` y `http://[::1]:8085`.
+  - En `backend/app/main.py`, se configuró `allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$"` para admitir de forma resiliente cualquier puerto de desarrollo local en IPv4 e IPv6 sin comprometer la seguridad en entornos de producción.
+  - Se habilitó la exposición de cabeceras (`expose_headers=["Content-Disposition"]`) para permitir al cliente web leer metadatos de descarga de archivos.
+- **Reconstrucción y Verificación de Servicios:**
+  - Reconstrucción de la imagen del contenedor `sigad-api` con `docker compose build api` y reinicio en caliente con `docker compose up -d api`.
+  - Verificación por CLI de solicitudes de preflight (`OPTIONS`) y autenticación (`POST /api/v1/auth/login`), validando respuesta `HTTP/1.1 200 OK` y cabeceras `Access-Control-Allow-Origin: http://[::1]:8085`.
+  - Identificación de credenciales canónicas de inicio de sesión de la semilla inicial para administradores: `admin@sigad.ec` / `Admin#SIGAD24`.
