@@ -90,10 +90,12 @@ plan/
 AGENTS.md
 
 
-# Ignorar archivos markdown locales/temporales excepto el README principal
+# Ignorar archivos markdown locales/temporales excepto el README principal y la documentación oficial
 *.md
 *.MD
 /!README.md
+!docs/
+!docs/**
 
 # Workflows / CI no productivos
 .github/
