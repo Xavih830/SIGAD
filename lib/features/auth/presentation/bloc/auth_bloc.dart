@@ -74,6 +74,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
         _failedAttempts = 0;
         _lockoutUntil = null;
+        await SessionVault.clearSession();
         await SessionVault.saveSession(enriched);
         emit(AuthSuccess(token: token, user: user));
       } else {
@@ -144,6 +145,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
         _failedAttempts = 0;
         _lockoutUntil = null;
+        await SessionVault.clearSession();
         await SessionVault.saveSession(enriched);
         emit(AuthSuccess(token: token, user: user));
       } else {

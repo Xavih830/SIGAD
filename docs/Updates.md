@@ -139,3 +139,17 @@
   - Reconstrucción de la imagen del contenedor `sigad-api` con `docker compose build api` y reinicio en caliente con `docker compose up -d api`.
   - Verificación por CLI de solicitudes de preflight (`OPTIONS`) y autenticación (`POST /api/v1/auth/login`), validando respuesta `HTTP/1.1 200 OK` y cabeceras `Access-Control-Allow-Origin: http://[::1]:8085`.
   - Identificación de credenciales canónicas de inicio de sesión de la semilla inicial para administradores: `admin@sigad.ec` / `Admin#SIGAD24`.
+
+## [2.0.7] - 2026-10-21
+### Persistencia Diferenciada Web/Móvil, Higiene Atómica de Sesión, Lazy Loading y Directivas Anti-Caché
+- **Persistencia Diferenciada por Plataforma (`SessionVault`):**
+  - **Servicio Web (`kIsWeb`):** Se implementó una política estricta de caducidad temporal con ventana máxima de 30 minutos (`maxWebSessionDuration = 30m`) o expiración del token JWT (`exp` claim). Tras este umbral o cierre/abandono de pestaña prolongado, la sesión se purga automáticamente y se redirige al login, mitigando riesgos de secuestro de sesión en terminales compartidas (OWASP Session Management).
+  - **Servicio Móvil (`!kIsWeb`):** Se preserva la persistencia segura y prolongada en el hardware del dispositivo (Keystore/Keychain) para maximizar el confort y la experiencia del asegurado, evitando inicios de sesión repetitivos.
+  - **Versionado de Bóveda:** Inclusión de `currentVaultVersion = 2` y sellos de tiempo (`saved_at`) para descartar de forma transparente cualquier sesión estructurada bajo esquemas o migraciones anteriores.
+- **Higiene Atómica de Sesión (`AuthBloc`):**
+  - Invocación de `await SessionVault.clearSession()` de forma previa a `saveSession()` tanto en `_onLoginSubmitted` como en `_onActivationSubmitted`, garantizando que nunca coexistan tokens huérfanos o estados inconsistentes entre inicios de sesión.
+- **Carga Perezosa (Lazy Loading) en Web Dashboard (`WebDashboardPage`):**
+  - Reemplazo de la instanciación masiva e inmediata de las 6 pestañas en `initState` por un despachador perezoso `_instantiatedTabs`.
+  - Cada pestaña (`PoliciesTabView`, `ClientsTabView`, etc.) solo se instancia y monta en el `IndexedStack` en el momento exacto en que el usuario la selecciona en el menú lateral, eliminando el bombardeo de peticiones concurrentes y previniendo carreras de carga de datos en el primer login.
+- **Directivas Anti-Caché en Caddyfile:**
+  - Configuración de matcher `@noCacheFiles` para `/`, `/index.html`, `/flutter_bootstrap.js` y `/version.json` con cabeceras `Cache-Control: no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0`, asegurando que el navegador siempre cargue el código actualizado sin requerir `Ctrl + Shift + R`.

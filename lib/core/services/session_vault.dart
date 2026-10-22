@@ -21,6 +21,9 @@ class SessionVault {
     ),
   );
 
+  static const int currentVaultVersion = 2;
+  static const Duration maxWebSessionDuration = Duration(minutes: 30);
+
   static Map<String, dynamic>? _inMemorySession;
   static final Map<String, bool> _inMemoryFlags = {};
   static bool _useInMemory = false;
@@ -54,39 +57,105 @@ class SessionVault {
 
   static Future<void> saveSession(Map<String, dynamic> sessionData) async {
     _cachedAccessToken = sessionData['access_token'] as String?;
+    final enriched = Map<String, dynamic>.from(sessionData);
+    enriched['vault_version'] = currentVaultVersion;
+    enriched['saved_at'] = DateTime.now().millisecondsSinceEpoch;
+
     if (_useInMemory) {
-      _inMemorySession = Map<String, dynamic>.from(sessionData);
+      _inMemorySession = enriched;
       return;
     }
     try {
-      final jsonStr = jsonEncode(sessionData);
+      final jsonStr = jsonEncode(enriched);
       await _storage.write(key: _sessionKey, value: jsonStr);
     } catch (e) {
       debugPrint('[SessionVault] Error al persistir en almacenamiento seguro: $e');
-      _inMemorySession = Map<String, dynamic>.from(sessionData);
+      _inMemorySession = enriched;
     }
   }
 
   static Future<Map<String, dynamic>?> getSession() async {
+    Map<String, dynamic>? session;
     if (_useInMemory) {
-      _cachedAccessToken = _inMemorySession?['access_token'] as String?;
-      return _inMemorySession;
-    }
-    try {
-      final jsonStr = await _storage.read(key: _sessionKey);
-      if (jsonStr == null || jsonStr.isEmpty) {
-        _cachedAccessToken = _inMemorySession?['access_token'] as String?;
-        return _inMemorySession;
+      session = _inMemorySession;
+    } else {
+      try {
+        final jsonStr = await _storage.read(key: _sessionKey);
+        if (jsonStr == null || jsonStr.isEmpty) {
+          session = _inMemorySession;
+        } else {
+          final decoded = jsonDecode(jsonStr);
+          session = Map<String, dynamic>.from(decoded as Map);
+        }
+      } catch (e) {
+        debugPrint('[SessionVault] Error al leer de almacenamiento seguro: $e');
+        session = _inMemorySession;
       }
-      final decoded = jsonDecode(jsonStr);
-      final map = Map<String, dynamic>.from(decoded as Map);
-      _cachedAccessToken = map['access_token'] as String?;
-      return map;
-    } catch (e) {
-      debugPrint('[SessionVault] Error al leer de almacenamiento seguro: $e');
-      _cachedAccessToken = _inMemorySession?['access_token'] as String?;
-      return _inMemorySession;
     }
+
+    if (session == null) {
+      _cachedAccessToken = null;
+      return null;
+    }
+
+    // Política de Seguridad y Confort:
+    // En Web (kIsWeb): expira estrictamente al alcanzar el límite máximo de minutos (30m) o exp JWT.
+    // En Móvil (!kIsWeb): se mantiene persistente en el dispositivo para conveniencia y confort del usuario.
+    if (kIsWeb && !_useInMemory) {
+      if (_isWebSessionExpired(session)) {
+        debugPrint('[SessionVault] Sesión Web expirada por política de seguridad y límite de tiempo.');
+        await clearSession();
+        return null;
+      }
+    }
+
+    _cachedAccessToken = session['access_token'] as String?;
+    return session;
+  }
+
+  static bool _isWebSessionExpired(Map<String, dynamic> session) {
+    // 1. Invalida sesiones de esquemas / versiones previas corruptas
+    final version = session['vault_version'];
+    if (version != null && version != currentVaultVersion) {
+      return true;
+    }
+
+    // 2. Control estricto de tiempo transcurrido desde el inicio de sesión web
+    final savedAtMs = session['saved_at'] as int?;
+    if (savedAtMs != null) {
+      final savedAt = DateTime.fromMillisecondsSinceEpoch(savedAtMs);
+      if (DateTime.now().difference(savedAt) > maxWebSessionDuration) {
+        return true;
+      }
+    }
+
+    // 3. Verificación de expiración intrínseca de claim 'exp' en el JWT
+    final token = session['access_token'] as String?;
+    if (token != null && token.isNotEmpty) {
+      final expDate = _extractJwtExpiry(token);
+      if (expDate != null && DateTime.now().toUtc().isAfter(expDate)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  static DateTime? _extractJwtExpiry(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return null;
+      var normalized = base64Url.normalize(parts[1]);
+      final payloadStr = utf8.decode(base64Url.decode(normalized));
+      final payload = jsonDecode(payloadStr) as Map<String, dynamic>;
+      if (payload.containsKey('exp') && payload['exp'] is int) {
+        return DateTime.fromMillisecondsSinceEpoch(
+          (payload['exp'] as int) * 1000,
+          isUtc: true,
+        );
+      }
+    } catch (_) {}
+    return null;
   }
 
   static Future<String?> getAccessToken() async {

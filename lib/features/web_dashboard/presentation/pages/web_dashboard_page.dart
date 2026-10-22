@@ -22,16 +22,34 @@ class WebDashboardPage extends StatefulWidget {
 class _WebDashboardPageState extends State<WebDashboardPage> {
   String _activeTab = 'policies';
   late final List<DashboardTabItem> _permittedTabs;
-  late final List<Widget> _tabWidgets;
+  final Map<String, Widget> _instantiatedTabs = {};
 
   @override
   void initState() {
     super.initState();
     _permittedTabs = DashboardTabRegistry.getPermittedTabs(widget.user);
-    _tabWidgets = _permittedTabs.map((t) => t.builder()).toList();
     if (_permittedTabs.isNotEmpty && !_permittedTabs.any((t) => t.id == _activeTab)) {
       _activeTab = _permittedTabs.first.id;
     }
+    _ensureTabLoaded(_activeTab);
+  }
+
+  void _ensureTabLoaded(String tabId) {
+    if (!_instantiatedTabs.containsKey(tabId)) {
+      for (final tab in _permittedTabs) {
+        if (tab.id == tabId) {
+          _instantiatedTabs[tabId] = tab.builder();
+          break;
+        }
+      }
+    }
+  }
+
+  void _onTabSelected(String tabId) {
+    setState(() {
+      _activeTab = tabId;
+      _ensureTabLoaded(tabId);
+    });
   }
 
   Widget _tabContent() {
@@ -46,7 +64,9 @@ class _WebDashboardPageState extends State<WebDashboardPage> {
     final activeIndex = _permittedTabs.indexWhere((t) => t.id == _activeTab);
     return IndexedStack(
       index: activeIndex >= 0 ? activeIndex : 0,
-      children: _tabWidgets,
+      children: _permittedTabs.map((tab) {
+        return _instantiatedTabs[tab.id] ?? const SizedBox.shrink();
+      }).toList(),
     );
   }
 
@@ -68,7 +88,7 @@ class _WebDashboardPageState extends State<WebDashboardPage> {
             DashboardSidebar(
               activeTab: _activeTab,
               user: widget.user,
-              onTabSelected: (tab) => setState(() => _activeTab = tab),
+              onTabSelected: _onTabSelected,
               onLogout: () => context.read<AuthBloc>().add(LogoutRequested()),
             ),
             Expanded(
