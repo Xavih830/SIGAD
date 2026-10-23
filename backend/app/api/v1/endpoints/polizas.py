@@ -1,0 +1,314 @@
+"""Polizas REST endpoints with SQL-level Anti-BOLA guards and SC-2026-001 support."""
+
+import uuid
+from collections.abc import Sequence
+from datetime import date, timedelta
+from decimal import Decimal
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
+
+from app.api.deps import check_role, get_current_user
+from app.core.constants import (
+    DEFAULT_PAGE_LIMIT,
+    DIAS_PERIODO_CUOTA_MENSUAL,
+    MAX_CUOTAS_POLIZA_ANUAL,
+    MAX_PAGE_LIMIT,
+    MIN_CUOTAS_POLIZA,
+)
+from app.core.exceptions import RecursoNoEncontradoException
+from app.db.session import get_db
+from app.domain.poliza_evaluator import (
+    validar_limite_vigencia_maxima,
+    validar_y_calcular_estado_inicial,
+)
+from app.models.cliente import Cliente
+from app.models.cobertura import Cobertura
+from app.models.deducible import Deducible, TipoSiniestroEnum
+from app.models.esquema_poliza import EsquemaPoliza
+from app.models.pago import Pago
+from app.models.poliza import Poliza
+from app.models.usuario import RolEnum, Usuario
+from app.models.vehiculo import Vehiculo
+from app.schemas.deducible import DeducibleResponse
+from app.schemas.poliza import (
+    PolizaCreate,
+    PolizaResponse,
+    PolizaUpdateEstado,
+)
+
+router = APIRouter(prefix="/polizas", tags=["Pólizas"])
+
+
+@router.post("", response_model=PolizaResponse, status_code=status.HTTP_201_CREATED)
+async def crear_poliza(
+    payload: PolizaCreate,
+    current_user: Usuario = Depends(check_role(RolEnum.ADMIN, RolEnum.AGENTE)),
+    db: AsyncSession = Depends(get_db),
+) -> Poliza:
+    """Emisión formal de póliza con snapshot inmutable de kilometraje y cálculo de estado inicial."""
+    cliente_res = await db.execute(select(Cliente).where(Cliente.id == payload.cliente_id))
+    cliente = cliente_res.scalar_one_or_none()
+    if not cliente:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Cliente con ID {payload.cliente_id} no existe.",
+        )
+
+    vehiculo_res = await db.execute(select(Vehiculo).where(Vehiculo.id == payload.vehiculo_id))
+    vehiculo = vehiculo_res.scalar_one_or_none()
+    if not vehiculo:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Vehículo con ID {payload.vehiculo_id} no existe.",
+        )
+
+    poliza_existente = await db.execute(
+        select(Poliza).where(Poliza.numero_poliza == payload.numero_poliza)
+    )
+    if poliza_existente.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Ya existe una póliza con número {payload.numero_poliza}.",
+        )
+
+    hoy = date.today()
+    estado_inicial = validar_y_calcular_estado_inicial(
+        payload.fecha_inicio, payload.fecha_fin, hoy
+    )
+
+    validar_limite_vigencia_maxima(payload.fecha_inicio, payload.fecha_fin)
+
+    if payload.esquema_id:
+        esquema_res = await db.execute(
+            select(EsquemaPoliza).where(EsquemaPoliza.id == payload.esquema_id)
+        )
+        esquema_poliza = esquema_res.scalar_one_or_none()
+        if not esquema_poliza:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Esquema de póliza con ID {payload.esquema_id} no existe.",
+            )
+        campos_dict = payload.campos_adicionales or {}
+        for regla in esquema_poliza.campos:
+            nombre_campo = regla["nombre"]
+            es_obligatorio = regla.get("es_obligatorio", False)
+            tipo_campo = regla.get("tipo", "texto")
+
+            if es_obligatorio and (nombre_campo not in campos_dict or campos_dict[nombre_campo] is None or campos_dict[nombre_campo] == ""):
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"Campo obligatorio '{nombre_campo}' requerido por el esquema '{esquema_poliza.codigo}' no fue suministrado.",
+                )
+
+            if nombre_campo in campos_dict and campos_dict[nombre_campo] is not None:
+                val = campos_dict[nombre_campo]
+                if tipo_campo in ("numero", "entero"):
+                    if not isinstance(val, int) and not (isinstance(val, str) and val.isdigit()):
+                        raise HTTPException(
+                            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                            detail=f"El campo '{nombre_campo}' debe ser de tipo numérico entero.",
+                        )
+                elif tipo_campo == "decimal":
+                    try:
+                        float(val)
+                    except (ValueError, TypeError):
+                        raise HTTPException(
+                            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                            detail=f"El campo '{nombre_campo}' debe ser de tipo decimal.",
+                        ) from None
+                elif tipo_campo == "booleano":
+                    if not isinstance(val, bool) and str(val).lower() not in ("true", "false", "1", "0"):
+                        raise HTTPException(
+                            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                            detail=f"El campo '{nombre_campo}' debe ser de tipo booleano.",
+                        )
+
+    poliza = Poliza(
+        numero_poliza=payload.numero_poliza,
+        cliente_id=payload.cliente_id,
+        vehiculo_id=payload.vehiculo_id,
+        inspeccion_id=payload.inspeccion_id,
+        esquema_id=payload.esquema_id,
+        fecha_inicio=payload.fecha_inicio,
+        fecha_fin=payload.fecha_fin,
+        estado=estado_inicial,
+        valor_asegurado=payload.valor_asegurado,
+        prima_mensual=payload.prima_mensual,
+        kilometraje_emision=payload.kilometraje_emision,
+        campos_adicionales=payload.campos_adicionales,
+    )
+    db.add(poliza)
+    await db.flush()
+
+    if payload.deducibles:
+        for d in payload.deducibles:
+            deducible = Deducible(
+                poliza_id=poliza.id,
+                tipo_siniestro=d.tipo_siniestro,
+                porcentaje_valor=d.porcentaje_valor,
+                monto_minimo_usd=d.monto_minimo_usd,
+            )
+            db.add(deducible)
+    else:
+        db.add(
+            Deducible(
+                poliza_id=poliza.id,
+                tipo_siniestro=TipoSiniestroEnum.GENERAL,
+                porcentaje_valor=Decimal("10.00"),
+                monto_minimo_usd=Decimal("200.00"),
+            )
+        )
+
+    if payload.coberturas:
+        for c in payload.coberturas:
+            cobertura = Cobertura(
+                poliza_id=poliza.id,
+                nombre=c.nombre,
+                monto=c.monto,
+            )
+            db.add(cobertura)
+
+    dias_totales = (payload.fecha_fin - payload.fecha_inicio).days
+    num_cuotas = max(
+        MIN_CUOTAS_POLIZA,
+        min(MAX_CUOTAS_POLIZA_ANUAL, round(dias_totales / DIAS_PERIODO_CUOTA_MENSUAL)),
+    )
+    for i in range(MIN_CUOTAS_POLIZA, num_cuotas + 1):
+        vencimiento = payload.fecha_inicio + timedelta(days=DIAS_PERIODO_CUOTA_MENSUAL * (i - 1))
+        cuota = Pago(
+            poliza_id=poliza.id,
+            numero_cuota=i,
+            monto_usd=payload.prima_mensual,
+            fecha_vencimiento=vencimiento,
+            estado="pendiente",
+        )
+        db.add(cuota)
+
+    await db.commit()
+    stmt = (
+        select(Poliza)
+        .options(
+            selectinload(Poliza.vehiculo),
+            selectinload(Poliza.deducibles),
+            selectinload(Poliza.coberturas),
+        )
+        .where(Poliza.id == poliza.id)
+    )
+    result = await db.execute(stmt)
+    return result.scalar_one()
+
+
+@router.get("", response_model=list[PolizaResponse])
+async def listar_polizas(
+    skip: int = Query(0, ge=0, description="Número de registros a omitir."),
+    limit: int = Query(
+        DEFAULT_PAGE_LIMIT,
+        ge=1,
+        le=MAX_PAGE_LIMIT,
+        description="Límite máximo de registros a retornar.",
+    ),
+    current_user: Usuario = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Sequence[Poliza]:
+    """Listar pólizas con paginación y protección Anti-BOLA estricta a nivel de consulta SQL."""
+    stmt = (
+        select(Poliza)
+        .options(
+            selectinload(Poliza.vehiculo),
+            selectinload(Poliza.deducibles),
+            selectinload(Poliza.coberturas),
+        )
+    )
+
+    if current_user.rol == RolEnum.CLIENTE:
+        stmt = stmt.join(Cliente, Poliza.cliente_id == Cliente.id).where(
+            Cliente.usuario_id == current_user.id
+        )
+
+    stmt = stmt.order_by(Poliza.created_at.desc()).offset(skip).limit(limit)
+    result = await db.execute(stmt)
+    return result.scalars().all()
+
+
+@router.get("/{id}", response_model=PolizaResponse)
+async def obtener_poliza(
+    id: uuid.UUID,
+    current_user: Usuario = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Poliza:
+    """Detalle de una póliza con Anti-BOLA en SQL."""
+    stmt = (
+        select(Poliza)
+        .options(
+            selectinload(Poliza.vehiculo),
+            selectinload(Poliza.deducibles),
+            selectinload(Poliza.coberturas),
+        )
+        .where(Poliza.id == id)
+    )
+
+    if current_user.rol == RolEnum.CLIENTE:
+        stmt = stmt.join(Cliente, Poliza.cliente_id == Cliente.id).where(
+            Cliente.usuario_id == current_user.id
+        )
+
+    result = await db.execute(stmt)
+    poliza = result.scalar_one_or_none()
+    if not poliza:
+        raise RecursoNoEncontradoException("Recurso no encontrado.")
+    return poliza
+
+
+@router.get("/{id}/deducibles", response_model=list[DeducibleResponse])
+async def consultar_deducibles(
+    id: uuid.UUID,
+    current_user: Usuario = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> Sequence[Deducible]:
+    stmt_pol = select(Poliza.id).where(Poliza.id == id)
+    if current_user.rol == RolEnum.CLIENTE:
+        stmt_pol = stmt_pol.join(Cliente, Poliza.cliente_id == Cliente.id).where(
+            Cliente.usuario_id == current_user.id
+        )
+
+    poliza_valida = (await db.execute(stmt_pol)).scalar_one_or_none()
+    if not poliza_valida:
+        raise RecursoNoEncontradoException("Recurso no encontrado.")
+
+    stmt = select(Deducible).where(Deducible.poliza_id == id)
+    result = await db.execute(stmt)
+    return result.scalars().all()
+
+
+@router.patch("/{id}/estado", response_model=PolizaResponse)
+async def actualizar_estado_poliza(
+    id: uuid.UUID,
+    payload: PolizaUpdateEstado,
+    current_user: Usuario = Depends(check_role(RolEnum.ADMIN, RolEnum.AGENTE)),
+    db: AsyncSession = Depends(get_db),
+) -> Poliza:
+    """Actualizar estado de póliza. Dispara triggers de auditoría en PostgreSQL."""
+    stmt = (
+        select(Poliza)
+        .options(
+            selectinload(Poliza.vehiculo),
+            selectinload(Poliza.deducibles),
+            selectinload(Poliza.coberturas),
+        )
+        .where(Poliza.id == id)
+    )
+    result = await db.execute(stmt)
+    poliza = result.scalar_one_or_none()
+    if not poliza:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Póliza no encontrada.",
+        )
+
+    poliza.estado = payload.estado
+    await db.commit()
+    await db.refresh(poliza)
+    return poliza
