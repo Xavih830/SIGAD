@@ -1,0 +1,37 @@
+name: sigad
+description: "Sistema Integral de Gestión de Asegurados (SIGAD) - RJ Seguros"
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.11.5
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  flutter_bloc: ^9.1.1
+  equatable: ^2.0.8
+  flutter_secure_storage: ^9.2.4
+  shared_preferences: ^2.5.2
+  flutter_local_notifications: ^22.3.1
+  url_launcher: ^6.3.3
+  intl: ^0.20.2
+  http: ^1.2.2
+  crypto: ^3.0.7
+  web: ^1.1.1
+  http_parser: ^4.1.2
+  timezone: ^0.11.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+  mocktail: ^1.0.5
+
+flutter:
+  uses-material-design: true
+
