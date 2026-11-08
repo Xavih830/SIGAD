@@ -12,3 +12,9 @@
 
 # SharedPreferences
 -keep class io.flutter.plugins.sharedpreferences.** { *; }
+
+# Play Core SplitInstall & SplitCompat (Flutter Deferred Components)
+-dontwarn com.google.android.play.core.splitcompat.**
+-dontwarn com.google.android.play.core.splitinstall.**
+-dontwarn com.google.android.play.core.tasks.**
+-dontwarn io.flutter.embedding.engine.deferredcomponents.**
