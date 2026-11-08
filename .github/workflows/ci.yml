@@ -30,6 +30,11 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+      mailpit:
+        image: axllent/mailpit:latest
+        ports:
+          - 1025:1025
+          - 8025:8025
 
     steps:
       - name: Checkout Repository
@@ -68,6 +73,8 @@ jobs:
           DATABASE_URL: postgresql+asyncpg://sigad:sigad_dev_2024@localhost:5432/sigad_db
           DATABASE_SYNC_URL: postgresql://sigad:sigad_dev_2024@localhost:5432/sigad_db
         run: |
+          # Crear base de datos de pruebas si no existe
+          python -c "import psycopg2; conn = psycopg2.connect(dbname='sigad_db', user='sigad', password='sigad_dev_2024', host='localhost', port=5432); conn.autocommit = True; cur = conn.cursor(); cur.execute('SELECT 1 FROM pg_database WHERE datname=\'sigad_test_db\''); not cur.fetchone() and cur.execute('CREATE DATABASE sigad_test_db OWNER sigad'); cur.close(); conn.close(); print('sigad_test_db verificada')"
           cd backend
           alembic upgrade head
           alembic downgrade base && alembic upgrade head

@@ -81,6 +81,8 @@ scratch/
 # 5. Agentes de IA, Planes, Workflows & Documentación Operativa
 # ==============================================================================
 .agents/
+!.agents/rules/
+!.agents/rules/code_smells_config.yml
 .gemini/
 .desloppify/
 .codegraph*/
