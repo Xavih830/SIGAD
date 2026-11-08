@@ -1,34 +1,20 @@
-name: SIGAD CI Pipeline
+name: SIGAD CI & Deployment Pipeline
 
 on:
   push:
-    branches: [ main, v2, Sprint1 ]
+    branches: [ main ]
     tags: [ 'v*.*.*' ]
   pull_request:
-    branches: [ main, v2 ]
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  lint-backend:
-    name: Backend Linting & Style Verification
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-
-      - name: Install Ruff
-        run: pip install ruff
-
-      - name: Ruff Check
-        run: ruff check backend
-
-  backend-test:
-    name: Backend Test Suite & Migrations
-    needs: lint-backend
+  backend-validation:
+    name: Backend Lint, Test Suite & OpenAPI Drift
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -55,6 +41,11 @@ jobs:
           python-version: '3.12'
           cache: 'pip'
           cache-dependency-path: 'backend/requirements.txt'
+
+      - name: Lint Backend with Ruff
+        run: |
+          pip install ruff
+          ruff check backend
 
       - name: Install System Dependencies (Tesseract OCR)
         run: |
@@ -86,73 +77,13 @@ jobs:
           cd backend
           PYTHONPATH=. pytest tests/ -v --cov=app --cov-report=term-missing
 
-  export-openapi:
-    name: Export OpenAPI Contract & Verify Drift
-    needs: lint-backend
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-          cache: 'pip'
-          cache-dependency-path: 'backend/requirements.txt'
-
-      - name: Install Python Dependencies
-        run: |
-          cd backend
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-
-      - name: Export OpenAPI Specification
+      - name: Verify OpenAPI Schema Drift
         run: |
           python backend/scripts/export_openapi.py
           git diff --exit-code openapi.json
 
-      - name: Upload OpenAPI Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: openapi-spec
-          path: openapi.json
-          retention-days: 1
-
-  generate-client:
-    name: Verify Client Models & OpenAPI Drift
-    needs: export-openapi
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v4
-
-      - name: Download OpenAPI Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: openapi-spec
-
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
-          cache: 'pip'
-          cache-dependency-path: 'backend/requirements.txt'
-
-      - name: Install Test Dependencies
-        run: |
-          cd backend
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
-          pip install pytest pytest-asyncio
-
-      - name: Verify Client Generation & OpenAPI Drift
-        run: |
-          cd backend
-          PYTHONPATH=. pytest tests/unit/test_quality/test_client_generation_drift.py tests/unit/test_quality/test_openapi_drift.py -v
-
-  flutter-test:
-    name: Flutter Web & Mobile Client Verification
+  flutter-validation:
+    name: Flutter Static Analysis & Test Suite
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -179,10 +110,10 @@ jobs:
       - name: Run Flutter Test Suite
         run: flutter test --coverage
 
-  publish-ghcr:
-    name: Build & Publish Container Image to GHCR
-    needs: [backend-test, generate-client, flutter-test]
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v'))
+  build-backend-image:
+    name: Build & Publish Backend Image to GHCR
+    needs: [backend-validation, flutter-validation]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -207,11 +138,10 @@ jobs:
         with:
           images: ghcr.io/${{ github.repository_owner }}/sigadbackend
           tags: |
-            type=semver,pattern={{version}}
             type=sha
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=latest
 
-      - name: Build and push Docker image
+      - name: Build and push Docker image with Cache
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -219,3 +149,120 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-frontend-and-apk:
+    name: Build Flutter Web & Android APK
+    needs: [backend-validation, flutter-validation]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Build Flutter Web Release
+        run: |
+          flutter build web --release \
+            --no-wasm-dry-run \
+            --pwa-strategy=none \
+            --dart-define=API_BASE_URL=${{ secrets.PROD_API_BASE_URL || 'https://www.sigad.duckdns.org' }}
+
+      - name: Build Android APK Release
+        run: flutter build apk --release
+
+      - name: Package Web & APK Clean Bundle
+        run: |
+          mkdir -p build/web/descargas
+          cp build/app/outputs/flutter-apk/app-release.apk build/web/descargas/sigad.apk
+          cp build/app/outputs/flutter-apk/app-release.apk build/web/descargas/app-release.apk
+          tar -czf /tmp/frontend-bundle.tar.gz -C build web
+
+      - name: Upload Frontend & APK Bundle Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-bundle
+          path: /tmp/frontend-bundle.tar.gz
+          retention-days: 1
+
+  deploy-to-gcp:
+    name: Zero-Waste Deploy to Google Cloud VPC
+    needs: [build-backend-image, build-frontend-and-apk]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Download Frontend & APK Bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-bundle
+          path: /tmp
+
+      - name: Deploy to GCP VM via SSH
+        env:
+          GCP_VM_HOST: ${{ secrets.GCP_VM_HOST }}
+          GCP_VM_USER: ${{ secrets.GCP_VM_USER }}
+          GCP_SSH_PRIVATE_KEY: ${{ secrets.GCP_SSH_PRIVATE_KEY }}
+          GCP_DEPLOY_DIR: ${{ secrets.GCP_DEPLOY_DIR || '/opt/sigad' }}
+          GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN || secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -z "$GCP_VM_HOST" ] || [ -z "$GCP_SSH_PRIVATE_KEY" ] || [ -z "$GCP_VM_USER" ]; then
+            echo "::warning::Secretos de conexion a GCP (GCP_VM_HOST, GCP_VM_USER, GCP_SSH_PRIVATE_KEY) no configurados en GitHub Secrets. Se omite el despliegue remoto."
+            exit 0
+          fi
+
+          mkdir -p ~/.ssh
+          echo "$GCP_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H "$GCP_VM_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+          echo "==> Transfiriendo bundle de frontend, APK y configuraciones a la VM ($GCP_VM_HOST)..."
+          ssh -o StrictHostKeyChecking=no "$GCP_VM_USER@$GCP_VM_HOST" "mkdir -p $GCP_DEPLOY_DIR"
+          scp -o StrictHostKeyChecking=no /tmp/frontend-bundle.tar.gz "$GCP_VM_USER@$GCP_VM_HOST:/tmp/frontend-bundle.tar.gz"
+          scp -o StrictHostKeyChecking=no docker-compose.yml Caddyfile "$GCP_VM_USER@$GCP_VM_HOST:$GCP_DEPLOY_DIR/"
+
+          echo "==> Ejecutando despliegue de bajo consumo en el servidor remoto..."
+          ssh -o StrictHostKeyChecking=no "$GCP_VM_USER@$GCP_VM_HOST" "bash -s" << EOF
+            set -euo pipefail
+            cd "$GCP_DEPLOY_DIR"
+
+            # 1. Descomprimir el frontend estatico y APK limpio en build/web
+            rm -rf build/web
+            tar -xzf /tmp/frontend-bundle.tar.gz -C "$GCP_DEPLOY_DIR"
+            rm -f /tmp/frontend-bundle.tar.gz
+
+            # 2. Autenticar Docker con GHCR si se definio token de acceso
+            if [ -n "$GHCR_PULL_TOKEN" ]; then
+              echo "$GHCR_PULL_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+            fi
+
+            # 3. Descargar imagenes pre-compiladas desde GHCR (cero carga de compilacion en VM)
+            docker compose pull api worker
+
+            # 4. Levantar servicios y ejecutar migraciones
+            docker compose up -d --remove-orphans
+
+            # 5. Reiniciar Caddy para recargar el front web y descargas
+            docker compose restart caddy
+
+            # 6. Limpieza radical en el VPC (remover imagenes huerfanas para cuidar el disco)
+            docker image prune -f
+            echo "==> Despliegue en GCP completado exitosamente sin residuos en disco."
+          EOF

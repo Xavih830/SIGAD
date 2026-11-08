@@ -46,8 +46,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      mailpit:
-        condition: service_healthy
     networks:
       - sigad_public
       - sigad_internal
@@ -95,6 +93,7 @@ services:
       - ACME_EMAIL=${ACME_EMAIL:-admin@localhost}
     ports:
       - "80:80"
+      - "443:443"
     healthcheck:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:2019/config/ || exit 1"]
       interval: 10s
@@ -103,7 +102,7 @@ services:
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./build/web:/srv/flutter_web:ro
-      - downloads_data:/srv/downloads
+      - ./build/web:/srv/downloads:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
@@ -116,25 +115,6 @@ services:
           memory: 150M
           cpus: "0.5"
 
-  mailpit:
-    image: axllent/mailpit:latest
-    container_name: sigad-mailpit
-    restart: always
-    ports:
-      - "127.0.0.1:1025:1025"
-      - "127.0.0.1:8025:8025"
-    healthcheck:
-      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8025/ || exit 1"]
-      interval: 10s
-      timeout: 3s
-      retries: 3
-    networks:
-      - sigad_internal
-    deploy:
-      resources:
-        limits:
-          memory: 100M
-          cpus: "0.25"
 
 networks:
   sigad_public:
@@ -147,4 +127,3 @@ volumes:
   uploads_data:
   caddy_data:
   caddy_config:
-  downloads_data:
