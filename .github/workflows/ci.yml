@@ -42,6 +42,10 @@ jobs:
           cache: 'pip'
           cache-dependency-path: 'backend/requirements.txt'
 
+      - name: Configure Test Environment Variables (.env)
+        run: |
+          cp .env.example .env
+
       - name: Lint Backend with Ruff
         run: |
           pip install ruff
