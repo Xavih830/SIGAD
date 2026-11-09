@@ -13,8 +13,53 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  changes:
+    name: Detect Changed Components
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      infra: ${{ steps.filter.outputs.infra }}
+      shared: ${{ steps.filter.outputs.shared }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Evaluate Path Filters
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - 'Dockerfile'
+              - '.dockerignore'
+              - '.env.example'
+              - 'openapi.json'
+              - '.agents/rules/**'
+            frontend:
+              - 'lib/**'
+              - 'test/**'
+              - 'web/**'
+              - 'android/**'
+              - 'pubspec.yaml'
+              - 'pubspec.lock'
+              - 'analysis_options.yaml'
+              - '.env.client.example'
+            infra:
+              - 'Caddyfile'
+              - 'docker-compose.yml'
+            shared:
+              - '.github/workflows/ci.yml'
+              - '.gitignore'
+
   backend-validation:
     name: Backend Lint, Test Suite & OpenAPI Drift
+    needs: changes
+    if: ${{ needs.changes.outputs.backend == 'true' || needs.changes.outputs.shared == 'true' }}
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -73,13 +118,10 @@ jobs:
           DATABASE_URL: postgresql+asyncpg://sigad:sigad_dev_2024@localhost:5432/sigad_db
           DATABASE_SYNC_URL: postgresql://sigad:sigad_dev_2024@localhost:5432/sigad_db
         run: |
-          # Crear base de datos de pruebas si no existe
           python -c "import psycopg2; conn = psycopg2.connect(dbname='sigad_db', user='sigad', password='sigad_dev_2024', host='localhost', port=5432); conn.autocommit = True; cur = conn.cursor(); cur.execute('SELECT 1 FROM pg_database WHERE datname=\'sigad_test_db\''); not cur.fetchone() and cur.execute('CREATE DATABASE sigad_test_db OWNER sigad'); cur.close(); conn.close(); print('sigad_test_db verificada')"
           cd backend
-          # Migrar sigad_db y verificar ciclo
           alembic upgrade head
           alembic downgrade base && alembic upgrade head
-          # Migrar sigad_test_db para aislar suite de pruebas de integracion
           DATABASE_SYNC_URL=postgresql://sigad:sigad_dev_2024@localhost:5432/sigad_test_db alembic upgrade head
 
       - name: Execute Backend Test Suite
@@ -98,6 +140,8 @@ jobs:
 
   flutter-validation:
     name: Flutter Static Analysis & Test Suite
+    needs: changes
+    if: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.shared == 'true' }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -126,8 +170,13 @@ jobs:
 
   build-backend-image:
     name: Build & Publish Backend Image to GHCR
-    needs: [backend-validation, flutter-validation]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [changes, backend-validation]
+    if: |
+      always() &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      (needs.changes.outputs.backend == 'true' || needs.changes.outputs.shared == 'true') &&
+      needs.backend-validation.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -168,8 +217,13 @@ jobs:
 
   build-frontend-and-apk:
     name: Build Flutter Web & Android APK
-    needs: [backend-validation, flutter-validation]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [changes, flutter-validation]
+    if: |
+      always() &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      (needs.changes.outputs.frontend == 'true' || needs.changes.outputs.shared == 'true') &&
+      needs.flutter-validation.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
@@ -215,18 +269,24 @@ jobs:
 
   deploy-to-gcp:
     name: Zero-Waste Deploy to Google Cloud VPC
-    needs: [build-backend-image, build-frontend-and-apk]
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [changes, backend-validation, flutter-validation, build-backend-image, build-frontend-and-apk]
+    if: |
+      always() &&
+      github.event_name == 'push' &&
+      github.ref == 'refs/heads/main' &&
+      !contains(needs.*.result, 'failure') &&
+      !contains(needs.*.result, 'cancelled')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Download Frontend & APK Bundle
+      - name: Download Frontend & APK Bundle (if built)
         uses: actions/download-artifact@v4
         with:
           name: frontend-bundle
           path: /tmp
+        continue-on-error: true
 
       - name: Deploy to GCP VM via SSH
         env:
@@ -235,9 +295,12 @@ jobs:
           GCP_SSH_PRIVATE_KEY: ${{ secrets.GCP_SSH_PRIVATE_KEY }}
           GCP_DEPLOY_DIR: ${{ secrets.GCP_DEPLOY_DIR || '/opt/sigad' }}
           GHCR_PULL_TOKEN: ${{ secrets.GHCR_PULL_TOKEN || secrets.GITHUB_TOKEN }}
+          BACKEND_CHANGED: ${{ needs.changes.outputs.backend == 'true' || needs.changes.outputs.shared == 'true' }}
+          FRONTEND_CHANGED: ${{ needs.changes.outputs.frontend == 'true' || needs.changes.outputs.shared == 'true' }}
+          INFRA_CHANGED: ${{ needs.changes.outputs.infra == 'true' || needs.changes.outputs.shared == 'true' }}
         run: |
           if [ -z "$GCP_VM_HOST" ] || [ -z "$GCP_SSH_PRIVATE_KEY" ] || [ -z "$GCP_VM_USER" ]; then
-            echo "::warning::Secretos de conexion a GCP (GCP_VM_HOST, GCP_VM_USER, GCP_SSH_PRIVATE_KEY) no configurados en GitHub Secrets. Se omite el despliegue remoto."
+            echo "::warning::Secretos de conexion a GCP no configurados. Se omite el despliegue."
             exit 0
           fi
 
@@ -246,37 +309,49 @@ jobs:
           chmod 600 ~/.ssh/id_rsa
           ssh-keyscan -H "$GCP_VM_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
-          echo "==> Transfiriendo bundle de frontend, APK y configuraciones a la VM ($GCP_VM_HOST)..."
+          echo "==> Sincronizando archivos base con el servidor remoto ($GCP_VM_HOST)..."
           ssh -o StrictHostKeyChecking=no "$GCP_VM_USER@$GCP_VM_HOST" "mkdir -p $GCP_DEPLOY_DIR"
-          scp -o StrictHostKeyChecking=no /tmp/frontend-bundle.tar.gz "$GCP_VM_USER@$GCP_VM_HOST:/tmp/frontend-bundle.tar.gz"
           scp -o StrictHostKeyChecking=no docker-compose.yml Caddyfile "$GCP_VM_USER@$GCP_VM_HOST:$GCP_DEPLOY_DIR/"
 
-          echo "==> Ejecutando despliegue de bajo consumo en el servidor remoto..."
+          # Transferir el bundle de frontend solo si fue generado en esta ejecucion
+          if [ -f "/tmp/frontend-bundle.tar.gz" ]; then
+            echo "==> Transfiriendo nuevo bundle de Flutter Web y APK Android..."
+            scp -o StrictHostKeyChecking=no /tmp/frontend-bundle.tar.gz "$GCP_VM_USER@$GCP_VM_HOST:/tmp/frontend-bundle.tar.gz"
+          fi
+
+          echo "==> Ejecutando orquestacion inteligente en la VM..."
           ssh -o StrictHostKeyChecking=no "$GCP_VM_USER@$GCP_VM_HOST" "bash -s" << EOF
             set -euo pipefail
             cd "$GCP_DEPLOY_DIR"
 
-            # 1. Descomprimir el frontend estatico y APK limpio en build/web
-            mkdir -p build
-            rm -rf build/web
-            tar -xzf /tmp/frontend-bundle.tar.gz -C "$GCP_DEPLOY_DIR/build"
-            rm -f /tmp/frontend-bundle.tar.gz
-
-            # 2. Autenticar Docker con GHCR si se definio token de acceso
-            if [ -n "$GHCR_PULL_TOKEN" ]; then
-              echo "$GHCR_PULL_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+            # 1. Si llego nuevo bundle web, extraerlo en build/web
+            if [ -f "/tmp/frontend-bundle.tar.gz" ]; then
+              echo "==> Descomprimiendo nueva version de Flutter Web y APK Android..."
+              mkdir -p build
+              rm -rf build/web
+              tar -xzf /tmp/frontend-bundle.tar.gz -C "$GCP_DEPLOY_DIR/build"
+              rm -f /tmp/frontend-bundle.tar.gz
             fi
 
-            # 3. Descargar imagenes pre-compiladas desde GHCR (cero carga de compilacion en VM)
-            docker compose pull api worker
+            # 2. Si cambio el Backend, descargar imagen actualizada de GHCR
+            if [ "$BACKEND_CHANGED" = "true" ]; then
+              echo "==> Descargando nuevas imagenes de Backend desde GHCR..."
+              if [ -n "$GHCR_PULL_TOKEN" ]; then
+                echo "$GHCR_PULL_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+              fi
+              docker compose pull api worker
+            fi
 
-            # 4. Levantar servicios y ejecutar migraciones
+            # 3. Aplicar estado deseado de contenedores (idempotente)
             docker compose up -d --remove-orphans
 
-            # 5. Reiniciar Caddy para recargar el front web y descargas
-            docker compose restart caddy
+            # 4. Si cambio el frontend o Caddyfile, reiniciar Caddy
+            if [ "$FRONTEND_CHANGED" = "true" ] || [ "$INFRA_CHANGED" = "true" ]; then
+              echo "==> Recargando Caddy para servir nuevos estaticos o configuracion..."
+              docker compose restart caddy
+            fi
 
-            # 6. Limpieza radical en el VPC (remover imagenes huerfanas para cuidar el disco)
+            # 5. Limpieza de imagenes huerfanas para proteger el disco de 30GB
             docker image prune -f
-            echo "==> Despliegue en GCP completado exitosamente sin residuos en disco."
+            echo "==> Despliegue completado con exito."
           EOF
