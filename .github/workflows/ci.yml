@@ -258,8 +258,9 @@ jobs:
             cd "$GCP_DEPLOY_DIR"
 
             # 1. Descomprimir el frontend estatico y APK limpio en build/web
+            mkdir -p build
             rm -rf build/web
-            tar -xzf /tmp/frontend-bundle.tar.gz -C "$GCP_DEPLOY_DIR"
+            tar -xzf /tmp/frontend-bundle.tar.gz -C "$GCP_DEPLOY_DIR/build"
             rm -f /tmp/frontend-bundle.tar.gz
 
             # 2. Autenticar Docker con GHCR si se definio token de acceso
