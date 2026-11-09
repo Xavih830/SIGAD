@@ -32,13 +32,13 @@ services:
     command: >
       sh -c "alembic upgrade head &&
              if [ \"$$ENVIRONMENT\" != \"production\" ]; then python -m scripts.seed_dev_data; fi &&
-             uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers 2"
+             uvicorn app.main:app --host 0.0.0.0 --port 8000 --workers ${UVICORN_WORKERS:-1}"
     env_file:
       - .env
     volumes:
       - uploads_data:/backend/${UPLOAD_DIR:?Variable UPLOAD_DIR es requerida en .env}
     healthcheck:
-      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()\""]
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live').read()\""]
       interval: 10s
       timeout: 3s
       retries: 3
