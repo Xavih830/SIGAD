@@ -46,7 +46,7 @@
 
     handle /descargas/* {
         root * /srv/downloads
-        file_server
+        file_server browse
     }
 
     @noCacheFiles {
