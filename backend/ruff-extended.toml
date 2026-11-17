@@ -1,0 +1,9 @@
+extend = "../pyproject.toml"
+
+[lint]
+extend-select = ["S", "SIM", "RUF", "PL", "ASYNC", "PT", "RET"]
+
+[lint.per-file-ignores]
+"scripts/*" = ["E402"]
+"tests/**" = ["S101", "PLR2004"]
+"backend/tests/**" = ["S101", "PLR2004"]
