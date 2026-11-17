@@ -1,0 +1,10 @@
+﻿SET
+                                              QUERY PLAN                                               
+-------------------------------------------------------------------------------------------------------
+ Limit  (cost=8.17..8.18 rows=1 width=760)
+   ->  Sort  (cost=8.17..8.18 rows=1 width=760)
+         Sort Key: created_at DESC
+         ->  Index Scan using ix_vehiculos_cliente_id on vehiculos  (cost=0.14..8.16 rows=1 width=760)
+               Index Cond: (cliente_id = '00000000-0000-0000-0000-000000000001'::uuid)
+(5 rows)
+

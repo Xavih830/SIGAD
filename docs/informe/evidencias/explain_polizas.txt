@@ -1,0 +1,10 @@
+﻿SET
+                                          QUERY PLAN                                           
+-----------------------------------------------------------------------------------------------
+ Limit  (cost=8.17..8.18 rows=1 width=298)
+   ->  Sort  (cost=8.17..8.18 rows=1 width=298)
+         Sort Key: created_at DESC
+         ->  Index Scan using ix_polizas_estado on polizas  (cost=0.14..8.16 rows=1 width=298)
+               Index Cond: (estado = 'activa'::estado_poliza_enum)
+(5 rows)
+

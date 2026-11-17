@@ -1,0 +1,10 @@
+﻿SET
+                                               QUERY PLAN                                                
+---------------------------------------------------------------------------------------------------------
+ Limit  (cost=8.17..8.17 rows=1 width=1582)
+   ->  Sort  (cost=8.17..8.17 rows=1 width=1582)
+         Sort Key: created_at DESC
+         ->  Index Scan using ix_documentos_poliza_id on documentos  (cost=0.14..8.16 rows=1 width=1582)
+               Index Cond: (poliza_id = '00000000-0000-0000-0000-000000000001'::uuid)
+(5 rows)
+

@@ -4,6 +4,7 @@ import asyncio
 import logging
 import signal
 
+from app.core.logging_filter import install_pii_redaction_filter
 from app.workers.health import start_health_server_async
 from app.workers.outbox_consumer import loop_consumidor_outbox
 from app.workers.scheduler import loop_scheduler_diario
@@ -13,6 +14,7 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
 )
+install_pii_redaction_filter()
 logger = logging.getLogger("sigad.worker")
 
 
