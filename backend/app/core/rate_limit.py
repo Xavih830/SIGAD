@@ -174,8 +174,7 @@ class RateLimiter:
             return 0.0
 
         burst_count = len(history) - self.tarpit_burst_threshold + 1
-        delay = min(self.tarpit_base_delay * (2 ** (burst_count - 1)), self.tarpit_max_delay)
-        return delay
+        return min(self.tarpit_base_delay * (2 ** (burst_count - 1)), self.tarpit_max_delay)
 
     async def apply_tarpitting(self, ip: str, now: float | None = None) -> float:
         """Asynchronously apply tarpitting sleep if burst pattern detected."""
@@ -198,9 +197,7 @@ class RateLimiter:
         now = now if now is not None else time.time()
         clean_id = identity.strip().lower()
         lock_until = self.cache.get(f"lockout:{clean_id}")
-        if lock_until and lock_until > now:
-            return True
-        return False
+        return bool(lock_until and lock_until > now)
 
     def record_failure(self, identity: str, ip: str | None = None, now: float | None = None) -> None:
         """Record an authentication or vinculacion failure. If failures reach 10 in 1 hour -> lock for 30m."""

@@ -61,11 +61,16 @@ def run_health_server(host: str = "127.0.0.1", port: int = 8001) -> None:
     uvicorn.run(worker_app, host=host, port=port, log_level="warning")
 
 
+_background_tasks: set[asyncio.Task[None]] = set()
+
+
 async def start_health_server_async(host: str = "127.0.0.1", port: int = 8001) -> uvicorn.Server:
     """Start uvicorn worker health server in asyncio background task."""
     config = uvicorn.Config(app=worker_app, host=host, port=port, log_level="warning")
     server = uvicorn.Server(config)
-    asyncio.create_task(server.serve())
+    task = asyncio.create_task(server.serve())
+    _background_tasks.add(task)
+    task.add_done_callback(_background_tasks.discard)
     await asyncio.sleep(0.2)
     return server
 

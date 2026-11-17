@@ -43,7 +43,7 @@ async def main() -> None:
             pass
 
     wait_stop = asyncio.create_task(stop_event.wait())
-    done, pending = await asyncio.wait(
+    _done, pending = await asyncio.wait(
         [wait_stop, *tasks],
         return_when=asyncio.FIRST_COMPLETED,
     )

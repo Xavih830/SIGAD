@@ -86,11 +86,11 @@ class StorageService:
             return False
         if mime_type == "application/pdf":
             return b"%PDF-" in content[:1024]
-        elif mime_type == "image/jpeg":
+        if mime_type == "image/jpeg":
             return content.startswith(b"\xff\xd8\xff")
-        elif mime_type == "image/png":
+        if mime_type == "image/png":
             return content.startswith(b"\x89PNG\r\n\x1a\n")
-        elif mime_type == "image/tiff":
+        if mime_type == "image/tiff":
             return content.startswith(b"II*\x00") or content.startswith(b"MM\x00*")
         return False
 

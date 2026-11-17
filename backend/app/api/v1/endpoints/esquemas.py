@@ -1,5 +1,6 @@
 """Esquemas de extracción configurables — Endpoints de administración y testing."""
 
+import asyncio
 import os
 import tempfile
 import uuid
@@ -28,6 +29,12 @@ from app.services.storage_service import (
 )
 
 router = APIRouter(prefix="/esquemas", tags=["Esquemas de Extracción"])
+
+
+def _cleanup_temp_file(path: str) -> None:
+    """Remove temporary file if present (OWASP API9)."""
+    if os.path.exists(path):
+        os.unlink(path)
 
 
 @router.get("", response_model=list[EsquemaListItem])
@@ -202,8 +209,7 @@ async def probar_esquema(
             detail=f"Error durante el procesamiento del documento: {exc}",
         ) from exc
     finally:
-        if os.path.exists(tmp_path):
-            os.unlink(tmp_path)  # Siempre eliminar el temporal (OWASP API9)
+        await asyncio.to_thread(_cleanup_temp_file, tmp_path)
 
     return ProbarEsquemaResponse(
         metodo=resultado["metodo"],

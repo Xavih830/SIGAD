@@ -31,16 +31,16 @@ async def ejecutar_watchdog_rescate(
         Number of documents updated.
     """
     stmt = text(
-        f"""
+        """
         UPDATE documentos
         SET estado_extraccion = CASE
-                WHEN intentos + 1 >= {MAX_OCR_FAILED_ATTEMPTS} THEN 'error_permanente'
+                WHEN intentos + 1 >= :max_attempts THEN 'error_permanente'
                 ELSE 'pendiente'
             END,
             intentos = intentos + 1,
             lease_token = NULL,
             error_motivo = CASE
-                WHEN intentos + 1 >= {MAX_OCR_FAILED_ATTEMPTS} THEN 'max_intentos_alcanzados_watchdog'
+                WHEN intentos + 1 >= :max_attempts THEN 'max_intentos_alcanzados_watchdog'
                 ELSE error_motivo
             END,
             updated_at = NOW()
@@ -48,7 +48,10 @@ async def ejecutar_watchdog_rescate(
           AND updated_at < NOW() - (:stale_minutes || ' minutes')::INTERVAL;
         """
     )
-    result = await db.execute(stmt, {"stale_minutes": str(stale_minutes)})
+    result = await db.execute(
+        stmt,
+        {"stale_minutes": str(stale_minutes), "max_attempts": MAX_OCR_FAILED_ATTEMPTS},
+    )
     await db.commit()
     filas_afectadas = result.rowcount
     if filas_afectadas > 0:

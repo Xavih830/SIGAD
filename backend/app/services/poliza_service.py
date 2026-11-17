@@ -70,17 +70,16 @@ def _validar_campos_esquema(esquema: EsquemaPoliza, campos_dict: dict) -> None:
                         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                         detail=f"El campo '{nombre_campo}' debe ser de tipo decimal.",
                     ) from None
-            elif tipo_campo == "booleano":
-                if not isinstance(val, bool) and str(val).lower() not in (
-                    "true",
-                    "false",
-                    "1",
-                    "0",
-                ):
-                    raise HTTPException(
-                        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                        detail=f"El campo '{nombre_campo}' debe ser de tipo booleano.",
-                    )
+            elif tipo_campo == "booleano" and not isinstance(val, bool) and str(val).lower() not in (
+                "true",
+                "false",
+                "1",
+                "0",
+            ):
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"El campo '{nombre_campo}' debe ser de tipo booleano.",
+                )
 
 
 class PolizaService:

@@ -50,7 +50,7 @@ def _build_service_with_seed():
 
 @pytest.mark.asyncio
 async def test_poliza_service_crear_y_actualizar_sin_bd():
-    service, repo, admin, cliente_id, vehiculo_id = _build_service_with_seed()
+    service, repo, _admin, cliente_id, vehiculo_id = _build_service_with_seed()
     hoy = date.today()
     payload = PolizaCreate(
         numero_poliza="POL-MEM-001",
@@ -94,7 +94,7 @@ async def test_poliza_service_crear_y_actualizar_sin_bd():
 
 @pytest.mark.asyncio
 async def test_poliza_service_anti_bola_sin_bd():
-    service, repo, admin, cliente_id, vehiculo_id = _build_service_with_seed()
+    service, _repo, _admin, cliente_id, vehiculo_id = _build_service_with_seed()
     otro_usuario = Usuario(
         id=uuid.uuid4(),
         email="ajeno@sigad.local",

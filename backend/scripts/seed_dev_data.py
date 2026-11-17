@@ -507,10 +507,9 @@ async def _seed_single_client(
         session.add(cliente)
         await session.flush()
         logger.info("  + Cliente registrado: %s (%s)", c_data["nombres"], c_data["identificacion"])
-    else:
-        if cliente.usuario_id != user.id:
-            cliente.usuario_id = user.id
-            await session.flush()
+    elif cliente.usuario_id != user.id:
+        cliente.usuario_id = user.id
+        await session.flush()
 
     for v_data in c_data["vehiculos"]:
         await _seed_vehiculo_poliza(session, cliente.id, v_data, today)

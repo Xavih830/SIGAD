@@ -80,9 +80,8 @@ async def obtener_cliente(
     service = ClienteService(db)
     cliente = await service.obtener(cliente_id)
 
-    if current_user.rol not in (RolEnum.ADMIN, RolEnum.AGENTE):
-        if cliente.usuario_id != current_user.id:
-            raise RecursoNoEncontradoException("Recurso no encontrado.")
+    if current_user.rol not in (RolEnum.ADMIN, RolEnum.AGENTE) and cliente.usuario_id != current_user.id:
+        raise RecursoNoEncontradoException("Recurso no encontrado.")
 
     return ClienteResponse.model_validate(cliente)
 

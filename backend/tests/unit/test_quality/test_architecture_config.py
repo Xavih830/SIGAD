@@ -172,9 +172,11 @@ async def test_seeder_blocks_execution_in_production():
     from scripts.seed_dev_data import seed_data
 
     mock_session = AsyncMock()
-    with patch.object(settings, "ENVIRONMENT", "production"):
-        with pytest.raises(RuntimeError, match="No se puede ejecutar el seeder de desarrollo en un entorno de producción"):
-            await seed_data(mock_session)
+    with (
+        patch.object(settings, "ENVIRONMENT", "production"),
+        pytest.raises(RuntimeError, match="No se puede ejecutar el seeder de desarrollo en un entorno de producción"),
+    ):
+        await seed_data(mock_session)
 
 
 @pytest.mark.asyncio

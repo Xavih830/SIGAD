@@ -27,9 +27,8 @@ class PIIRedactionFilter(logging.Filter):
         text = cls.EMAIL_REGEX.sub("[REDACTED_EMAIL]", text)
         text = cls.RUC_REGEX.sub("[REDACTED_RUC]", text)
         text = cls.CEDULA_REGEX.sub("[REDACTED_CEDULA]", text)
-        text = cls.PLACA_REGEX.sub("[REDACTED_PLACA]", text)
+        return cls.PLACA_REGEX.sub("[REDACTED_PLACA]", text)
 
-        return text
 
     def filter(self, record: logging.LogRecord) -> bool:
         rendered_msg = record.getMessage()

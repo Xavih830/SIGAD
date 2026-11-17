@@ -36,14 +36,16 @@ def test_extraccion_200_dpi_liberacion_memoria():
             gc_collect_calls += 1
             return real_gc_collect()
 
-        with patch("pytesseract.image_to_string", return_value="PLACA: PBM-5678 TOYOTA COROLLA"):
-            with patch("gc.collect", side_effect=mock_gc_collect):
-                gc.collect()
-                snapshot1 = tracemalloc.take_snapshot()
+        with (
+            patch("pytesseract.image_to_string", return_value="PLACA: PBM-5678 TOYOTA COROLLA"),
+            patch("gc.collect", side_effect=mock_gc_collect),
+        ):
+            gc.collect()
+            snapshot1 = tracemalloc.take_snapshot()
 
-                resultado = _extraer_compuerta_2_tesseract_200dpi(pdf_path)
+            resultado = _extraer_compuerta_2_tesseract_200dpi(pdf_path)
 
-                snapshot2 = tracemalloc.take_snapshot()
+            snapshot2 = tracemalloc.take_snapshot()
 
         assert gc_collect_calls >= 4, f"Se esperaban al menos 4 llamadas a gc.collect(), pero hubo {gc_collect_calls}"
         assert "PLACA: PBM-5678" in resultado

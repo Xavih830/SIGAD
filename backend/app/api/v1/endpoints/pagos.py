@@ -34,9 +34,8 @@ async def listar_pagos_poliza(
     if not poliza:
         raise RecursoNoEncontradoException("Recurso no encontrado.")
 
-    if current_user.rol == RolEnum.CLIENTE:
-        if not poliza.cliente or poliza.cliente.usuario_id != current_user.id:
-            raise RecursoNoEncontradoException("Recurso no encontrado.")
+    if current_user.rol == RolEnum.CLIENTE and (not poliza.cliente or poliza.cliente.usuario_id != current_user.id):
+        raise RecursoNoEncontradoException("Recurso no encontrado.")
 
     stmt_pagos = select(Pago).where(Pago.poliza_id == poliza_id).order_by(Pago.numero_cuota)
     res_pagos = await db.execute(stmt_pagos)

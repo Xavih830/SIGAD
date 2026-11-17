@@ -90,7 +90,7 @@ def test_adversarial_caracteres_especiales_y_emojis():
     texto = "🚗 POLIZA VEHICULAR 🛡️\nPLACA: ABC-1234 💥\nVALOR: $ 10,000.00 €\nCHASIS: 1HGCR2F83HA123456"
     campos = [c.copy() for c in CAMPOS_ESQUEMA_VEHICULAR]
 
-    resultado, confianza = aplicar_esquema(texto, campos)
+    resultado, _confianza = aplicar_esquema(texto, campos)
     assert resultado["placa"] == "ABC-1234"
     assert resultado["chasis"] == "1HGCR2F83HA123456"
 

@@ -49,7 +49,7 @@ async def test_worker_health_endpoints():
         assert data["pool"] == "active"
 
 
-async def test_docker_compose_healthchecks_and_restart_policy():
+def test_docker_compose_healthchecks_and_restart_policy():
     """Verify docker-compose.yml specifies restart: always and healthchecks (§2.5)."""
     repo_root = Path(__file__).resolve().parents[2].parent
     compose_path = repo_root / "docker-compose.yml"
