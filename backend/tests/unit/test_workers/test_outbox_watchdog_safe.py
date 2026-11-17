@@ -32,4 +32,4 @@ async def test_outbox_watchdog_rescues_abandoned_document():
     assert "intentos = intentos + 1" in sql_text
     assert "lease_token = NULL" in sql_text
     assert "WHERE estado_extraccion = 'procesando'" in sql_text
-    assert params == {"stale_minutes": "5"}
+    assert params == {"stale_minutes": "5", "max_attempts": 3}

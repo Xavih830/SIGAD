@@ -21,7 +21,9 @@ async def test_watchdog_atomic_increment_to_permanent_error():
     assert afectados == 1
     sql_text = mock_db.execute.call_args[0][0].text
 
-    assert "WHEN intentos + 1 >= 3 THEN 'error_permanente'" in sql_text
-    assert "WHEN intentos + 1 >= 3 THEN 'max_intentos_alcanzados_watchdog'" in sql_text
+    assert "WHEN intentos + 1 >= :max_attempts THEN 'error_permanente'" in sql_text
+    params = mock_db.execute.call_args[0][1]
+    assert params["max_attempts"] == 3
+    assert "WHEN intentos + 1 >= :max_attempts THEN 'max_intentos_alcanzados_watchdog'" in sql_text
     assert "intentos = intentos + 1" in sql_text
     assert "lease_token = NULL" in sql_text
