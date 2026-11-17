@@ -302,3 +302,40 @@ async def test_subida_imagen_dimensiones_excedidas_400(base_scenario: ScenarioBu
         assert res.status_code == 400
         assert "exceden el límite máximo permitido" in res.json()["detail"]
 
+
+async def test_subida_documento_mime_no_permitido_rechazado(base_scenario: ScenarioBundle):
+    """Un ejecutable (MZ...) disfrazado de PDF es rechazado por validación de magic bytes."""
+    admin_token = base_scenario.admin_token
+    exe_bytes = b"MZ\x90\x00\x03\x00\x00\x00\x04\x00\xff\xff"
+
+    async with make_client(admin_token) as client:
+        res = await client.post(
+            "/api/v1/documentos",
+            files={"file": ("poliza.pdf", exe_bytes, "application/pdf")},
+            data={"poliza_id": str(base_scenario.poliza_a.id)},
+        )
+        assert res.status_code in (400, 415, 422), f"Esperado rechazo, obtuvo {res.status_code}: {res.text}"
+
+
+async def test_subida_documento_magic_bytes_pdf_valido(base_scenario: ScenarioBundle):
+    """Un archivo PDF válido con magic bytes %PDF- y estructura íntegra es aceptado (201)."""
+    import pypdfium2 as pdfium
+
+    admin_token = base_scenario.admin_token
+    doc = pdfium.PdfDocument.new()
+    doc.new_page(200, 200)
+    buf = io.BytesIO()
+    doc.save(buf)
+    pdf_bytes = buf.getvalue()
+
+    async with make_client(admin_token) as client:
+        res = await client.post(
+            "/api/v1/documentos",
+            files={"file": ("poliza.pdf", pdf_bytes, "application/pdf")},
+            data={"poliza_id": str(base_scenario.poliza_a.id)},
+        )
+        assert res.status_code == 201, res.text
+        data = res.json()
+        assert data["tipo_mime"] == "application/pdf"
+
+
