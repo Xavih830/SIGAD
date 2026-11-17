@@ -1,39 +1,19 @@
-"""Polizas REST endpoints with SQL-level Anti-BOLA guards and SC-2026-001 support."""
+"""Polizas REST endpoints delegating domain logic to PolizaService."""
 
 import uuid
 from collections.abc import Sequence
-from datetime import date, timedelta
-from decimal import Decimal
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func, select
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.api.deps import check_role, get_current_user
-from app.core.constants import (
-    DEFAULT_PAGE_LIMIT,
-    DIAS_PERIODO_CUOTA_MENSUAL,
-    MAX_CUOTAS_POLIZA_ANUAL,
-    MAX_PAGE_LIMIT,
-    MIN_CUOTAS_POLIZA,
-)
-from app.core.exceptions import ConflictoDominioException, RecursoNoEncontradoException
+from app.core.constants import DEFAULT_PAGE_LIMIT, MAX_PAGE_LIMIT
 from app.db.session import get_db
-from app.domain.poliza_evaluator import (
-    EstadoPoliza,
-    validar_limite_vigencia_maxima,
-    validar_y_calcular_estado_inicial,
-)
-from app.models.cliente import Cliente
-from app.models.cobertura import Cobertura
-from app.models.deducible import Deducible, TipoSiniestroEnum
-from app.models.esquema_poliza import EsquemaPoliza
-from app.models.historial_cambio import HistorialCambio
-from app.models.pago import Pago
+from app.domain.poliza_evaluator import EstadoPoliza
+from app.models.deducible import Deducible
 from app.models.poliza import Poliza
 from app.models.usuario import RolEnum, Usuario
-from app.models.vehiculo import Vehiculo
+from app.repositories.poliza_repository import PolizaRepository
 from app.schemas.base import PaginatedResponse
 from app.schemas.deducible import DeducibleResponse
 from app.schemas.poliza import (
@@ -43,167 +23,24 @@ from app.schemas.poliza import (
     PolizaUpdate,
     PolizaUpdateEstado,
 )
+from app.services.poliza_service import PolizaService
 
 router = APIRouter(prefix="/polizas", tags=["Pólizas"])
+
+
+def get_poliza_service(db: AsyncSession = Depends(get_db)) -> PolizaService:
+    """Inyección de PolizaService con PolizaRepository."""
+    return PolizaService(PolizaRepository(db))
 
 
 @router.post("", response_model=PolizaResponse, status_code=status.HTTP_201_CREATED)
 async def crear_poliza(
     payload: PolizaCreate,
     current_user: Usuario = Depends(check_role(RolEnum.ADMIN, RolEnum.AGENTE)),
-    db: AsyncSession = Depends(get_db),
+    service: PolizaService = Depends(get_poliza_service),
 ) -> Poliza:
     """Emisión formal de póliza con snapshot inmutable de kilometraje y cálculo de estado inicial."""
-    cliente_res = await db.execute(select(Cliente).where(Cliente.id == payload.cliente_id))
-    cliente = cliente_res.scalar_one_or_none()
-    if not cliente:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Cliente con ID {payload.cliente_id} no existe.",
-        )
-
-    vehiculo_res = await db.execute(select(Vehiculo).where(Vehiculo.id == payload.vehiculo_id))
-    vehiculo = vehiculo_res.scalar_one_or_none()
-    if not vehiculo:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Vehículo con ID {payload.vehiculo_id} no existe.",
-        )
-
-    poliza_existente = await db.execute(
-        select(Poliza).where(Poliza.numero_poliza == payload.numero_poliza)
-    )
-    if poliza_existente.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Ya existe una póliza con número {payload.numero_poliza}.",
-        )
-
-    hoy = date.today()
-    estado_inicial = validar_y_calcular_estado_inicial(
-        payload.fecha_inicio, payload.fecha_fin, hoy
-    )
-
-    validar_limite_vigencia_maxima(payload.fecha_inicio, payload.fecha_fin)
-
-    if payload.esquema_id:
-        esquema_res = await db.execute(
-            select(EsquemaPoliza).where(EsquemaPoliza.id == payload.esquema_id)
-        )
-        esquema_poliza = esquema_res.scalar_one_or_none()
-        if not esquema_poliza:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Esquema de póliza con ID {payload.esquema_id} no existe.",
-            )
-        campos_dict = payload.campos_adicionales or {}
-        for regla in esquema_poliza.campos:
-            nombre_campo = regla["nombre"]
-            es_obligatorio = regla.get("es_obligatorio", False)
-            tipo_campo = regla.get("tipo", "texto")
-
-            if es_obligatorio and (nombre_campo not in campos_dict or campos_dict[nombre_campo] is None or campos_dict[nombre_campo] == ""):
-                raise HTTPException(
-                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                    detail=f"Campo obligatorio '{nombre_campo}' requerido por el esquema '{esquema_poliza.codigo}' no fue suministrado.",
-                )
-
-            if nombre_campo in campos_dict and campos_dict[nombre_campo] is not None:
-                val = campos_dict[nombre_campo]
-                if tipo_campo in ("numero", "entero"):
-                    if not isinstance(val, int) and not (isinstance(val, str) and val.isdigit()):
-                        raise HTTPException(
-                            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                            detail=f"El campo '{nombre_campo}' debe ser de tipo numérico entero.",
-                        )
-                elif tipo_campo == "decimal":
-                    try:
-                        float(val)
-                    except (ValueError, TypeError):
-                        raise HTTPException(
-                            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                            detail=f"El campo '{nombre_campo}' debe ser de tipo decimal.",
-                        ) from None
-                elif tipo_campo == "booleano":
-                    if not isinstance(val, bool) and str(val).lower() not in ("true", "false", "1", "0"):
-                        raise HTTPException(
-                            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                            detail=f"El campo '{nombre_campo}' debe ser de tipo booleano.",
-                        )
-
-    poliza = Poliza(
-        numero_poliza=payload.numero_poliza,
-        cliente_id=payload.cliente_id,
-        vehiculo_id=payload.vehiculo_id,
-        inspeccion_id=payload.inspeccion_id,
-        esquema_id=payload.esquema_id,
-        fecha_inicio=payload.fecha_inicio,
-        fecha_fin=payload.fecha_fin,
-        estado=estado_inicial,
-        valor_asegurado=payload.valor_asegurado,
-        prima_mensual=payload.prima_mensual,
-        kilometraje_emision=payload.kilometraje_emision,
-        campos_adicionales=payload.campos_adicionales,
-    )
-    db.add(poliza)
-    await db.flush()
-
-    if payload.deducibles:
-        for d in payload.deducibles:
-            deducible = Deducible(
-                poliza_id=poliza.id,
-                tipo_siniestro=d.tipo_siniestro,
-                porcentaje_valor=d.porcentaje_valor,
-                monto_minimo_usd=d.monto_minimo_usd,
-            )
-            db.add(deducible)
-    else:
-        db.add(
-            Deducible(
-                poliza_id=poliza.id,
-                tipo_siniestro=TipoSiniestroEnum.GENERAL,
-                porcentaje_valor=Decimal("10.00"),
-                monto_minimo_usd=Decimal("200.00"),
-            )
-        )
-
-    if payload.coberturas:
-        for c in payload.coberturas:
-            cobertura = Cobertura(
-                poliza_id=poliza.id,
-                nombre=c.nombre,
-                monto=c.monto,
-            )
-            db.add(cobertura)
-
-    dias_totales = (payload.fecha_fin - payload.fecha_inicio).days
-    num_cuotas = max(
-        MIN_CUOTAS_POLIZA,
-        min(MAX_CUOTAS_POLIZA_ANUAL, round(dias_totales / DIAS_PERIODO_CUOTA_MENSUAL)),
-    )
-    for i in range(MIN_CUOTAS_POLIZA, num_cuotas + 1):
-        vencimiento = payload.fecha_inicio + timedelta(days=DIAS_PERIODO_CUOTA_MENSUAL * (i - 1))
-        cuota = Pago(
-            poliza_id=poliza.id,
-            numero_cuota=i,
-            monto_usd=payload.prima_mensual,
-            fecha_vencimiento=vencimiento,
-            estado="pendiente",
-        )
-        db.add(cuota)
-
-    await db.commit()
-    stmt = (
-        select(Poliza)
-        .options(
-            selectinload(Poliza.vehiculo),
-            selectinload(Poliza.deducibles),
-            selectinload(Poliza.coberturas),
-        )
-        .where(Poliza.id == poliza.id)
-    )
-    result = await db.execute(stmt)
-    return result.scalar_one()
+    return await service.crear_poliza(payload)
 
 
 @router.get("", response_model=list[PolizaResponse])
@@ -217,79 +54,31 @@ async def listar_polizas(
         description="Límite máximo de registros a retornar.",
     ),
     current_user: Usuario = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    service: PolizaService = Depends(get_poliza_service),
 ) -> Sequence[Poliza]:
     """Listar pólizas con paginación y protección Anti-BOLA estricta a nivel de consulta SQL."""
-    stmt = (
-        select(Poliza)
-        .options(
-            selectinload(Poliza.vehiculo),
-            selectinload(Poliza.deducibles),
-            selectinload(Poliza.coberturas),
-        )
+    return await service.listar_polizas(
+        current_user=current_user, estado=estado, skip=skip, limit=limit
     )
-
-    if current_user.rol == RolEnum.CLIENTE:
-        stmt = stmt.join(Cliente, Poliza.cliente_id == Cliente.id).where(
-            Cliente.usuario_id == current_user.id
-        )
-
-    if estado is not None:
-        stmt = stmt.where(Poliza.estado == estado)
-
-    stmt = stmt.order_by(Poliza.created_at.desc()).offset(skip).limit(limit)
-    result = await db.execute(stmt)
-    return result.scalars().all()
 
 
 @router.get("/{id}", response_model=PolizaResponse)
 async def obtener_poliza(
     id: uuid.UUID,
     current_user: Usuario = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    service: PolizaService = Depends(get_poliza_service),
 ) -> Poliza:
     """Detalle de una póliza con Anti-BOLA en SQL."""
-    stmt = (
-        select(Poliza)
-        .options(
-            selectinload(Poliza.vehiculo),
-            selectinload(Poliza.deducibles),
-            selectinload(Poliza.coberturas),
-        )
-        .where(Poliza.id == id)
-    )
-
-    if current_user.rol == RolEnum.CLIENTE:
-        stmt = stmt.join(Cliente, Poliza.cliente_id == Cliente.id).where(
-            Cliente.usuario_id == current_user.id
-        )
-
-    result = await db.execute(stmt)
-    poliza = result.scalar_one_or_none()
-    if not poliza:
-        raise RecursoNoEncontradoException("Recurso no encontrado.")
-    return poliza
+    return await service.obtener_poliza(id, current_user=current_user)
 
 
 @router.get("/{id}/deducibles", response_model=list[DeducibleResponse])
 async def consultar_deducibles(
     id: uuid.UUID,
     current_user: Usuario = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    service: PolizaService = Depends(get_poliza_service),
 ) -> Sequence[Deducible]:
-    stmt_pol = select(Poliza.id).where(Poliza.id == id)
-    if current_user.rol == RolEnum.CLIENTE:
-        stmt_pol = stmt_pol.join(Cliente, Poliza.cliente_id == Cliente.id).where(
-            Cliente.usuario_id == current_user.id
-        )
-
-    poliza_valida = (await db.execute(stmt_pol)).scalar_one_or_none()
-    if not poliza_valida:
-        raise RecursoNoEncontradoException("Recurso no encontrado.")
-
-    stmt = select(Deducible).where(Deducible.poliza_id == id)
-    result = await db.execute(stmt)
-    return result.scalars().all()
+    return await service.consultar_deducibles(id, current_user=current_user)
 
 
 @router.patch("/{id}/estado", response_model=PolizaResponse)
@@ -297,30 +86,10 @@ async def actualizar_estado_poliza(
     id: uuid.UUID,
     payload: PolizaUpdateEstado,
     current_user: Usuario = Depends(check_role(RolEnum.ADMIN, RolEnum.AGENTE)),
-    db: AsyncSession = Depends(get_db),
+    service: PolizaService = Depends(get_poliza_service),
 ) -> Poliza:
     """Actualizar estado de póliza. Dispara triggers de auditoría en PostgreSQL."""
-    stmt = (
-        select(Poliza)
-        .options(
-            selectinload(Poliza.vehiculo),
-            selectinload(Poliza.deducibles),
-            selectinload(Poliza.coberturas),
-        )
-        .where(Poliza.id == id)
-    )
-    result = await db.execute(stmt)
-    poliza = result.scalar_one_or_none()
-    if not poliza:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Póliza no encontrada.",
-        )
-
-    poliza.estado = payload.estado
-    await db.commit()
-    await db.refresh(poliza)
-    return poliza
+    return await service.actualizar_estado(id, payload)
 
 
 @router.put("/{id}", response_model=PolizaResponse)
@@ -328,73 +97,10 @@ async def actualizar_poliza(
     id: uuid.UUID,
     payload: PolizaUpdate,
     current_user: Usuario = Depends(check_role(RolEnum.ADMIN, RolEnum.AGENTE)),
-    db: AsyncSession = Depends(get_db),
+    service: PolizaService = Depends(get_poliza_service),
 ) -> Poliza:
     """Modificación idempotente de póliza con control optimista de versión."""
-    stmt = (
-        select(Poliza)
-        .options(
-            selectinload(Poliza.vehiculo),
-            selectinload(Poliza.deducibles),
-            selectinload(Poliza.coberturas),
-        )
-        .where(Poliza.id == id)
-    )
-    result = await db.execute(stmt)
-    poliza = result.scalar_one_or_none()
-    if not poliza:
-        raise RecursoNoEncontradoException("Recurso no encontrado.")
-
-    if payload.version != poliza.version:
-        raise ConflictoDominioException(
-            "Conflicto de versión: la póliza fue modificada por otro usuario."
-        )
-
-    nueva_fecha_inicio = payload.fecha_inicio if payload.fecha_inicio is not None else poliza.fecha_inicio
-    nueva_fecha_fin = payload.fecha_fin if payload.fecha_fin is not None else poliza.fecha_fin
-    if nueva_fecha_inicio != poliza.fecha_inicio or nueva_fecha_fin != poliza.fecha_fin:
-        validar_y_calcular_estado_inicial(nueva_fecha_inicio, nueva_fecha_fin, date.today())
-        validar_limite_vigencia_maxima(nueva_fecha_inicio, nueva_fecha_fin)
-
-    campos_cambiados = False
-    if payload.fecha_inicio is not None and payload.fecha_inicio != poliza.fecha_inicio:
-        poliza.fecha_inicio = payload.fecha_inicio
-        campos_cambiados = True
-    if payload.fecha_fin is not None and payload.fecha_fin != poliza.fecha_fin:
-        poliza.fecha_fin = payload.fecha_fin
-        campos_cambiados = True
-    if payload.valor_asegurado is not None and payload.valor_asegurado != poliza.valor_asegurado:
-        poliza.valor_asegurado = payload.valor_asegurado
-        campos_cambiados = True
-    if payload.prima_mensual is not None and payload.prima_mensual != poliza.prima_mensual:
-        poliza.prima_mensual = payload.prima_mensual
-        campos_cambiados = True
-    if payload.esquema_id is not None and payload.esquema_id != poliza.esquema_id:
-        poliza.esquema_id = payload.esquema_id
-        campos_cambiados = True
-    if payload.campos_adicionales is not None and payload.campos_adicionales != poliza.campos_adicionales:
-        poliza.campos_adicionales = payload.campos_adicionales
-        campos_cambiados = True
-
-    if payload.coberturas is not None:
-        actuales = sorted((c.nombre, Decimal(c.monto)) for c in poliza.coberturas)
-        nuevas = sorted((c.nombre, Decimal(c.monto)) for c in payload.coberturas)
-        if actuales != nuevas:
-            poliza.coberturas.clear()
-            await db.flush()
-            for c in payload.coberturas:
-                poliza.coberturas.append(
-                    Cobertura(poliza_id=poliza.id, nombre=c.nombre, monto=c.monto)
-                )
-            campos_cambiados = True
-
-    if not campos_cambiados:
-        return poliza
-
-    poliza.version += 1
-    await db.commit()
-    await db.refresh(poliza)
-    return poliza
+    return await service.actualizar_poliza(id, payload)
 
 
 @router.get("/{id}/historial", response_model=PaginatedResponse[HistorialCambioResponse])
@@ -408,31 +114,7 @@ async def listar_historial_poliza(
         description="Límite máximo de registros a retornar.",
     ),
     current_user: Usuario = Depends(get_current_user),
-    db: AsyncSession = Depends(get_db),
+    service: PolizaService = Depends(get_poliza_service),
 ) -> PaginatedResponse[HistorialCambioResponse]:
     """Listado paginado de cambios auditados para una póliza."""
-    stmt_pol = select(Poliza.id).where(Poliza.id == id)
-    if current_user.rol == RolEnum.CLIENTE:
-        stmt_pol = stmt_pol.join(Cliente, Poliza.cliente_id == Cliente.id).where(
-            Cliente.usuario_id == current_user.id
-        )
-    if (await db.execute(stmt_pol)).scalar_one_or_none() is None:
-        raise RecursoNoEncontradoException("Recurso no encontrado.")
-
-    base_filter = (
-        HistorialCambio.entidad == "polizas",
-        HistorialCambio.entidad_id == id,
-    )
-    total_stmt = select(func.count()).select_from(HistorialCambio).where(*base_filter)
-    total = (await db.execute(total_stmt)).scalar_one()
-
-    items_stmt = (
-        select(HistorialCambio)
-        .where(*base_filter)
-        .order_by(HistorialCambio.fecha.desc(), HistorialCambio.id.desc())
-        .offset(skip)
-        .limit(limit)
-    )
-    rows = (await db.execute(items_stmt)).scalars().all()
-    items = [HistorialCambioResponse.model_validate(r) for r in rows]
-    return PaginatedResponse(items=items, total=total, skip=skip, limit=limit)
+    return await service.listar_historial(id, current_user=current_user, skip=skip, limit=limit)

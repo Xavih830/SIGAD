@@ -547,6 +547,24 @@
         ],
         "parameters": [
           {
+            "name": "estado",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/EstadoPoliza"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filtrar pólizas por estado.",
+              "title": "Estado"
+            },
+            "description": "Filtrar pólizas por estado."
+          },
+          {
             "name": "skip",
             "in": "query",
             "required": false,
@@ -627,6 +645,63 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PolizaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Pólizas"
+        ],
+        "summary": "Actualizar Poliza",
+        "description": "Modificación idempotente de póliza con control optimista de versión.",
+        "operationId": "actualizar_poliza_api_v1_polizas__id__put",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PolizaUpdate"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -745,6 +820,82 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/PolizaResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/polizas/{id}/historial": {
+      "get": {
+        "tags": [
+          "Pólizas"
+        ],
+        "summary": "Listar Historial Poliza",
+        "description": "Listado paginado de cambios auditados para una póliza.",
+        "operationId": "listar_historial_poliza_api_v1_polizas__id__historial_get",
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Id"
+            }
+          },
+          {
+            "name": "skip",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Número de registros a omitir.",
+              "default": 0,
+              "title": "Skip"
+            },
+            "description": "Número de registros a omitir."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Límite máximo de registros a retornar.",
+              "default": 50,
+              "title": "Limit"
+            },
+            "description": "Límite máximo de registros a retornar."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse_HistorialCambioResponse_"
                 }
               }
             }
@@ -3353,6 +3504,79 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "HistorialCambioResponse": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "entidad": {
+            "type": "string",
+            "title": "Entidad"
+          },
+          "entidad_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Entidad Id"
+          },
+          "campo": {
+            "type": "string",
+            "title": "Campo"
+          },
+          "valor_anterior": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valor Anterior"
+          },
+          "valor_nuevo": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valor Nuevo"
+          },
+          "usuario_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usuario Id"
+          },
+          "fecha": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Fecha"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "entidad",
+          "entidad_id",
+          "campo",
+          "valor_anterior",
+          "valor_nuevo",
+          "usuario_id",
+          "fecha"
+        ],
+        "title": "HistorialCambioResponse",
+        "description": "Registro de auditoría en historial_cambios."
+      },
       "LoginRequest": {
         "properties": {
           "identificador": {
@@ -3407,6 +3631,37 @@
           "limit"
         ],
         "title": "PaginatedResponse[ClienteResponse]"
+      },
+      "PaginatedResponse_HistorialCambioResponse_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/HistorialCambioResponse"
+            },
+            "type": "array",
+            "title": "Items"
+          },
+          "total": {
+            "type": "integer",
+            "title": "Total"
+          },
+          "skip": {
+            "type": "integer",
+            "title": "Skip"
+          },
+          "limit": {
+            "type": "integer",
+            "title": "Limit"
+          }
+        },
+        "type": "object",
+        "required": [
+          "items",
+          "total",
+          "skip",
+          "limit"
+        ],
+        "title": "PaginatedResponse[HistorialCambioResponse]"
       },
       "PagoResponse": {
         "properties": {
@@ -3735,6 +3990,11 @@
             ],
             "title": "Campos Adicionales"
           },
+          "version": {
+            "type": "integer",
+            "title": "Version",
+            "default": 1
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -3790,6 +4050,130 @@
         ],
         "title": "PolizaResponse",
         "description": "Schema de respuesta completo para una póliza."
+      },
+      "PolizaUpdate": {
+        "properties": {
+          "fecha_inicio": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fecha Inicio"
+          },
+          "fecha_fin": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fecha Fin"
+          },
+          "valor_asegurado": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valor Asegurado"
+          },
+          "prima_mensual": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prima Mensual"
+          },
+          "esquema_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Esquema Id"
+          },
+          "campos_adicionales": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "boolean"
+                    }
+                  ]
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Campos Adicionales"
+          },
+          "coberturas": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/CoberturaCreate"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Coberturas"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "Version",
+            "description": "Versión optimista actual de la póliza"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "version"
+        ],
+        "title": "PolizaUpdate",
+        "description": "Schema para modificación idempotente de póliza con control optimista de versión."
       },
       "PolizaUpdateEstado": {
         "properties": {
