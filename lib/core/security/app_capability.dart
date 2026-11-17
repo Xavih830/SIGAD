@@ -1,0 +1,15 @@
+enum AppCapability {
+  viewPolicies,
+  createPolicy,
+  viewClients,
+  createClient,
+  editClients,
+  deleteClients,
+  scanOcr,
+  manageOcrSchemas,
+  manageCatalogs,
+  viewReports,
+  viewAlerts,
+  accessWebDashboard,
+  accessMobileApp,
+}

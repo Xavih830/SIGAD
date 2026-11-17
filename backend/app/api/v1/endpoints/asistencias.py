@@ -1,0 +1,78 @@
+"""Asistencias catalog endpoint — roadside assistance numbers and services."""
+
+import logging
+import uuid
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.api.deps import check_catalog_rate_limit, check_role
+from app.db.session import get_db
+from app.models.asistencia import Asistencia
+from app.models.usuario import RolEnum, Usuario
+from app.schemas.catalogo import AsistenciaCreate, AsistenciaResponse
+
+logger = logging.getLogger("sigad.asistencias")
+
+router = APIRouter(prefix="/asistencias", tags=["Asistencias"])
+
+
+@router.get("", response_model=list[AsistenciaResponse])
+async def listar_asistencias(
+    response: Response,
+    solo_activas: bool = Query(True, description="Mostrar solo asistencias activas"),
+    _: None = Depends(check_catalog_rate_limit),
+    db: AsyncSession = Depends(get_db),
+) -> list[AsistenciaResponse]:
+    """Obtiene el catálogo de servicios de asistencia en carretera y emergencias."""
+    response.headers["Cache-Control"] = "public, max-age=300"
+    stmt = select(Asistencia)
+    if solo_activas:
+        stmt = stmt.where(Asistencia.activo.is_(True))
+
+    res = await db.execute(stmt)
+    asistencias = res.scalars().all()
+    return [AsistenciaResponse.model_validate(a) for a in asistencias]
+
+
+@router.post("", response_model=AsistenciaResponse, status_code=status.HTTP_201_CREATED)
+async def crear_asistencia(
+    body: AsistenciaCreate,
+    current_user: Usuario = Depends(check_role(RolEnum.ADMIN)),
+    db: AsyncSession = Depends(get_db),
+) -> AsistenciaResponse:
+    """Registra un nuevo servicio de asistencia."""
+    asistencia = Asistencia(
+        titulo=body.titulo.strip(),
+        descripcion=body.descripcion.strip(),
+        telefono_emergencia=body.telefono_emergencia.strip(),
+        icono=body.icono.strip(),
+        activo=body.activo,
+    )
+    db.add(asistencia)
+    await db.commit()
+    await db.refresh(asistencia)
+    return AsistenciaResponse.model_validate(asistencia)
+
+
+@router.get("/{asistencia_id}", response_model=AsistenciaResponse)
+async def obtener_asistencia(
+    asistencia_id: uuid.UUID,
+    response: Response,
+    _: None = Depends(check_catalog_rate_limit),
+    db: AsyncSession = Depends(get_db),
+) -> AsistenciaResponse:
+    """Obtiene el detalle de un servicio de asistencia por ID."""
+    response.headers["Cache-Control"] = "public, max-age=300"
+    stmt = select(Asistencia).where(Asistencia.id == asistencia_id)
+    res = await db.execute(stmt)
+    asistencia = res.scalar_one_or_none()
+
+    if not asistencia:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Servicio de asistencia no encontrado.",
+        )
+
+    return AsistenciaResponse.model_validate(asistencia)
