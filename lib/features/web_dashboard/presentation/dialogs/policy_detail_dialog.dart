@@ -263,7 +263,7 @@ class _PolicyDetailDialogState extends State<PolicyDetailDialog> {
 
     return ListView.separated(
       itemCount: _history.length,
-      separatorBuilder: (_, __) => const Divider(height: 12),
+      separatorBuilder: (_, _) => const Divider(height: 12),
       itemBuilder: (context, index) {
         final h = _history[index];
         return ListTile(

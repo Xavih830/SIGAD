@@ -165,7 +165,7 @@ class _PoliciesTabViewState extends State<PoliciesTabView> {
       title: 'Desactivar Póliza',
       message: '¿Está seguro de desactivar (cancelar) la póliza ${policy.number}?',
       confirmLabel: 'Sí, Desactivar',
-      isDestructive: true,
+      destructive: true,
     );
     if (!confirmed) return;
     await _updatePolicyStatus(policy, 'cancelada');
@@ -192,7 +192,9 @@ class _PoliciesTabViewState extends State<PoliciesTabView> {
           if (result.esquemaId != null) 'esquema_id': result.esquemaId,
           if (result.camposAdicionales != null) 'campos_adicionales': result.camposAdicionales,
           if (result.coverages.isNotEmpty)
-            'coberturas': result.coverages.map((c) => c.toCreatePayloadJson()).toList(),
+            'coberturas': result.coverages
+                .map((name) => {'nombre': name, 'monto': 5000.0})
+                .toList(),
           'version': policy.version,
         };
         await _policiesRepo.updatePolicy(policy.id, payload, token: _getAuthToken());
