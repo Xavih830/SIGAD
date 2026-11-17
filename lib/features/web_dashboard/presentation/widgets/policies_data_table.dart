@@ -7,11 +7,13 @@ import 'package:sigad/core/utils/date_formatter.dart';
 class PoliciesDataTable extends StatefulWidget {
   final List<PolicyModel> policies;
   final ValueChanged<PolicyModel> onViewDetail;
+  final ValueChanged<PolicyModel>? onDeactivate;
 
   const PoliciesDataTable({
     super.key,
     required this.policies,
     required this.onViewDetail,
+    this.onDeactivate,
   });
 
   @override
@@ -126,6 +128,12 @@ class _PoliciesDataTableState extends State<PoliciesDataTable> {
                           tooltip: 'Ver Detalle',
                           onPressed: () => widget.onViewDetail(p),
                         ),
+                        if (widget.onDeactivate != null && statusNorm != 'cancelada')
+                          TextButton.icon(
+                            icon: const Icon(Icons.block_outlined, color: Colors.red, size: 18),
+                            label: const Text('Desactivar', style: TextStyle(color: Colors.red, fontSize: 12)),
+                            onPressed: () => widget.onDeactivate!(p),
+                          ),
                       ],
                     )),
                   ]);

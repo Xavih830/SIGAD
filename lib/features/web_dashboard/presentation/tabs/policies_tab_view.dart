@@ -4,12 +4,14 @@ import 'package:sigad/core/models/policy_model.dart';
 import 'package:sigad/core/repositories/clients_repository.dart';
 import 'package:sigad/core/repositories/policies_repository.dart';
 import 'package:sigad/core/theme/app_theme.dart';
+import 'package:sigad/core/utils/date_formatter.dart';
 import 'package:sigad/core/widgets/error_view.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_bloc.dart';
 import 'package:sigad/features/auth/presentation/bloc/auth_state.dart';
 import 'package:sigad/features/web_dashboard/presentation/dialogs/policy_detail_dialog.dart';
 import 'package:sigad/features/web_dashboard/presentation/dialogs/policy_form_dialog.dart';
 import 'package:sigad/features/web_dashboard/presentation/widgets/policies_data_table.dart';
+import 'package:sigad/shared/widgets/sigad_confirm_dialog.dart';
 
 class PoliciesTabView extends StatefulWidget {
   final PoliciesRepository? policiesRepository;
@@ -123,33 +125,95 @@ class _PoliciesTabViewState extends State<PoliciesTabView> {
       context: context,
       builder: (_) => PolicyDetailDialog(
         policy: policy,
-        onStatusChange: (nuevoEstado) async {
-          try {
-            await _policiesRepo.updatePolicyStatus(
-              policy.id,
-              nuevoEstado,
-              token: _getAuthToken(),
-            );
-            if (!mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Estado de póliza ${policy.number} actualizado a $nuevoEstado.'),
-                backgroundColor: AppTheme.successColor,
-              ),
-            );
-            await _loadPolicies();
-          } catch (e) {
-            if (!mounted) return;
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Error al actualizar estado: $e'),
-                backgroundColor: AppTheme.errorColor,
-              ),
-            );
-          }
-        },
+        policiesRepository: _policiesRepo,
+        authToken: _getAuthToken(),
+        onEdit: () => _editPolicy(policy),
+        onStatusChange: (nuevoEstado) => _updatePolicyStatus(policy, nuevoEstado),
       ),
     );
+  }
+
+  Future<void> _updatePolicyStatus(PolicyModel policy, String nuevoEstado) async {
+    try {
+      await _policiesRepo.updatePolicyStatus(
+        policy.id,
+        nuevoEstado,
+        token: _getAuthToken(),
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Estado de póliza ${policy.number} actualizado a $nuevoEstado.'),
+          backgroundColor: AppTheme.successColor,
+        ),
+      );
+      await _loadPolicies();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al actualizar estado: $e'),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
+    }
+  }
+
+  Future<void> _deactivatePolicy(PolicyModel policy) async {
+    final confirmed = await showSigadConfirm(
+      context,
+      title: 'Desactivar Póliza',
+      message: '¿Está seguro de desactivar (cancelar) la póliza ${policy.number}?',
+      confirmLabel: 'Sí, Desactivar',
+      isDestructive: true,
+    );
+    if (!confirmed) return;
+    await _updatePolicyStatus(policy, 'cancelada');
+  }
+
+  Future<void> _editPolicy(PolicyModel policy) async {
+    try {
+      final clients = await _clientsRepo.getClients(token: _getAuthToken());
+      if (!mounted) return;
+      final result = await showDialog<CreatePolicyRequest>(
+        context: context,
+        builder: (_) => PolicyFormDialog(
+          initialPolicy: policy,
+          clients: clients.items,
+          authToken: _getAuthToken(),
+        ),
+      );
+      if (result != null) {
+        final payload = <String, dynamic>{
+          'fecha_inicio': DateFormatter.toIsoDate(result.startDate),
+          'fecha_fin': DateFormatter.toIsoDate(result.endDate),
+          if (result.insuredValue != null) 'valor_asegurado': result.insuredValue,
+          if (result.monthlyPremium != null) 'prima_mensual': result.monthlyPremium,
+          if (result.esquemaId != null) 'esquema_id': result.esquemaId,
+          if (result.camposAdicionales != null) 'campos_adicionales': result.camposAdicionales,
+          if (result.coverages.isNotEmpty)
+            'coberturas': result.coverages.map((c) => c.toCreatePayloadJson()).toList(),
+          'version': policy.version,
+        };
+        await _policiesRepo.updatePolicy(policy.id, payload, token: _getAuthToken());
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Póliza ${policy.number} actualizada con éxito.'),
+            backgroundColor: AppTheme.successColor,
+          ),
+        );
+        await _loadPolicies();
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al actualizar póliza: $e'),
+          backgroundColor: AppTheme.errorColor,
+        ),
+      );
+    }
   }
 
   @override
@@ -214,6 +278,7 @@ class _PoliciesTabViewState extends State<PoliciesTabView> {
                   : PoliciesDataTable(
                       policies: _getFilteredPolicies(),
                       onViewDetail: _showPolicyDetail,
+                      onDeactivate: _deactivatePolicy,
                     ),
             ),
           ],

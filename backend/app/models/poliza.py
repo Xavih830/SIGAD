@@ -58,6 +58,7 @@ class Poliza(Base):
         index=True,
     )
     campos_adicionales: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    version: Mapped[int] = mapped_column(Integer, default=1, server_default=text("1"), nullable=False)
 
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

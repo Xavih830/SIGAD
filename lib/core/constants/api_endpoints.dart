@@ -5,11 +5,18 @@ abstract class ApiEndpoints {
   static const String authVinculacion = '/api/v1/auth/vinculacion';
 
   static const String polizasBase = '/api/v1/polizas';
-  static String polizas({int skip = 0, int limit = 50}) =>
-      '/api/v1/polizas?skip=$skip&limit=$limit';
+  static String polizas({int skip = 0, int limit = 50, String? estado}) {
+    final base = '/api/v1/polizas?skip=$skip&limit=$limit';
+    if (estado != null && estado.isNotEmpty) {
+      return '$base&estado=$estado';
+    }
+    return base;
+  }
   static String poliza(String id) => '/api/v1/polizas/$id';
   static String polizaEstado(String id) => '/api/v1/polizas/$id/estado';
   static String polizaDeducibles(String id) => '/api/v1/polizas/$id/deducibles';
+  static String polizaHistorial(String id, {int skip = 0, int limit = 50}) =>
+      '/api/v1/polizas/$id/historial?skip=$skip&limit=$limit';
   static String polizaPagos(String policyId) => '/api/v1/polizas/$policyId/pagos';
   static String polizaRegistrarPago(String policyId, String paymentId) =>
       '/api/v1/polizas/$policyId/pagos/$paymentId/registrar';

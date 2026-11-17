@@ -6,7 +6,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -18,9 +18,10 @@ from app.core.constants import (
     MAX_PAGE_LIMIT,
     MIN_CUOTAS_POLIZA,
 )
-from app.core.exceptions import RecursoNoEncontradoException
+from app.core.exceptions import ConflictoDominioException, RecursoNoEncontradoException
 from app.db.session import get_db
 from app.domain.poliza_evaluator import (
+    EstadoPoliza,
     validar_limite_vigencia_maxima,
     validar_y_calcular_estado_inicial,
 )
@@ -28,14 +29,18 @@ from app.models.cliente import Cliente
 from app.models.cobertura import Cobertura
 from app.models.deducible import Deducible, TipoSiniestroEnum
 from app.models.esquema_poliza import EsquemaPoliza
+from app.models.historial_cambio import HistorialCambio
 from app.models.pago import Pago
 from app.models.poliza import Poliza
 from app.models.usuario import RolEnum, Usuario
 from app.models.vehiculo import Vehiculo
+from app.schemas.base import PaginatedResponse
 from app.schemas.deducible import DeducibleResponse
 from app.schemas.poliza import (
+    HistorialCambioResponse,
     PolizaCreate,
     PolizaResponse,
+    PolizaUpdate,
     PolizaUpdateEstado,
 )
 
@@ -203,6 +208,7 @@ async def crear_poliza(
 
 @router.get("", response_model=list[PolizaResponse])
 async def listar_polizas(
+    estado: EstadoPoliza | None = Query(None, description="Filtrar pólizas por estado."),
     skip: int = Query(0, ge=0, description="Número de registros a omitir."),
     limit: int = Query(
         DEFAULT_PAGE_LIMIT,
@@ -227,6 +233,9 @@ async def listar_polizas(
         stmt = stmt.join(Cliente, Poliza.cliente_id == Cliente.id).where(
             Cliente.usuario_id == current_user.id
         )
+
+    if estado is not None:
+        stmt = stmt.where(Poliza.estado == estado)
 
     stmt = stmt.order_by(Poliza.created_at.desc()).offset(skip).limit(limit)
     result = await db.execute(stmt)
@@ -312,3 +321,118 @@ async def actualizar_estado_poliza(
     await db.commit()
     await db.refresh(poliza)
     return poliza
+
+
+@router.put("/{id}", response_model=PolizaResponse)
+async def actualizar_poliza(
+    id: uuid.UUID,
+    payload: PolizaUpdate,
+    current_user: Usuario = Depends(check_role(RolEnum.ADMIN, RolEnum.AGENTE)),
+    db: AsyncSession = Depends(get_db),
+) -> Poliza:
+    """Modificación idempotente de póliza con control optimista de versión."""
+    stmt = (
+        select(Poliza)
+        .options(
+            selectinload(Poliza.vehiculo),
+            selectinload(Poliza.deducibles),
+            selectinload(Poliza.coberturas),
+        )
+        .where(Poliza.id == id)
+    )
+    result = await db.execute(stmt)
+    poliza = result.scalar_one_or_none()
+    if not poliza:
+        raise RecursoNoEncontradoException("Recurso no encontrado.")
+
+    if payload.version != poliza.version:
+        raise ConflictoDominioException(
+            "Conflicto de versión: la póliza fue modificada por otro usuario."
+        )
+
+    nueva_fecha_inicio = payload.fecha_inicio if payload.fecha_inicio is not None else poliza.fecha_inicio
+    nueva_fecha_fin = payload.fecha_fin if payload.fecha_fin is not None else poliza.fecha_fin
+    if nueva_fecha_inicio != poliza.fecha_inicio or nueva_fecha_fin != poliza.fecha_fin:
+        validar_y_calcular_estado_inicial(nueva_fecha_inicio, nueva_fecha_fin, date.today())
+        validar_limite_vigencia_maxima(nueva_fecha_inicio, nueva_fecha_fin)
+
+    campos_cambiados = False
+    if payload.fecha_inicio is not None and payload.fecha_inicio != poliza.fecha_inicio:
+        poliza.fecha_inicio = payload.fecha_inicio
+        campos_cambiados = True
+    if payload.fecha_fin is not None and payload.fecha_fin != poliza.fecha_fin:
+        poliza.fecha_fin = payload.fecha_fin
+        campos_cambiados = True
+    if payload.valor_asegurado is not None and payload.valor_asegurado != poliza.valor_asegurado:
+        poliza.valor_asegurado = payload.valor_asegurado
+        campos_cambiados = True
+    if payload.prima_mensual is not None and payload.prima_mensual != poliza.prima_mensual:
+        poliza.prima_mensual = payload.prima_mensual
+        campos_cambiados = True
+    if payload.esquema_id is not None and payload.esquema_id != poliza.esquema_id:
+        poliza.esquema_id = payload.esquema_id
+        campos_cambiados = True
+    if payload.campos_adicionales is not None and payload.campos_adicionales != poliza.campos_adicionales:
+        poliza.campos_adicionales = payload.campos_adicionales
+        campos_cambiados = True
+
+    if payload.coberturas is not None:
+        actuales = sorted((c.nombre, Decimal(c.monto)) for c in poliza.coberturas)
+        nuevas = sorted((c.nombre, Decimal(c.monto)) for c in payload.coberturas)
+        if actuales != nuevas:
+            poliza.coberturas.clear()
+            await db.flush()
+            for c in payload.coberturas:
+                poliza.coberturas.append(
+                    Cobertura(poliza_id=poliza.id, nombre=c.nombre, monto=c.monto)
+                )
+            campos_cambiados = True
+
+    if not campos_cambiados:
+        return poliza
+
+    poliza.version += 1
+    await db.commit()
+    await db.refresh(poliza)
+    return poliza
+
+
+@router.get("/{id}/historial", response_model=PaginatedResponse[HistorialCambioResponse])
+async def listar_historial_poliza(
+    id: uuid.UUID,
+    skip: int = Query(0, ge=0, description="Número de registros a omitir."),
+    limit: int = Query(
+        DEFAULT_PAGE_LIMIT,
+        ge=1,
+        le=MAX_PAGE_LIMIT,
+        description="Límite máximo de registros a retornar.",
+    ),
+    current_user: Usuario = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> PaginatedResponse[HistorialCambioResponse]:
+    """Listado paginado de cambios auditados para una póliza."""
+    stmt_pol = select(Poliza.id).where(Poliza.id == id)
+    if current_user.rol == RolEnum.CLIENTE:
+        stmt_pol = stmt_pol.join(Cliente, Poliza.cliente_id == Cliente.id).where(
+            Cliente.usuario_id == current_user.id
+        )
+    if (await db.execute(stmt_pol)).scalar_one_or_none() is None:
+        raise RecursoNoEncontradoException("Recurso no encontrado.")
+
+    base_filter = (
+        HistorialCambio.entidad == "polizas",
+        HistorialCambio.entidad_id == id,
+    )
+    total_stmt = select(func.count()).select_from(HistorialCambio).where(*base_filter)
+    total = (await db.execute(total_stmt)).scalar_one()
+
+    items_stmt = (
+        select(HistorialCambio)
+        .where(*base_filter)
+        .order_by(HistorialCambio.fecha.desc(), HistorialCambio.id.desc())
+        .offset(skip)
+        .limit(limit)
+    )
+    rows = (await db.execute(items_stmt)).scalars().all()
+    items = [HistorialCambioResponse.model_validate(r) for r in rows]
+    return PaginatedResponse(items=items, total=total, skip=skip, limit=limit)

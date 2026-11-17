@@ -68,6 +68,34 @@ class PolizaUpdateEstado(StrictBaseSchema):
     estado: EstadoPoliza = Field(..., strict=False)
 
 
+class PolizaUpdate(StrictBaseSchema):
+    """Schema para modificación idempotente de póliza con control optimista de versión."""
+
+    fecha_inicio: date | None = Field(None, strict=False)
+    fecha_fin: date | None = Field(None, strict=False)
+    valor_asegurado: Decimal | None = Field(None, gt=0, strict=False)
+    prima_mensual: Decimal | None = Field(None, gt=0, strict=False)
+    esquema_id: uuid.UUID | None = Field(None, strict=False)
+    campos_adicionales: dict[str, ValorCampoPoliza] | None = None
+    coberturas: list[CoberturaCreate] | None = None
+    version: int = Field(..., ge=1, strict=False, description="Versión optimista actual de la póliza")
+
+
+class HistorialCambioResponse(BaseModel):
+    """Registro de auditoría en historial_cambios."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    entidad: str
+    entidad_id: uuid.UUID
+    campo: str
+    valor_anterior: str | None
+    valor_nuevo: str | None
+    usuario_id: uuid.UUID | None
+    fecha: datetime
+
+
 class PolizaResponse(BaseModel):
     """Schema de respuesta completo para una póliza."""
     model_config = ConfigDict(from_attributes=True)
@@ -85,6 +113,7 @@ class PolizaResponse(BaseModel):
     prima_mensual: Decimal
     kilometraje_emision: int
     campos_adicionales: dict[str, ValorCampoPoliza] | None = None
+    version: int = 1
     created_at: datetime
     updated_at: datetime
     vehiculo: VehiculoResponse | None = None

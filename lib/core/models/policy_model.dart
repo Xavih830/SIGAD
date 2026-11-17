@@ -53,6 +53,7 @@ class PolicyModel {
   final String? lastPaymentDate;
   final String? esquemaId;
   final Map<String, dynamic>? camposAdicionales;
+  final int version;
 
   const PolicyModel({
     required this.id,
@@ -73,6 +74,7 @@ class PolicyModel {
     this.lastPaymentDate,
     this.esquemaId,
     this.camposAdicionales,
+    this.version = 1,
   });
 
   int get daysUntilExpiration => endDate.difference(DateTime.now()).inDays;
@@ -128,6 +130,7 @@ class PolicyModel {
       camposAdicionales: json['campos_adicionales'] != null
           ? Map<String, dynamic>.from(json['campos_adicionales'] as Map)
           : null,
+      version: (json['version'] as int?) ?? 1,
     );
   }
 
@@ -169,7 +172,43 @@ class PolicyModel {
         if (clientName != null) 'cliente_nombre': clientName,
         if (paymentStatus != null) 'estado_pago': paymentStatus,
         if (lastPaymentDate != null) 'ultimo_pago': lastPaymentDate,
+        'version': version,
       };
+}
+
+class PolicyHistoryEntry {
+  final int id;
+  final String entidad;
+  final String entidadId;
+  final String campo;
+  final String? valorAnterior;
+  final String? valorNuevo;
+  final String? usuarioId;
+  final DateTime fecha;
+
+  const PolicyHistoryEntry({
+    required this.id,
+    required this.entidad,
+    required this.entidadId,
+    required this.campo,
+    this.valorAnterior,
+    this.valorNuevo,
+    this.usuarioId,
+    required this.fecha,
+  });
+
+  factory PolicyHistoryEntry.fromJson(Map<String, dynamic> json) {
+    return PolicyHistoryEntry(
+      id: json['id'] as int,
+      entidad: json['entidad'] as String? ?? 'polizas',
+      entidadId: json['entidad_id'] as String? ?? '',
+      campo: json['campo'] as String,
+      valorAnterior: json['valor_anterior']?.toString(),
+      valorNuevo: json['valor_nuevo']?.toString(),
+      usuarioId: json['usuario_id']?.toString(),
+      fecha: DateTime.parse(json['fecha'] as String),
+    );
+  }
 }
 
 class CreatePolicyRequest {

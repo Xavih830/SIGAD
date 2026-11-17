@@ -22,10 +22,11 @@ class PoliciesRepository {
   Future<List<PolicyModel>> getPolicies({
     int skip = AppConstants.defaultPageSkip,
     int limit = AppConstants.defaultPageLimit,
+    String? estado,
     String? token,
   }) async {
     final list = await _client.getList(
-      ApiEndpoints.polizas(skip: skip, limit: limit),
+      ApiEndpoints.polizas(skip: skip, limit: limit, estado: estado),
       token: token,
     );
     return list.map((item) => PolicyModel.fromJson(item)).toList();
@@ -89,6 +90,35 @@ class PoliciesRepository {
       token: token,
     );
     return PolicyModel.fromJson(data);
+  }
+
+  Future<PolicyModel> updatePolicy(
+    String id,
+    Map<String, dynamic> payload, {
+    String? token,
+  }) async {
+    final data = await _client.put(
+      ApiEndpoints.poliza(id),
+      body: payload,
+      token: token,
+    );
+    return PolicyModel.fromJson(data);
+  }
+
+  Future<List<PolicyHistoryEntry>> getPolicyHistory(
+    String policyId, {
+    int skip = AppConstants.defaultPageSkip,
+    int limit = AppConstants.defaultPageLimit,
+    String? token,
+  }) async {
+    final data = await _client.getMap(
+      ApiEndpoints.polizaHistorial(policyId, skip: skip, limit: limit),
+      token: token,
+    );
+    final rawItems = (data['items'] as List<dynamic>? ?? []);
+    return rawItems
+        .map((e) => PolicyHistoryEntry.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   Future<List<DeductibleModel>> getPolicyDeductibles(String policyId, {String? token}) async {
