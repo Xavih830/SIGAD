@@ -1,0 +1,110 @@
+# Catálogo Declarativo de Malos Olores (Code Smells) de SIGAD
+# Aplicable a Python (Backend) y Dart/Flutter (Frontend)
+# Configura umbrales, patrones sintácticos y reglas arquitectónicas.
+
+version: 1
+
+rules:
+  # -------------------------------------------------------------
+  # 1. Higiene de Comentarios y Documentación (Anti-Vibe / Anti-Changelog)
+  # -------------------------------------------------------------
+  - id: smell-docstring-inline-changelog
+    description: "Docstrings o comentarios que actúan como registro de cambios o justificación de refactor."
+    severity: error
+    languages: ["dart", "python"]
+    # Detecta verbos de corrección/refactor al inicio de docstrings
+    pattern_regex: '(?i)(///|""")\s*(Erradica|Soluciona|Corrige|Refactorizado|Arreglado|Fixes|Removed tangling|Previene el bug)\b'
+    remedy: "Documentar el contrato, propósito, parámetros y comportamiento actual. El historial de cambios pertenece a git."
+
+  - id: smell-commented-out-code
+    description: "Bloques de código comentado que ya no se usan."
+    severity: warning
+    languages: ["dart", "python"]
+    pattern_regex: '(//|#)\s*(class |def |Future<|void |import |from |final |var )\b'
+    remedy: "Eliminar el código muerto. Git mantiene el historial."
+
+  - id: smell-redundant-inline-comment
+    description: "Comentarios que parafrasean de forma obvia o redundante la línea de código subsiguiente."
+    severity: error
+    languages: ["dart", "python"]
+    pattern_regex: '(?i)(//|#)\s*(Attempt \d+|Intento \d+|Cédula vacía|Sin mayúscula|Menor a 12|Verificar botones|Mount API|Copiar código fuente)\b'
+    remedy: "Eliminar comentarios que repiten el código. El código limpio debe ser autoexplicativo."
+
+  - id: smell-dart-relative-import-violation
+    description: "Uso de navegación relativa o saltos de directorio en imports de Dart en lugar de package imports absolutos."
+    severity: error
+    languages: ["dart"]
+    pattern_regex: 'import\s+[\x27\x22](\.\./|\.\/|helpers\/|test_factories|test_fixtures)'
+    remedy: "Utilizar package imports absolutos (import 'package:sigad/...';) conforme a la Regla 3."
+
+  # -------------------------------------------------------------
+  # 2. Respeto a Capas Arquitectónicas (Anti-Bypass y Anti-Scattering)
+  # -------------------------------------------------------------
+  - id: smell-dart-raw-endpoint-in-widgets
+    description: "Uso de rutas de API crudas en widgets en lugar de ApiEndpoints y Repositorios."
+    severity: error
+    languages: ["dart"]
+    scope_path: "lib/features/**"
+    pattern_regex: "['\"]/api/v1/[^'\"]+['\"]"
+    remedy: "Consumir el repositorio correspondiente y usar ApiEndpoints de lib/core/constants/api_endpoints.dart."
+
+  - id: smell-python-magic-file-size
+    description: "Hardcoding de tamaños máximos de archivos en lugar de constantes canónicas."
+    severity: error
+    languages: ["python"]
+    scope_path: "backend/app/api/**"
+    pattern_regex: "(15\\s*\\*\\s*1024\\s*\\*\\s*1024|15728640)"
+    remedy: "Importar MAX_DOCUMENT_SIZE_BYTES de app.core.constants."
+
+  # -------------------------------------------------------------
+  # 3. Métricas y Umbrales de Complejidad (Anti-Blob / God Classes)
+  # -------------------------------------------------------------
+  - id: threshold-max-file-loc
+    description: "Archivos monolíticos excesivamente extensos."
+    severity: warning
+    thresholds:
+      dart_loc: 600
+      python_loc: 500
+    remedy: "Descomponer en componentes, mixins o módulos especializados."
+
+  # -------------------------------------------------------------
+  # 4. Configuración Estricta de Linters e Infraestructura
+  # -------------------------------------------------------------
+  - id: smell-permissive-analyzer-suppression
+    description: "Supresión permisiva de advertencias de obsolescencia en analysis_options.yaml."
+    severity: error
+    languages: ["dart"]
+    scope_path: "analysis_options.yaml"
+    pattern_regex: "deprecated_member_use:\\s*ignore"
+    remedy: "Eliminar el ignore de deprecated_member_use y modernizar el código según el SDK actual."
+
+  # -------------------------------------------------------------
+  # 5. Suites de Pruebas Antifrágiles
+  # -------------------------------------------------------------
+  - id: smell-test-tautological-assertion
+    description: "Aserciones tautológicas o triviales en pruebas que no validan comportamiento real."
+    severity: error
+    languages: ["python"]
+    scope_path: "backend/tests/**/*.py"
+    pattern_regex: '\bassert\s+(True|1\s*==\s*1)\b'
+    remedy: "Reemplazar con aserciones explícitas sobre el estado de la respuesta o modelo."
+
+  # -------------------------------------------------------------
+  # 6. Anti-Puntillismo Defensivo y Anti-Zombie Objects (Frontend)
+  # -------------------------------------------------------------
+  - id: smell-dart-dispersed-fallback-plate
+    description: "Uso de cadenas mágicas 'S/P' como fallback disperso de placas vehiculares."
+    severity: error
+    languages: ["dart"]
+    scope_path: "lib/features/**"
+    pattern_regex: "\\?\\?\\s*['\"]S/P['\"]"
+    remedy: "Verificar la presencia del objeto de vehículo o renderizar indicador explícito sin fallbacks silenciosos."
+
+  - id: smell-dart-zombie-policy-instantiation
+    description: "Instanciación de PolicyModel incompleto con id vacío como DTO de creación."
+    severity: error
+    languages: ["dart"]
+    scope_path: "lib/features/**"
+    pattern_regex: "PolicyModel\\([^)]*id:\\s*['\"]['\"]"
+    remedy: "Utilizar el DTO canónico CreatePolicyRequest en diálogos y formularios."
+
