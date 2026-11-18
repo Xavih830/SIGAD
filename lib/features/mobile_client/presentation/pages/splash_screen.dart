@@ -1,0 +1,91 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:sigad/core/models/user_model.dart';
+import 'package:sigad/core/routing/app_routes.dart';
+import 'package:sigad/core/security/app_capability.dart';
+import 'package:sigad/core/security/authorization_policy.dart';
+import 'package:sigad/core/theme/app_theme.dart';
+import 'package:sigad/core/widgets/sigad_logo.dart';
+import 'package:sigad/features/auth/presentation/bloc/auth_bloc.dart';
+import 'package:sigad/features/auth/presentation/bloc/auth_event.dart';
+import 'package:sigad/features/auth/presentation/bloc/auth_state.dart';
+
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  double _opacity = 0.0;
+
+  @override
+  void initState() {
+    super.initState();
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (mounted) {
+        setState(() {
+          _opacity = 1.0;
+        });
+      }
+    });
+
+    Future.delayed(const Duration(milliseconds: 2000), () {
+      if (mounted) {
+        context.read<AuthBloc>().add(CheckSession());
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final logoSize = 130.0;
+
+    return Scaffold(
+      backgroundColor: AppTheme.primaryColor,
+      body: BlocListener<AuthBloc, AuthState>(
+        listener: (context, state) {
+          if (state is AuthSuccess) {
+            _navigateToDashboard(state.user);
+          } else if (state is AuthInitial || state is AuthFailure || state is AuthLockedOut) {
+            _navigateToLogin();
+          }
+        },
+        child: AnimatedOpacity(
+          opacity: _opacity,
+          duration: const Duration(milliseconds: 800),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                SigadLogo(size: logoSize),
+                SizedBox(height: logoSize),
+                const SizedBox(
+                  height: 36,
+                  width: 36,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 3.0,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _navigateToDashboard(UserModel user) {
+    if (AuthorizationPolicy.canUser(user, AppCapability.accessWebDashboard)) {
+      Navigator.of(context).pushReplacementNamed(AppRoutes.dashboard);
+    } else {
+      Navigator.of(context).pushReplacementNamed(AppRoutes.mobile);
+    }
+  }
+
+  void _navigateToLogin() {
+    Navigator.of(context).pushReplacementNamed(AppRoutes.login);
+  }
+}

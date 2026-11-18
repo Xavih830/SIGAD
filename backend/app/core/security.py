@@ -122,8 +122,5 @@ def verify_otp_hmac(code: str, stored_hmac: str) -> bool:
         return True
 
     digest_anterior = compute_otp_hmac(code, settings.OTP_SECRET_KEY_ANTERIOR)
-    if hmac.compare_digest(digest_anterior, stored_hmac):
-        return True
-
-    return False
+    return bool(hmac.compare_digest(digest_anterior, stored_hmac))
 

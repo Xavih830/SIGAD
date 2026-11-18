@@ -275,6 +275,34 @@ class ApiClient {
     );
   }
 
+  Future<Map<String, dynamic>> put(
+    String path, {
+    Object? body,
+    String? token,
+    Map<String, String>? headers,
+    Duration? timeout,
+  }) async {
+    final response = await _send(
+      path: path,
+      token: token,
+      headers: headers,
+      execute: (h) => _client.put(
+        Uri.parse('$baseUrl$path'),
+        headers: h,
+        body: body != null ? jsonEncode(body) : null,
+      ).timeout(timeout ?? AppConstants.apiDefaultTimeout),
+    );
+
+    final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+    if (decoded is Map<String, dynamic>) {
+      return decoded;
+    }
+    throw ApiException(
+      statusCode: response.statusCode,
+      message: 'Respuesta inesperada: se esperaba un objeto JSON pero se recibió ${decoded.runtimeType}',
+    );
+  }
+
   Future<Map<String, dynamic>> patch(
     String path, {
     Object? body,

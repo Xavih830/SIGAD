@@ -11,12 +11,14 @@ from app.api.deps import get_db
 from app.api.v1.api import api_router
 from app.core.config import settings
 from app.core.handlers import register_handlers
+from app.core.logging_filter import install_pii_redaction_filter
 
 logger = logging.getLogger("sigad.health")
 
 
 def create_app() -> FastAPI:
     """FastAPI application factory supporting production docs blocking."""
+    install_pii_redaction_filter()
     is_production = settings.ENVIRONMENT == "production"
 
     application = FastAPI(

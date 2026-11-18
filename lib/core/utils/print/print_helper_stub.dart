@@ -1,0 +1,1 @@
+void triggerBrowserPrint([String? htmlContent]) {}

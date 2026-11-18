@@ -1,0 +1,63 @@
+name: Deploy Web to GitHub Pages (Sprint 2)
+
+on:
+  workflow_dispatch:
+    inputs:
+      api_base_url:
+        description: 'URL pública del backend en Render (ej. https://sigad-api.onrender.com)'
+        required: true
+        type: string
+  push:
+    branches:
+      - Sprint2
+    paths:
+      - 'lib/**'
+      - 'web/**'
+      - 'pubspec.yaml'
+      - '.github/workflows/deploy-gh-pages.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  deploy-pages:
+    name: Build & Publish Flutter Web to gh-pages
+    if: github.event_name == 'workflow_dispatch' || vars.API_BASE_URL != ''
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Resolve API_BASE_URL
+        id: api_url
+        run: |
+          URL="${{ inputs.api_base_url || vars.API_BASE_URL }}"
+          URL="${URL%/}"
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Build Flutter Web for GitHub Pages
+        run: |
+          flutter build web --release \
+            --base-href "/SIGAD/" \
+            --pwa-strategy=none \
+            --no-wasm-dry-run \
+            --dart-define=API_BASE_URL=${{ steps.api_url.outputs.url }}
+
+      - name: Add SPA fallback (404.html)
+        run: cp build/web/index.html build/web/404.html
+
+      - name: Deploy to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./build/web

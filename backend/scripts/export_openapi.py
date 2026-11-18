@@ -80,9 +80,6 @@ if __name__ == "__main__":
     socket.socket = SocketBloqueado
     socket.create_connection = socket_connect_bloqueado
     repo_root = backend_dir.parent
-    if len(sys.argv) > 1:
-        dest = Path(sys.argv[1]).resolve()
-    else:
-        dest = repo_root / "openapi.json"
+    dest = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else repo_root / "openapi.json"
     export_schema(dest)
     print(f"Contrato OpenAPI exportado con aislamiento estricto en: {dest}")

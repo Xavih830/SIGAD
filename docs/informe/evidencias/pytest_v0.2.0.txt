@@ -1,0 +1,670 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.2.0, pluggy-1.7.0 -- /home/xavih830/.venv-sigad/bin/python3
+cachedir: .pytest_cache
+rootdir: /mnt/c/Users/xhcg2/OneDrive/Escritorio/X/Proyectos_personales/SIGAD/backend
+configfile: pyproject.toml
+plugins: asyncio-1.5.0, anyio-4.16.0, cov-7.1.0
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=session, asyncio_default_test_loop_scope=function
+collecting ... collected 333 items / 1 deselected / 332 selected
+
+tests/integration/test_actualizacion_estados_poliza.py::test_actualizacion_estado_dispara_trigger_auditoria PASSED [  0%]
+tests/integration/test_bola_query_level.py::test_cliente_solo_ve_sus_propias_polizas PASSED [  0%]
+tests/integration/test_bola_query_level.py::test_cliente_no_puede_acceder_a_poliza_ajena_por_id PASSED [  0%]
+tests/integration/test_bola_query_level.py::test_cliente_no_puede_acceder_a_deducibles_ajenos PASSED [  1%]
+tests/integration/test_bola_query_level.py::test_cliente_no_puede_acceder_a_vehiculo_ajeno PASSED [  1%]
+tests/integration/test_bola_query_level.py::test_admin_puede_ver_todas_las_polizas PASSED [  1%]
+tests/integration/test_caddy_headers.py::test_security_headers_in_caddyfile PASSED [  2%]
+tests/integration/test_caddy_headers.py::test_caddy_routing_isolation PASSED [  2%]
+tests/integration/test_catalogos_rate_limit.py::test_catalogos_cache_control_headers PASSED [  2%]
+tests/integration/test_catalogos_rate_limit.py::test_catalogos_rate_limit_exceeded_triggers_429 PASSED [  3%]
+tests/integration/test_clientes_api.py::test_crear_cliente_con_cedula_valida_201 PASSED [  3%]
+tests/integration/test_clientes_api.py::test_crear_cliente_con_ruc_natural_201 PASSED [  3%]
+tests/integration/test_clientes_api.py::test_crear_cliente_con_ruc_sociedad_privada_201 PASSED [  3%]
+tests/integration/test_clientes_api.py::test_crear_cliente_con_ruc_sociedad_publica_201 PASSED [  4%]
+tests/integration/test_clientes_api.py::test_crear_cliente_identificacion_invalida_422 PASSED [  4%]
+tests/integration/test_clientes_api.py::test_crear_cliente_identificacion_duplicada_409 PASSED [  4%]
+tests/integration/test_clientes_api.py::test_listar_clientes_paginado_con_total PASSED [  5%]
+tests/integration/test_clientes_api.py::test_buscar_cliente_por_nombre_parcial PASSED [  5%]
+tests/integration/test_clientes_api.py::test_buscar_cliente_por_identificacion_parcial PASSED [  5%]
+tests/integration/test_clientes_api.py::test_actualizar_cliente_admin_y_agente_200 PASSED [  6%]
+tests/integration/test_clientes_api.py::test_actualizar_cliente_no_modifica_identificacion PASSED [  6%]
+tests/integration/test_clientes_api.py::test_eliminar_cliente_sin_registros_por_admin_204 PASSED [  6%]
+tests/integration/test_clientes_api.py::test_eliminar_cliente_con_polizas_retorna_409 PASSED [  6%]
+tests/integration/test_clientes_api.py::test_eliminar_cliente_por_agente_retorna_403 PASSED [  7%]
+tests/integration/test_clientes_api.py::test_cliente_no_encontrado_retorna_404 PASSED [  7%]
+tests/integration/test_documentos_api.py::test_idor_documentos PASSED    [  7%]
+tests/integration/test_documentos_api.py::test_subida_documento_tamano_excedido_413 PASSED [  8%]
+tests/integration/test_documentos_api.py::test_subida_documento_maximo_paginas_400 PASSED [  8%]
+tests/integration/test_documentos_api.py::test_subida_y_consulta_documento_valido PASSED [  8%]
+tests/integration/test_documentos_api.py::test_revisar_campos_documento_exitoso PASSED [  9%]
+tests/integration/test_documentos_api.py::test_revisar_campos_documento_prohibido_cliente PASSED [  9%]
+tests/integration/test_documentos_api.py::test_revisar_campos_documento_estado_invalido_422 PASSED [  9%]
+tests/integration/test_documentos_api.py::test_revisar_campos_documento_no_encontrado_404 PASSED [  9%]
+tests/integration/test_documentos_api.py::test_subida_imagen_dimensiones_excedidas_400 PASSED [ 10%]
+tests/integration/test_documentos_api.py::test_subida_documento_mime_no_permitido_rechazado PASSED [ 10%]
+tests/integration/test_documentos_api.py::test_subida_documento_magic_bytes_pdf_valido PASSED [ 10%]
+tests/integration/test_e2e_complete_universe.py::test_complete_universe_end_to_end FAILED [ 11%]
+tests/integration/test_esquemas_api.py::test_creacion_independiente_tres_dominios PASSED [ 11%]
+tests/integration/test_esquemas_api.py::test_transiciones_atomicas_y_conmutacion_versiones PASSED [ 11%]
+tests/integration/test_esquemas_api.py::test_inmutabilidad_put_y_delete_prohibidos PASSED [ 12%]
+tests/integration/test_esquemas_api.py::test_ataque_redos_por_api_rechazado_con_422 PASSED [ 12%]
+tests/integration/test_esquemas_api.py::test_ataque_null_byte_por_api_rechazado_con_422 PASSED [ 12%]
+tests/integration/test_esquemas_api.py::test_ataque_campos_duplicados_por_api_rechazado_con_422 PASSED [ 12%]
+tests/integration/test_esquemas_api.py::test_probar_esquema_archivo_vacio_retorna_400 PASSED [ 13%]
+tests/integration/test_esquemas_api.py::test_probar_esquema_error_extraccion_limpia_temporal PASSED [ 13%]
+tests/integration/test_esquemas_api.py::test_probar_esquema_imagen_dimensiones_excedidas_400 PASSED [ 13%]
+tests/integration/test_esquemas_api.py::test_probar_esquema_exitoso_multi_dominio PASSED [ 14%]
+tests/integration/test_esquemas_api.py::test_rbac_cliente_bloqueado_completamente PASSED [ 14%]
+tests/integration/test_esquemas_api.py::test_rbac_agente_lectura_y_prueba_si_escritura_no PASSED [ 14%]
+tests/integration/test_esquemas_poliza_api.py::test_crear_y_listar_esquemas_poliza PASSED [ 15%]
+tests/integration/test_esquemas_poliza_api.py::test_versionamiento_y_activacion_esquema_poliza PASSED [ 15%]
+tests/integration/test_esquemas_poliza_api.py::test_validacion_fail_fast_campos_adicionales_en_poliza PASSED [ 15%]
+tests/integration/test_failure_modes_and_boundaries.py::test_rechazo_poliza_cliente_inexistente PASSED [ 15%]
+tests/integration/test_failure_modes_and_boundaries.py::test_rechazo_poliza_vehiculo_inexistente PASSED [ 16%]
+tests/integration/test_failure_modes_and_boundaries.py::test_rechazo_poliza_numero_duplicado PASSED [ 16%]
+tests/integration/test_failure_modes_and_boundaries.py::test_rechazo_poliza_escalamiento_rol_cliente PASSED [ 16%]
+tests/integration/test_failure_modes_and_boundaries.py::test_rechazo_poliza_fechas_identicas_duracion_cero PASSED [ 17%]
+tests/integration/test_failure_modes_and_boundaries.py::test_rechazo_actualizar_estado_poliza_inexistente PASSED [ 17%]
+tests/integration/test_failure_modes_and_boundaries.py::test_rechazo_actualizar_estado_poliza_valor_prohibido PASSED [ 17%]
+tests/integration/test_failure_modes_and_boundaries.py::test_rechazo_cliente_cedula_invalida_modulo_10 PASSED [ 18%]
+tests/integration/test_failure_modes_and_boundaries.py::test_rechazo_cliente_cedula_provincia_invalida PASSED [ 18%]
+tests/integration/test_failure_modes_and_boundaries.py::test_rechazo_cliente_cedula_duplicada PASSED [ 18%]
+tests/integration/test_failure_modes_and_boundaries.py::test_rechazo_otp_cliente_inexistente PASSED [ 18%]
+tests/integration/test_failure_modes_and_boundaries.py::test_rechazo_vehiculo_cliente_inexistente PASSED [ 19%]
+tests/integration/test_failure_modes_and_boundaries.py::test_rechazo_vehiculo_placa_duplicada PASSED [ 19%]
+tests/integration/test_failure_modes_and_boundaries.py::test_rechazo_vehiculo_placa_malformada PASSED [ 19%]
+tests/integration/test_failure_modes_and_boundaries.py::test_rechazo_token_jwt_manipulado_o_adulterado PASSED [ 20%]
+tests/integration/test_failure_modes_and_boundaries.py::test_rechazo_token_jwt_texto_plano_malformado PASSED [ 20%]
+tests/integration/test_failure_modes_and_boundaries.py::test_rechazo_login_sql_injection_en_identificador PASSED [ 20%]
+tests/integration/test_failure_modes_and_boundaries.py::test_rechazo_taller_inexistente PASSED [ 21%]
+tests/integration/test_failure_modes_and_boundaries.py::test_rechazo_asistencia_inexistente PASSED [ 21%]
+tests/integration/test_health_probes.py::test_api_health_and_readiness_endpoints PASSED [ 21%]
+tests/integration/test_health_probes.py::test_worker_health_endpoints PASSED [ 21%]
+tests/integration/test_health_probes.py::test_docker_compose_healthchecks_and_restart_policy PASSED [ 22%]
+tests/integration/test_idor_documentos.py::test_cliente_no_puede_descargar_documento_ajeno_retorna_404 PASSED [ 22%]
+tests/integration/test_idor_documentos.py::test_cliente_no_puede_consultar_metadatos_documento_ajeno PASSED [ 22%]
+tests/integration/test_idor_documentos.py::test_agente_puede_acceder_documentos_de_asegurados PASSED [ 23%]
+tests/integration/test_idor_documentos.py::test_admin_puede_acceder_cualquier_documento PASSED [ 23%]
+tests/integration/test_idor_documentos.py::test_solicitud_anonima_documentos_retorna_401 PASSED [ 23%]
+tests/integration/test_ingress_strict_boundary.py::test_rechazo_inyeccion_campos_extra_mass_assignment PASSED [ 24%]
+tests/integration/test_ingress_strict_boundary.py::test_rechazo_ruta_duplicada_cargar PASSED [ 24%]
+tests/integration/test_ingress_strict_boundary.py::test_rechazo_subida_sin_content_type PASSED [ 24%]
+tests/integration/test_ingress_strict_boundary.py::test_rechazo_coercion_implicita_tipos_strict_mode PASSED [ 25%]
+tests/integration/test_kilometraje_snapshot.py::test_vehiculo_no_tiene_columna_kilometraje PASSED [ 25%]
+tests/integration/test_kilometraje_snapshot.py::test_kilometraje_snapshot_inmutable PASSED [ 25%]
+tests/integration/test_migracion_deducibles_historicos.py::test_migracion_deducibles_historicos_idempotente PASSED [ 25%]
+tests/integration/test_multiverse_paths.py::test_happy_path_emision_poliza_flujo_completo PASSED [ 26%]
+tests/integration/test_multiverse_paths.py::test_happy_path_registro_cliente_y_vehiculo_con_formatos_oficiales PASSED [ 26%]
+tests/integration/test_multiverse_paths.py::test_happy_path_login_polimorfico PASSED [ 26%]
+tests/integration/test_multiverse_paths.py::test_happy_path_transicion_estado_poliza PASSED [ 27%]
+tests/integration/test_multiverse_paths.py::test_bad_path_emision_cliente_inexistente PASSED [ 27%]
+tests/integration/test_multiverse_paths.py::test_bad_path_emision_vehiculo_inexistente PASSED [ 27%]
+tests/integration/test_multiverse_paths.py::test_bad_path_numero_poliza_duplicado PASSED [ 28%]
+tests/integration/test_multiverse_paths.py::test_bad_path_login_credenciales_invalidas PASSED [ 28%]
+tests/integration/test_multiverse_paths.py::test_bad_path_consulta_poliza_id_inexistente PASSED [ 28%]
+tests/integration/test_multiverse_paths.py::test_horrible_path_poliza_cronologia_invertida_o_cero PASSED [ 28%]
+tests/integration/test_multiverse_paths.py::test_horrible_path_poliza_vigencia_mayor_a_5_anios PASSED [ 29%]
+tests/integration/test_multiverse_paths.py::test_horrible_path_cliente_cedula_violaciones_modulo_10 PASSED [ 29%]
+tests/integration/test_multiverse_paths.py::test_horrible_path_vehiculo_placas_ant_deformes PASSED [ 29%]
+tests/integration/test_multiverse_paths.py::test_horrible_path_montos_financieros_negativos_o_cero PASSED [ 30%]
+tests/integration/test_multiverse_paths.py::test_horrible_path_inyeccion_sql_en_login_y_consultas PASSED [ 30%]
+tests/integration/test_multiverse_paths.py::test_shitty_path_bola_idor_acceso_cruzado_entre_inquilinos PASSED [ 30%]
+tests/integration/test_multiverse_paths.py::test_shitty_path_escalamiento_de_privilegios_rol_cliente PASSED [ 31%]
+tests/integration/test_multiverse_paths.py::test_shitty_path_falsificacion_de_tokens_jwt PASSED [ 31%]
+tests/integration/test_multiverse_paths.py::test_shitty_path_inyeccion_caracteres_nulos_y_xss PASSED [ 31%]
+tests/integration/test_pagos_api.py::test_listar_pagos_propios_cliente PASSED [ 31%]
+tests/integration/test_pagos_api.py::test_anti_bola_cliente_no_puede_ver_pagos_ajenos PASSED [ 32%]
+tests/integration/test_pagos_api.py::test_staff_puede_ver_pagos_cualquier_poliza PASSED [ 32%]
+tests/integration/test_pagos_api.py::test_poliza_inexistente_retorna_404 PASSED [ 32%]
+tests/integration/test_pagos_api.py::test_agente_puede_registrar_pago_cuota PASSED [ 33%]
+tests/integration/test_pagos_api.py::test_cliente_no_puede_registrar_pago_403 PASSED [ 33%]
+tests/integration/test_pagos_api.py::test_registrar_pago_cuota_inexistente_404 PASSED [ 33%]
+tests/integration/test_polizas_api.py::test_crear_poliza_flujo_completo PASSED [ 34%]
+tests/integration/test_polizas_api.py::test_crear_poliza_fecha_fin_menor_rechaza_422 PASSED [ 34%]
+tests/integration/test_polizas_api.py::test_crear_poliza_vigencia_mayor_a_5_anios_rechaza_422 PASSED [ 34%]
+tests/integration/test_polizas_api.py::test_crear_vehiculo_con_placa_ant_valida PASSED [ 34%]
+tests/integration/test_polizas_api.py::test_crear_vehiculo_placa_invalida_rechaza_422 PASSED [ 35%]
+tests/integration/test_polizas_api.py::test_listar_polizas_paginacion_limites_y_validacion PASSED [ 35%]
+tests/integration/test_polizas_api.py::test_listar_vehiculos_paginacion_limites_y_validacion PASSED [ 35%]
+tests/integration/test_polizas_update_historial.py::test_put_poliza_cambio_genera_historial_con_usuario PASSED [ 36%]
+tests/integration/test_polizas_update_historial.py::test_put_poliza_idempotente_no_duplica_historial PASSED [ 36%]
+tests/integration/test_polizas_update_historial.py::test_put_poliza_version_desactualizada_rechaza_409 PASSED [ 36%]
+tests/integration/test_polizas_update_historial.py::test_cancelar_poliza_no_borra_y_filtra_por_cancelada PASSED [ 37%]
+tests/integration/test_recursos_ajenos_404.py::test_cliente_acceso_uniforme_404_cliente_detalle PASSED [ 37%]
+tests/integration/test_recursos_ajenos_404.py::test_cliente_acceso_uniforme_404_vehiculo_detalle PASSED [ 37%]
+tests/integration/test_recursos_ajenos_404.py::test_cliente_crear_vehiculo_uniforme_404_cliente_id PASSED [ 37%]
+tests/integration/test_recursos_ajenos_404.py::test_cliente_acceso_uniforme_404_poliza_detalle PASSED [ 38%]
+tests/integration/test_recursos_ajenos_404.py::test_cliente_acceso_uniforme_404_poliza_deducibles PASSED [ 38%]
+tests/integration/test_recursos_ajenos_404.py::test_cliente_acceso_uniforme_404_poliza_pagos PASSED [ 38%]
+tests/integration/test_refresh_rotation.py::test_login_crea_exactamente_una_sesion PASSED [ 39%]
+tests/integration/test_refresh_rotation.py::test_refresh_valido_rota_token_y_conserva_familia PASSED [ 39%]
+tests/integration/test_refresh_rotation.py::test_reutilizacion_refresh_revoca_toda_la_familia PASSED [ 39%]
+tests/integration/test_refresh_rotation.py::test_access_token_en_endpoint_refresh_retorna_401 PASSED [ 40%]
+tests/integration/test_refresh_rotation.py::test_logout_revoca_familia_y_refresh_posterior_falla PASSED [ 40%]
+tests/integration/test_security_headers.py::test_caddy_routing_isolation PASSED [ 40%]
+tests/integration/test_security_headers.py::test_security_headers_in_caddyfile PASSED [ 40%]
+tests/integration/test_smtp_mailpit.py::test_smtp_mailpit_delivery_and_otp_matching FAILED [ 41%]
+tests/unit/test_domain/test_data_flow_no_anomalies.py::test_ast_data_flow_static_no_anomalies PASSED [ 41%]
+tests/unit/test_domain/test_data_flow_no_anomalies.py::test_dynamic_all_uses_coverage PASSED [ 41%]
+tests/unit/test_domain/test_data_flow_no_anomalies.py::test_bva_vigencia_maxima_5_anios PASSED [ 42%]
+tests/unit/test_domain/test_data_flow_no_anomalies.py::test_bva_bisiesto_vigencia PASSED [ 42%]
+tests/unit/test_domain/test_fecha_invalida_lanza_excepcion.py::test_fecha_fin_menor_que_inicio_lanza_excepcion PASSED [ 42%]
+tests/unit/test_domain/test_fecha_invalida_lanza_excepcion.py::test_fecha_fin_igual_a_inicio_lanza_excepcion PASSED [ 43%]
+tests/unit/test_domain/test_fecha_invalida_lanza_excepcion.py::test_no_retorna_error_string PASSED [ 43%]
+tests/unit/test_domain/test_poliza_activa.py::test_poliza_vigente_retorna_activa PASSED [ 43%]
+tests/unit/test_domain/test_poliza_activa.py::test_poliza_limite_inferior_inicio_hoy PASSED [ 43%]
+tests/unit/test_domain/test_poliza_activa.py::test_poliza_limite_fin_hoy PASSED [ 44%]
+tests/unit/test_domain/test_poliza_pendiente.py::test_poliza_inicio_futuro_retorna_pendiente PASSED [ 44%]
+tests/unit/test_domain/test_poliza_pendiente.py::test_poliza_limite_inferior_futuro_inmediato PASSED [ 44%]
+tests/unit/test_domain/test_poliza_vencida_al_crear.py::test_poliza_fechas_pasadas_retorna_vencida PASSED [ 45%]
+tests/unit/test_domain/test_poliza_vencida_al_crear.py::test_poliza_vencida_ayer PASSED [ 45%]
+tests/unit/test_domain_cfg.py::TestDominioCFG::test_path_1_fecha_fin_invalida PASSED [ 45%]
+tests/unit/test_domain_cfg.py::TestDominioCFG::test_path_2_poliza_pendiente PASSED [ 46%]
+tests/unit/test_domain_cfg.py::TestDominioCFG::test_path_3_poliza_vencida PASSED [ 46%]
+tests/unit/test_domain_cfg.py::TestDominioCFG::test_path_4_poliza_activa PASSED [ 46%]
+tests/unit/test_domain_cfg.py::TestDominioCFG::test_limite_vigencia_5_anios_cobertura PASSED [ 46%]
+tests/unit/test_domain_cfg.py::TestDominioCFG::test_limite_vigencia_bisiesto_cobertura PASSED [ 47%]
+tests/unit/test_esquemas/test_esquema_poliza_model.py::test_esquema_poliza_instanciacion PASSED [ 47%]
+tests/unit/test_esquemas/test_esquema_poliza_model.py::test_poliza_modelo_acepta_esquema_id_y_campos_adicionales PASSED [ 47%]
+tests/unit/test_esquemas/test_esquemas_unit.py::test_aplicar_esquema_dominio_vehicular PASSED [ 48%]
+tests/unit/test_esquemas/test_esquemas_unit.py::test_aplicar_esquema_dominio_vida PASSED [ 48%]
+tests/unit/test_esquemas/test_esquemas_unit.py::test_aplicar_esquema_dominio_hogar PASSED [ 48%]
+tests/unit/test_esquemas/test_esquemas_unit.py::test_aplicar_esquema_cruce_dominios_incompatible_retorna_cero PASSED [ 49%]
+tests/unit/test_esquemas/test_esquemas_unit.py::test_adversarial_texto_gigante_no_bloquea PASSED [ 49%]
+tests/unit/test_esquemas/test_esquemas_unit.py::test_adversarial_caracteres_especiales_y_emojis PASSED [ 49%]
+tests/unit/test_esquemas/test_esquemas_unit.py::test_adversarial_orden_de_reglas_respetado PASSED [ 50%]
+tests/unit/test_esquemas/test_esquemas_unit.py::test_adversarial_datos_corruptos_lanza_keyerror_fail_fast PASSED [ 50%]
+tests/unit/test_esquemas/test_esquemas_unit.py::test_adversarial_grupo_captura_invalido_lanza_indexerror_fail_fast PASSED [ 50%]
+tests/unit/test_esquemas/test_esquemas_unit.py::test_adversarial_lista_vacia PASSED [ 50%]
+tests/unit/test_esquemas/test_esquemas_unit.py::test_adversarial_rechazo_evil_regex_anti_redos[(a+)+] PASSED [ 51%]
+tests/unit/test_esquemas/test_esquemas_unit.py::test_adversarial_rechazo_evil_regex_anti_redos[([0-9]+)+] PASSED [ 51%]
+tests/unit/test_esquemas/test_esquemas_unit.py::test_adversarial_rechazo_evil_regex_anti_redos[((a*)*)*] PASSED [ 51%]
+tests/unit/test_esquemas/test_esquemas_unit.py::test_adversarial_rechazo_evil_regex_anti_redos[([a-zA-Z]+)*] PASSED [ 52%]
+tests/unit/test_esquemas/test_esquemas_unit.py::test_adversarial_rechazo_evil_regex_anti_redos[(((((((((((a)))))))))))] PASSED [ 52%]
+tests/unit/test_esquemas/test_esquemas_unit.py::test_adversarial_rechazo_evil_regex_anti_redos[[A-Z+(] PASSED [ 52%]
+tests/unit/test_esquemas/test_esquemas_unit.py::test_adversarial_null_byte_injection_rechazado[payload_nulo0] PASSED [ 53%]
+tests/unit/test_esquemas/test_esquemas_unit.py::test_adversarial_null_byte_injection_rechazado[payload_nulo1] PASSED [ 53%]
+tests/unit/test_esquemas/test_esquemas_unit.py::test_adversarial_campos_duplicados_en_mismo_esquema_rechazado PASSED [ 53%]
+tests/unit/test_esquemas/test_esquemas_unit.py::test_adversarial_incoherencia_fecha_y_formato PASSED [ 53%]
+tests/unit/test_esquemas/test_esquemas_unit.py::test_adversarial_codigo_esquema_formatos_invalidos[codigo con espacios] PASSED [ 54%]
+tests/unit/test_esquemas/test_esquemas_unit.py::test_adversarial_codigo_esquema_formatos_invalidos[codigo_en_minusculas] PASSED [ 54%]
+tests/unit/test_esquemas/test_esquemas_unit.py::test_adversarial_codigo_esquema_formatos_invalidos[CODIGO-CON-GUION-MEDIO] PASSED [ 54%]
+tests/unit/test_esquemas/test_esquemas_unit.py::test_adversarial_codigo_esquema_formatos_invalidos[CODIGO$ESPECIAL#] PASSED [ 55%]
+tests/unit/test_esquemas/test_esquemas_unit.py::test_adversarial_codigo_esquema_formatos_invalidos[<script>alert(1)</script>] PASSED [ 55%]
+tests/unit/test_esquemas/test_esquemas_unit.py::test_adversarial_codigo_esquema_formatos_invalidos[CODIGO\x00NULO] PASSED [ 55%]
+tests/unit/test_esquemas/test_esquemas_unit.py::test_adversarial_codigo_esquema_formatos_invalidos[] PASSED [ 56%]
+tests/unit/test_esquemas/test_esquemas_unit.py::test_adversarial_codigo_esquema_formatos_invalidos[AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA] PASSED [ 56%]
+tests/unit/test_esquemas/test_esquemas_unit.py::test_adversarial_limites_cardinalidad_campos PASSED [ 56%]
+tests/unit/test_esquemas/test_esquemas_unit.py::test_adversarial_inyeccion_atributos_extra_bloqueada PASSED [ 56%]
+tests/unit/test_esquemas/test_esquemas_unit.py::test_preset_vehicular_valido PASSED [ 57%]
+tests/unit/test_esquemas/test_esquemas_unit.py::test_preset_vida_valido PASSED [ 57%]
+tests/unit/test_esquemas/test_esquemas_unit.py::test_preset_hogar_valido PASSED [ 57%]
+tests/unit/test_otp/test_constant_time_vinculacion_structural.py::test_constant_time_vinculacion_structural_ast PASSED [ 58%]
+tests/unit/test_otp/test_constant_time_vinculacion_structural.py::test_constant_time_vinculacion_functional_nonexistent_cedula PASSED [ 58%]
+tests/unit/test_otp/test_otp_bruteforce.py::test_otp_bruteforce_invalidates_at_third_failed_attempt PASSED [ 58%]
+tests/unit/test_otp/test_otp_hmac_verification.py::test_otp_hmac_verification_with_actual_key PASSED [ 59%]
+tests/unit/test_otp/test_otp_hmac_verification.py::test_otp_hmac_verification_with_anterior_key PASSED [ 59%]
+tests/unit/test_otp/test_otp_hmac_verification.py::test_otp_hmac_verification_wrong_code PASSED [ 59%]
+tests/unit/test_otp/test_otp_hmac_verification.py::test_otp_hmac_verification_tampered_key PASSED [ 59%]
+tests/unit/test_otp/test_vinculacion_con_password.py::test_password_complexity_valid PASSED [ 60%]
+tests/unit/test_otp/test_vinculacion_con_password.py::test_password_too_short PASSED [ 60%]
+tests/unit/test_otp/test_vinculacion_con_password.py::test_password_missing_uppercase PASSED [ 60%]
+tests/unit/test_otp/test_vinculacion_con_password.py::test_password_missing_lowercase PASSED [ 61%]
+tests/unit/test_otp/test_vinculacion_con_password.py::test_password_missing_digit PASSED [ 61%]
+tests/unit/test_otp/test_vinculacion_con_password.py::test_password_missing_special_char PASSED [ 61%]
+tests/unit/test_otp/test_vinculacion_con_password.py::test_vinculacion_request_schema_validation PASSED [ 62%]
+tests/unit/test_otp/test_vinculacion_email_duplicado.py::test_vinculacion_email_duplicado PASSED [ 62%]
+tests/unit/test_poliza_service_unit.py::test_poliza_service_crear_y_actualizar_sin_bd PASSED [ 62%]
+tests/unit/test_poliza_service_unit.py::test_poliza_service_anti_bola_sin_bd PASSED [ 62%]
+tests/unit/test_quality/test_architecture_config.py::test_single_canonical_env_in_root PASSED [ 63%]
+tests/unit/test_quality/test_architecture_config.py::test_settings_config_uses_deterministic_absolute_path PASSED [ 63%]
+tests/unit/test_quality/test_architecture_config.py::test_docker_compose_enforces_fail_fast_upload_dir PASSED [ 63%]
+tests/unit/test_quality/test_architecture_config.py::test_flutter_api_config_enforces_fail_fast PASSED [ 64%]
+tests/unit/test_quality/test_architecture_config.py::test_cors_security_not_wildcard_with_credentials PASSED [ 64%]
+tests/unit/test_quality/test_architecture_config.py::test_caddyfile_does_not_expose_mailpit_publicly PASSED [ 64%]
+tests/unit/test_quality/test_architecture_config.py::test_upload_dir_validator_prevents_path_traversal PASSED [ 65%]
+tests/unit/test_quality/test_architecture_config.py::test_client_env_example_has_no_backend_secrets FAILED [ 65%]
+tests/unit/test_quality/test_architecture_config.py::test_storage_service_enforces_magic_bytes_and_extensions PASSED [ 65%]
+tests/unit/test_quality/test_architecture_config.py::test_seeder_blocks_execution_in_production PASSED [ 65%]
+tests/unit/test_quality/test_architecture_config.py::test_seeder_blocks_execution_on_test_database PASSED [ 66%]
+tests/unit/test_quality/test_architecture_config.py::test_dockerfile_enforces_non_root_user PASSED [ 66%]
+tests/unit/test_quality/test_architecture_config.py::test_smtp_password_masked_secretstr PASSED [ 66%]
+tests/unit/test_quality/test_architecture_config.py::test_vinculacion_rejects_already_linked_client PASSED [ 67%]
+tests/unit/test_quality/test_architecture_config.py::test_health_probe_masks_internal_error PASSED [ 67%]
+tests/unit/test_quality/test_centralized_constants.py::test_constantes_limites_almacenamiento PASSED [ 67%]
+tests/unit/test_quality/test_centralized_constants.py::test_constantes_ocr_y_timeouts PASSED [ 68%]
+tests/unit/test_quality/test_centralized_constants.py::test_constantes_seguridad_otp PASSED [ 68%]
+tests/unit/test_quality/test_centralized_constants.py::test_constantes_rate_limit_y_polizas PASSED [ 68%]
+tests/unit/test_quality/test_centralized_constants.py::test_constantes_pagos_y_cuotas PASSED [ 68%]
+tests/unit/test_quality/test_centralized_constants.py::test_constantes_esquemas_extraccion PASSED [ 69%]
+tests/unit/test_quality/test_centralized_constants.py::test_constantes_paginacion PASSED [ 69%]
+tests/unit/test_quality/test_client_generation_drift.py::test_dart_models_align_with_openapi_schemas PASSED [ 69%]
+tests/unit/test_quality/test_decision_table.py::test_regla_1_no_legible_rechaza_indiferente_a_otras_condiciones PASSED [ 70%]
+tests/unit/test_quality/test_decision_table.py::test_regla_2_baja_confianza_requiere_revision_manual PASSED [ 70%]
+tests/unit/test_quality/test_decision_table.py::test_regla_3_placa_duplicada_rechaza_aun_con_alta_confianza PASSED [ 70%]
+tests/unit/test_quality/test_decision_table.py::test_regla_4_aprobacion_automatica PASSED [ 71%]
+tests/unit/test_quality/test_decision_table.py::test_regla_5_discrepancia_vehiculo_revision_manual PASSED [ 71%]
+tests/unit/test_quality/test_decision_table.py::test_fronteras_confianza_80_por_ciento PASSED [ 71%]
+tests/unit/test_quality/test_decision_table.py::test_completitud_y_consistencia_16_combinaciones PASSED [ 71%]
+tests/unit/test_quality/test_logging_pii.py::test_redact_ecuadorian_cedula_and_ruc PASSED [ 72%]
+tests/unit/test_quality/test_logging_pii.py::test_redact_email_address PASSED [ 72%]
+tests/unit/test_quality/test_logging_pii.py::test_redact_vehicle_plates PASSED [ 72%]
+tests/unit/test_quality/test_logging_pii.py::test_redact_passwords_and_secrets PASSED [ 73%]
+tests/unit/test_quality/test_logging_pii.py::test_pii_logging_filter_in_standard_logger PASSED [ 73%]
+tests/unit/test_quality/test_logging_pii.py::test_non_pii_operational_ids_preserved PASSED [ 73%]
+tests/unit/test_quality/test_mechanical_guardrails.py::test_flutter_repositories_use_canonical_api_endpoints PASSED [ 74%]
+tests/unit/test_quality/test_mechanical_guardrails.py::test_no_magic_file_size_limits_hardcoded_in_backend_endpoints PASSED [ 74%]
+tests/unit/test_quality/test_mechanical_guardrails.py::test_flutter_network_no_hardcoded_endpoint_magic_strings_outside_registry PASSED [ 74%]
+tests/unit/test_quality/test_mechanical_guardrails.py::test_declarative_code_smells_compliance FAILED [ 75%]
+tests/unit/test_quality/test_openapi_drift.py::test_openapi_contract_no_drift PASSED [ 75%]
+tests/unit/test_quality/test_openapi_export.py::test_defensive_socket_blocks_network PASSED [ 75%]
+tests/unit/test_quality/test_openapi_export.py::test_openapi_schema_export_structure PASSED [ 75%]
+tests/unit/test_quality/test_openapi_export.py::test_export_sin_env_usa_variables_ficticias PASSED [ 76%]
+tests/unit/test_quality/test_openapi_not_exposed.py::test_openapi_and_swagger_blocked_in_production PASSED [ 76%]
+tests/unit/test_quality/test_openapi_not_exposed.py::test_openapi_and_swagger_exposed_in_development PASSED [ 76%]
+tests/unit/test_quality/test_uat_coverage.py::test_uat_matrix_completeness PASSED [ 77%]
+tests/unit/test_quality/test_uat_coverage.py::test_all_uat_test_modules_exist_on_disk PASSED [ 77%]
+tests/unit/test_quality/test_uat_coverage.py::test_uat_schema_attributes PASSED [ 77%]
+tests/unit/test_rate_limit/test_rate_limit_layers.py::test_layer1_ip_rate_limit_login PASSED [ 78%]
+tests/unit/test_rate_limit/test_rate_limit_layers.py::test_layer1_ip_rate_limit_vinculacion PASSED [ 78%]
+tests/unit/test_rate_limit/test_rate_limit_layers.py::test_layer2_identity_rate_limit PASSED [ 78%]
+tests/unit/test_rate_limit/test_rate_limit_layers.py::test_layer3_tarpitting_burst_delay PASSED [ 78%]
+tests/unit/test_rate_limit/test_rate_limit_layers.py::test_layer4_account_lockout PASSED [ 79%]
+tests/unit/test_rate_limit/test_rate_limit_layers.py::test_layer1_ip_rate_limit_catalogo PASSED [ 79%]
+tests/unit/test_rate_limit/test_rate_limit_layers.py::test_get_client_ip_resolution PASSED [ 79%]
+tests/unit/test_rate_limit/test_rate_limit_lru.py::test_rate_limiter_uses_bounded_lru_cache PASSED [ 80%]
+tests/unit/test_rate_limit/test_rate_limit_lru.py::test_rate_limiter_lru_eviction_and_max_size PASSED [ 80%]
+tests/unit/test_rate_limit/test_rate_limit_lru.py::test_rate_limiter_memory_footprint_under_2mb PASSED [ 80%]
+tests/unit/test_security/test_argon2_no_event_loop_block.py::test_argon2_no_event_loop_block PASSED [ 81%]
+tests/unit/test_security/test_constant_time_login_structural.py::test_constant_time_login_structural PASSED [ 81%]
+tests/unit/test_security/test_login_movil_por_cedula.py::test_login_movil_por_cedula PASSED [ 81%]
+tests/unit/test_security/test_login_polimorfico.py::test_login_polimorfico PASSED [ 81%]
+tests/unit/test_security/test_no_pii_in_sqlalchemy_logs.py::test_no_pii_in_sqlalchemy_logs PASSED [ 82%]
+tests/unit/test_security/test_uniform_error_responses.py::test_uniform_error_responses PASSED [ 82%]
+tests/unit/test_validation/test_ecuadorian_id.py::test_valid_ecuadorian_ids PASSED [ 82%]
+tests/unit/test_validation/test_ecuadorian_id.py::test_invalid_length_ids PASSED [ 83%]
+tests/unit/test_validation/test_ecuadorian_id.py::test_non_numeric_ids PASSED [ 83%]
+tests/unit/test_validation/test_ecuadorian_id.py::test_invalid_province_code PASSED [ 83%]
+tests/unit/test_validation/test_ecuadorian_id.py::test_invalid_third_digit PASSED [ 84%]
+tests/unit/test_validation/test_ecuadorian_id.py::test_invalid_verifier_digit PASSED [ 84%]
+tests/unit/test_validation/test_ecuadorian_id.py::test_valid_ruc_types PASSED [ 84%]
+tests/unit/test_validation/test_ecuadorian_id.py::test_invalid_rucs PASSED [ 84%]
+tests/unit/test_validation/test_ecuadorian_id.py::test_validar_identificacion PASSED [ 85%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_validas_y_clasificacion[PBA-1234-PARTICULAR-Particular Pichincha 3L+4D] PASSED [ 85%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_validas_y_clasificacion[GYE-0987-PARTICULAR-Particular Guayas 3L+4D] PASSED [ 85%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_validas_y_clasificacion[ICA-0001-PARTICULAR-Particular Imbabura 3L+4D] PASSED [ 86%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_validas_y_clasificacion[PTA-1234-PARTICULAR-Particular Pichincha segunda letra T (D5)] PASSED [ 86%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_validas_y_clasificacion[IAA-5678-SERVICIO_PUBLICO-Servicio p\xfablico Imbabura segunda letra A] PASSED [ 86%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_validas_y_clasificacion[UAA-1111-SERVICIO_PUBLICO-Servicio p\xfablico Sucumb\xedos segunda letra A] PASSED [ 87%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_validas_y_clasificacion[AB-1234-MOTO-Moto est\xe1ndar 2L+4D] PASSED [ 87%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_validas_y_clasificacion[AB-123C-MOTO-Moto alfanum\xe9rica ANT actual 2L+3D+1L] PASSED [ 87%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_validas_y_clasificacion[GAA-1234-SERVICIO_PUBLICO-Servicio p\xfablico Guayas segunda letra A] PASSED [ 87%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_validas_y_clasificacion[PUB-0001-SERVICIO_PUBLICO-Servicio p\xfablico Pichincha segunda letra U] PASSED [ 88%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_validas_y_clasificacion[PZA-9999-SERVICIO_PUBLICO-Servicio p\xfablico Pichincha segunda letra Z] PASSED [ 88%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_validas_y_clasificacion[PEA-1234-GUBERNAMENTAL-Gubernamental Pichincha segunda letra E] PASSED [ 88%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_validas_y_clasificacion[PXA-1234-GUBERNAMENTAL-Gubernamental Pichincha segunda letra X] PASSED [ 89%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_validas_y_clasificacion[PMA-0001-GUBERNAMENTAL-Gubernamental Pichincha segunda letra M] PASSED [ 89%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_validas_y_clasificacion[PSA-1234-GUBERNAMENTAL-Gubernamental Pichincha segunda letra S] PASSED [ 89%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_validas_y_clasificacion[XXX-0000-GUBERNAMENTAL-Frontera ceros 0000 (segunda letra X gubernamental)] PASSED [ 90%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_validas_y_clasificacion[XXX-9999-GUBERNAMENTAL-Frontera nueves 9999 (segunda letra X gubernamental)] PASSED [ 90%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_validas_y_clasificacion[AB-000A-MOTO-Frontera ceros en moto alfanum\xe9rica 2L+3D+1L] PASSED [ 90%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_invalidas[XYZ-123-Formato antiguo descontinuado 3L+3D] PASSED [ 90%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_invalidas[1234-ABC-Orden invertido] PASSED [ 91%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_invalidas[AB C-123-Espacio intermedio y 3 d\xedgitos] PASSED [ 91%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_invalidas[PBA 1234-Espacio en lugar de gui\xf3n] PASSED [ 91%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_invalidas[PBA1234-Sin gui\xf3n] PASSED [ 92%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_invalidas[PBA-12345-5 d\xedgitos en auto] PASSED [ 92%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_invalidas[PBA-123-3 d\xedgitos en auto] PASSED [ 92%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_invalidas[A-1234-Solo 1 letra] PASSED [ 93%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_invalidas[ABCD-1234-4 letras] PASSED [ 93%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_invalidas[AB-12C-Moto alfanum\xe9rica con 2 d\xedgitos en vez de 3] PASSED [ 93%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_invalidas[AB-1234C-Moto alfanum\xe9rica con 4 d\xedgitos y letra] PASSED [ 93%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_invalidas[pba-1234-Min\xfasculas no permitidas] PASSED [ 94%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_invalidas[-Cadena vac\xeda] PASSED [ 94%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_invalidas[   -Solo espacios] PASSED [ 94%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_invalidas[PBA-123A-Auto con letra al final no permitido] PASSED [ 95%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_invalidas[ab-000a-Moto alfanum\xe9rica en min\xfasculas] PASSED [ 95%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_invalidas[AB-000a-Letra final de moto en min\xfascula] PASSED [ 95%]
+tests/unit/test_validation/test_plates.py::test_placas_ant_invalidas[AB-12345-Moto con 5 d\xedgitos] PASSED [ 96%]
+tests/unit/test_workers/test_extraccion_200_dpi_liberacion_memoria.py::test_extraccion_200_dpi_liberacion_memoria PASSED [ 96%]
+tests/unit/test_workers/test_extraccion_200_dpi_liberacion_memoria.py::test_extraer_documento_sync_con_esquemas_personalizados PASSED [ 96%]
+tests/unit/test_workers/test_outbox_process_timeout.py::test_outbox_process_timeout_exceeded PASSED [ 96%]
+tests/unit/test_workers/test_outbox_watchdog_safe.py::test_outbox_watchdog_rescues_abandoned_document PASSED [ 97%]
+tests/unit/test_workers/test_pool_kill_workers.py::test_pool_kill_workers_terminates_subprocess PASSED [ 97%]
+tests/unit/test_workers/test_resilient_pool_recovery.py::test_resilient_pool_recovery_after_timeout PASSED [ 97%]
+tests/unit/test_workers/test_scheduler_transiciones_completas.py::test_scheduler_transiciones_completas_e_idempotencia PASSED [ 98%]
+tests/unit/test_workers/test_storage_image_dimensions.py::test_imagen_dimensiones_validas_retorna_tupla PASSED [ 98%]
+tests/unit/test_workers/test_storage_image_dimensions.py::test_imagen_ancho_excedido_lanza_excepcion PASSED [ 98%]
+tests/unit/test_workers/test_storage_image_dimensions.py::test_imagen_alto_excedido_lanza_excepcion PASSED [ 99%]
+tests/unit/test_workers/test_storage_image_dimensions.py::test_imagen_resolucion_total_excedida_lanza_excepcion PASSED [ 99%]
+tests/unit/test_workers/test_storage_image_dimensions.py::test_imagen_bytes_corruptos_lanza_storage_exception PASSED [ 99%]
+tests/unit/test_workers/test_watchdog_incrementa_intentos.py::test_watchdog_atomic_increment_to_permanent_error PASSED [100%]
+
+=================================== FAILURES ===================================
+______________________ test_complete_universe_end_to_end _______________________
+
+    @contextlib.contextmanager
+    def map_httpcore_exceptions() -> typing.Iterator[None]:
+        global HTTPCORE_EXC_MAP
+        if len(HTTPCORE_EXC_MAP) == 0:
+            HTTPCORE_EXC_MAP = _load_httpcore_exceptions()
+        try:
+>           yield
+
+/home/xavih830/.venv-sigad/lib/python3.12/site-packages/httpx/_transports/default.py:101: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/home/xavih830/.venv-sigad/lib/python3.12/site-packages/httpx/_transports/default.py:394: in handle_async_request
+    resp = await self._pool.handle_async_request(req)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/xavih830/.venv-sigad/lib/python3.12/site-packages/httpcore/_async/connection_pool.py:256: in handle_async_request
+    raise exc from None
+/home/xavih830/.venv-sigad/lib/python3.12/site-packages/httpcore/_async/connection_pool.py:236: in handle_async_request
+    response = await connection.handle_async_request(
+/home/xavih830/.venv-sigad/lib/python3.12/site-packages/httpcore/_async/connection.py:101: in handle_async_request
+    raise exc
+/home/xavih830/.venv-sigad/lib/python3.12/site-packages/httpcore/_async/connection.py:78: in handle_async_request
+    stream = await self._connect(request)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/xavih830/.venv-sigad/lib/python3.12/site-packages/httpcore/_async/connection.py:124: in _connect
+    stream = await self._network_backend.connect_tcp(**kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/xavih830/.venv-sigad/lib/python3.12/site-packages/httpcore/_backends/auto.py:31: in connect_tcp
+    return await self._backend.connect_tcp(
+/home/xavih830/.venv-sigad/lib/python3.12/site-packages/httpcore/_backends/anyio.py:113: in connect_tcp
+    with map_exceptions(exc_map):
+/usr/lib/python3.12/contextlib.py:158: in __exit__
+    self.gen.throw(value)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+map = {<class 'TimeoutError'>: <class 'httpcore.ConnectTimeout'>, <class 'OSError'>: <class 'httpcore.ConnectError'>, <class 'anyio.BrokenResourceError'>: <class 'httpcore.ConnectError'>}
+
+    @contextlib.contextmanager
+    def map_exceptions(map: ExceptionMapping) -> typing.Iterator[None]:
+        try:
+            yield
+        except Exception as exc:  # noqa: PIE786
+            for from_exc, to_exc in map.items():
+                if isinstance(exc, from_exc):
+>                   raise to_exc(exc) from exc
+E                   httpcore.ConnectError: All connection attempts failed
+
+/home/xavih830/.venv-sigad/lib/python3.12/site-packages/httpcore/_exceptions.py:14: ConnectError
+
+The above exception was the direct cause of the following exception:
+
+db_session = <sqlalchemy.ext.asyncio.session.AsyncSession object at 0x7f1f82bb70e0>
+base_scenario = ScenarioBundle(admin_user=<app.models.usuario.Usuario object at 0x7f1f82b00470>, admin_token='eyJhbGciOiJIUzI1NiIsInR5...DgtYTZlYi02MWEzYjllZmMyMzUiLCJleHAiOjE3OTQ5NjAyOTIsInR5cGUiOiJhY2Nlc3MifQ.aRcWhiXh4NJuSvXcssx_7UVnOEhNZ0dWWggjgwRF4aY')
+
+    async def test_complete_universe_end_to_end(
+        db_session: AsyncSession,
+        base_scenario: ScenarioBundle,
+    ):
+        """Executes the entire 0-to-100% operational lifecycle with live components and zero mocks."""
+        mailpit_api = f"http://{TEST_MAILPIT_HOST}:{TEST_MAILPIT_HTTP_PORT}/api/v1"
+    
+        async with make_client() as anon_client:
+            admin_login = await anon_client.post(
+                "/api/v1/auth/login",
+                json=login_payload(base_scenario.admin_user.email),
+            )
+            assert admin_login.status_code == 200, f"Login de Administrador debe ser exitoso: {admin_login.text}"
+            admin_token = admin_login.json()["access_token"]
+    
+        async with make_client(admin_token) as admin_client:
+            taller_res = await admin_client.post(
+                "/api/v1/talleres",
+                json=taller_payload(),
+            )
+            assert taller_res.status_code in [200, 201], f"Admin debe poder crear taller afiliado: {taller_res.text}"
+            assert taller_res.json()["nombre"] == TALLER_NOMBRE
+    
+            asistencia_res = await admin_client.post(
+                "/api/v1/asistencias",
+                json=asistencia_payload(),
+            )
+            assert asistencia_res.status_code in [200, 201], f"Admin debe poder crear asistencia: {asistencia_res.text}"
+    
+        async with make_client() as anon_client:
+            agente_login = await anon_client.post(
+                "/api/v1/auth/login",
+                json=login_payload(base_scenario.broker_user.email),
+            )
+            assert agente_login.status_code == 200, f"Login de Agente debe ser exitoso: {agente_login.text}"
+            agente_token = agente_login.json()["access_token"]
+    
+        c_payload = cliente_payload()
+        cedula_cliente = c_payload["identificacion"]
+        email_cliente = c_payload["email"]
+    
+        async with make_client(agente_token) as agente_client:
+            cliente_res = await agente_client.post(
+                "/api/v1/clientes",
+                json=c_payload,
+            )
+            assert cliente_res.status_code in [200, 201], f"Agente debe poder registrar cliente: {cliente_res.text}"
+            cliente_data = cliente_res.json()
+            cliente_id = cliente_data["id"]
+            otp_generado = cliente_data["codigo_vinculacion"]
+            assert len(otp_generado) == 6, "El código OTP generado debe tener 6 dígitos."
+    
+        target_msg = None
+        async with httpx.AsyncClient() as mail_client:
+            for _ in range(15):
+>               mail_resp = await mail_client.get(f"{mailpit_api}/messages")
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/integration/test_e2e_complete_universe.py:101: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+/home/xavih830/.venv-sigad/lib/python3.12/site-packages/httpx/_client.py:1768: in get
+    return await self.request(
+/home/xavih830/.venv-sigad/lib/python3.12/site-packages/httpx/_client.py:1540: in request
+    return await self.send(request, auth=auth, follow_redirects=follow_redirects)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/xavih830/.venv-sigad/lib/python3.12/site-packages/httpx/_client.py:1629: in send
+    response = await self._send_handling_auth(
+/home/xavih830/.venv-sigad/lib/python3.12/site-packages/httpx/_client.py:1657: in _send_handling_auth
+    response = await self._send_handling_redirects(
+/home/xavih830/.venv-sigad/lib/python3.12/site-packages/httpx/_client.py:1694: in _send_handling_redirects
+    response = await self._send_single_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/xavih830/.venv-sigad/lib/python3.12/site-packages/httpx/_client.py:1730: in _send_single_request
+    response = await transport.handle_async_request(request)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+/home/xavih830/.venv-sigad/lib/python3.12/site-packages/httpx/_transports/default.py:393: in handle_async_request
+    with map_httpcore_exceptions():
+/usr/lib/python3.12/contextlib.py:158: in __exit__
+    self.gen.throw(value)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    @contextlib.contextmanager
+    def map_httpcore_exceptions() -> typing.Iterator[None]:
+        global HTTPCORE_EXC_MAP
+        if len(HTTPCORE_EXC_MAP) == 0:
+            HTTPCORE_EXC_MAP = _load_httpcore_exceptions()
+        try:
+            yield
+        except Exception as exc:
+            mapped_exc = None
+    
+            for from_exc, to_exc in HTTPCORE_EXC_MAP.items():
+                if not isinstance(exc, from_exc):
+                    continue
+                # We want to map to the most specific exception we can find.
+                # Eg if `exc` is an `httpcore.ReadTimeout`, we want to map to
+                # `httpx.ReadTimeout`, not just `httpx.TimeoutException`.
+                if mapped_exc is None or issubclass(to_exc, mapped_exc):
+                    mapped_exc = to_exc
+    
+            if mapped_exc is None:  # pragma: no cover
+                raise
+    
+            message = str(exc)
+>           raise mapped_exc(message) from exc
+E           httpx.ConnectError: All connection attempts failed
+
+/home/xavih830/.venv-sigad/lib/python3.12/site-packages/httpx/_transports/default.py:118: ConnectError
+------------------------------ Captured log call -------------------------------
+ERROR    sigad.smtp:smtp_service.py:89 smtp_backup_failed recipient=[REDACTED_EMAIL] error=[Errno 111] Connection refused
+_________________ test_smtp_mailpit_delivery_and_otp_matching __________________
+
+    async def test_smtp_mailpit_delivery_and_otp_matching():
+        """Verify that an email sent via SMTP arrives in Mailpit and contains the exact OTP."""
+        mailpit_api_url = f"http://{TEST_MAILPIT_HOST}:{TEST_MAILPIT_HTTP_PORT}/api/v1/messages"
+    
+        test_otp = DEFAULT_OTP
+        test_client_name = CLIENTE_NAME
+        test_email = f"carlos.{uuid.uuid4().hex[:6]}@cliente.ec"
+    
+        delivered = await smtp_service.send_otp_email(
+            destinatario=test_email,
+            codigo_otp=test_otp,
+            nombres=test_client_name,
+            smtp_host=TEST_MAILPIT_HOST,
+        )
+>       assert delivered is True, "El envío SMTP debe ser exitoso hacia Mailpit."
+E       AssertionError: El envío SMTP debe ser exitoso hacia Mailpit.
+E       assert False is True
+
+tests/integration/test_smtp_mailpit.py:33: AssertionError
+------------------------------ Captured log call -------------------------------
+ERROR    sigad.smtp:smtp_service.py:89 smtp_backup_failed recipient=[REDACTED_EMAIL] error=[Errno 111] Connection refused
+________________ test_client_env_example_has_no_backend_secrets ________________
+
+    def test_client_env_example_has_no_backend_secrets():
+        """Verify that .env.client.example contains ONLY public client config and no backend secrets."""
+        repo_root = Path(__file__).resolve().parents[4]
+        client_env_path = repo_root / ".env.client.example"
+    
+>       assert client_env_path.is_file(), ".env.client.example debe existir para guiar al frontend"
+E       AssertionError: .env.client.example debe existir para guiar al frontend
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/mnt/c/Users/xhcg2/OneDrive/Escritorio/X/Proyectos_personales/SIGAD/.env.client.example').is_file
+
+tests/unit/test_quality/test_architecture_config.py:138: AssertionError
+___________________ test_declarative_code_smells_compliance ____________________
+
+    def test_declarative_code_smells_compliance():
+        """Ejecuta las reglas de olores declarativas de .agents/rules/code_smells_config.yml sobre el repositorio."""
+        import yaml
+    
+        config_path = REPO_ROOT / ".agents" / "rules" / "code_smells_config.yml"
+>       assert config_path.is_file(), f"No se encontró el archivo de configuración {config_path}"
+E       AssertionError: No se encontró el archivo de configuración /mnt/c/Users/xhcg2/OneDrive/Escritorio/X/Proyectos_personales/SIGAD/.agents/rules/code_smells_config.yml
+E       assert False
+E        +  where False = is_file()
+E        +    where is_file = PosixPath('/mnt/c/Users/xhcg2/OneDrive/Escritorio/X/Proyectos_personales/SIGAD/.agents/rules/code_smells_config.yml').is_file
+
+tests/unit/test_quality/test_mechanical_guardrails.py:84: AssertionError
+=============================== warnings summary ===============================
+tests/integration/test_documentos_api.py::test_subida_documento_tamano_excedido_413
+  /home/xavih830/.venv-sigad/lib/python3.12/site-packages/fastapi/routing.py:372: StarletteDeprecationWarning: 'HTTP_413_REQUEST_ENTITY_TOO_LARGE' is deprecated. Use 'HTTP_413_CONTENT_TOO_LARGE' instead.
+    return await dependant.call(**values)
+
+tests/integration/test_documentos_api.py::test_revisar_campos_documento_estado_invalido_422
+tests/integration/test_esquemas_api.py::test_probar_esquema_error_extraccion_limpia_temporal
+tests/integration/test_ingress_strict_boundary.py::test_rechazo_subida_sin_content_type
+  /home/xavih830/.venv-sigad/lib/python3.12/site-packages/fastapi/routing.py:372: StarletteDeprecationWarning: 'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated. Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead.
+    return await dependant.call(**values)
+
+tests/integration/test_esquemas_poliza_api.py::test_validacion_fail_fast_campos_adicionales_en_poliza
+  /mnt/c/Users/xhcg2/OneDrive/Escritorio/X/Proyectos_personales/SIGAD/backend/app/services/poliza_service.py:124: StarletteDeprecationWarning: 'HTTP_422_UNPROCESSABLE_ENTITY' is deprecated. Use 'HTTP_422_UNPROCESSABLE_CONTENT' instead.
+    _validar_campos_esquema(esquema_poliza, payload.campos_adicionales or {})
+
+tests/integration/test_health_probes.py::test_docker_compose_healthchecks_and_restart_policy
+  tests/integration/test_health_probes.py:52: PytestWarning: The test <Function test_docker_compose_healthchecks_and_restart_policy> is marked with '@pytest.mark.asyncio' but it is not an async function. Please remove the asyncio mark. If the test is not marked explicitly, check for global marks applied via 'pytestmark'.
+    def test_docker_compose_healthchecks_and_restart_policy():
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+- generated xml file: /mnt/c/Users/xhcg2/OneDrive/Escritorio/X/Proyectos_personales/SIGAD/docs/informe/evidencias/pytest_v0.2.0.xml -
+================================ tests coverage ================================
+_______________ coverage: platform linux, python 3.12.3-final-0 ________________
+
+Name                                      Stmts   Miss  Cover
+-------------------------------------------------------------
+app/__init__.py                               0      0   100%
+app/api/__init__.py                           0      0   100%
+app/api/deps.py                              40      7    82%
+app/api/v1/__init__.py                        0      0   100%
+app/api/v1/api.py                            13      0   100%
+app/api/v1/endpoints/__init__.py              0      0   100%
+app/api/v1/endpoints/asistencias.py          37      8    78%
+app/api/v1/endpoints/auth.py                115     20    83%
+app/api/v1/endpoints/clientes.py             49      9    82%
+app/api/v1/endpoints/documentos.py          113     52    54%
+app/api/v1/endpoints/esquemas.py             84     48    43%
+app/api/v1/endpoints/esquemas_poliza.py      41     19    54%
+app/api/v1/endpoints/pagos.py                43     18    58%
+app/api/v1/endpoints/polizas.py              40      0   100%
+app/api/v1/endpoints/talleres.py             39      9    77%
+app/api/v1/endpoints/vehiculos.py            73     39    47%
+app/core/__init__.py                          0      0   100%
+app/core/config.py                           80     18    78%
+app/core/constants.py                        52      0   100%
+app/core/exceptions.py                       22      0   100%
+app/core/handlers.py                         30      3    90%
+app/core/logging_filter.py                   33      1    97%
+app/core/rate_limit.py                      140     12    91%
+app/core/security.py                         58      0   100%
+app/db/__init__.py                            3      0   100%
+app/db/base.py                                3      0   100%
+app/db/session.py                            13      1    92%
+app/domain/__init__.py                        0      0   100%
+app/domain/poliza_evaluator.py               28      0   100%
+app/main.py                                  43      3    93%
+app/models/__init__.py                       19      0   100%
+app/models/asistencia.py                     15      0   100%
+app/models/cliente.py                        19      0   100%
+app/models/cobertura.py                      15      0   100%
+app/models/codigo_vinculacion.py             16      0   100%
+app/models/deducible.py                      22      0   100%
+app/models/documento.py                      33      0   100%
+app/models/esquema_extraccion.py             18      0   100%
+app/models/esquema_poliza.py                 18      0   100%
+app/models/historial_cambio.py               16      0   100%
+app/models/inspeccion.py                     15      0   100%
+app/models/pago.py                           22      0   100%
+app/models/poliza.py                         33      0   100%
+app/models/resultado_extraccion.py           18      0   100%
+app/models/sesion_auth.py                    18      0   100%
+app/models/taller.py                         15      0   100%
+app/models/usuario.py                        22      0   100%
+app/models/vehiculo.py                       22      0   100%
+app/repositories/__init__.py                  3      0   100%
+app/repositories/base.py                     34      8    76%
+app/repositories/cliente_repository.py       20      1    95%
+app/repositories/poliza_repository.py        69     12    83%
+app/schemas/__init__.py                       9      0   100%
+app/schemas/auth.py                          24      1    96%
+app/schemas/base.py                          11      0   100%
+app/schemas/catalogo.py                      34      0   100%
+app/schemas/cliente.py                      141      8    94%
+app/schemas/deducible.py                     18      0   100%
+app/schemas/documento.py                     45      0   100%
+app/schemas/esquema_extraccion.py            81      1    99%
+app/schemas/esquema_poliza.py                61      6    90%
+app/schemas/pago.py                          19      0   100%
+app/schemas/poliza.py                        81      0   100%
+app/schemas/vehiculo.py                     119     13    89%
+app/services/cliente_service.py              89     51    43%
+app/services/extraccion_service.py          107     35    67%
+app/services/poliza_service.py              138     44    68%
+app/services/resilient_pool.py               43      4    91%
+app/services/sesion_service.py               73     27    63%
+app/services/smtp_service.py                 43      9    79%
+app/services/storage_service.py             109     10    91%
+app/workers/__init__.py                       5      0   100%
+app/workers/health.py                        44     15    66%
+app/workers/outbox_consumer.py               78     61    22%
+app/workers/scheduler.py                     46     12    74%
+app/workers/watchdog.py                      28     12    57%
+app/workers/worker_entrypoint.py             36     36     0%
+-------------------------------------------------------------
+TOTAL                                      3156    633    80%
+Coverage HTML written to dir ../docs/informe/evidencias/cov_v0.2.0
+=========================== short test summary info ============================
+FAILED tests/integration/test_e2e_complete_universe.py::test_complete_universe_end_to_end
+FAILED tests/integration/test_smtp_mailpit.py::test_smtp_mailpit_delivery_and_otp_matching
+FAILED tests/unit/test_quality/test_architecture_config.py::test_client_env_example_has_no_backend_secrets
+FAILED tests/unit/test_quality/test_mechanical_guardrails.py::test_declarative_code_smells_compliance
+====== 4 failed, 328 passed, 1 deselected, 6 warnings in 60.55s (0:01:00) ======
