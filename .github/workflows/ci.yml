@@ -171,13 +171,14 @@ jobs:
 
   build-backend-image:
     name: Build & Publish Backend Image to GHCR
-    needs: [changes, backend-validation]
+    needs: [changes, backend-validation, flutter-validation]
     if: |
       always() &&
       github.event_name == 'push' &&
       github.ref == 'refs/heads/main' &&
       (needs.changes.outputs.backend == 'true' || needs.changes.outputs.shared == 'true') &&
-      needs.backend-validation.result == 'success'
+      needs.backend-validation.result == 'success' &&
+      (needs.changes.outputs.frontend != 'true' || needs.flutter-validation.result == 'success')
     runs-on: ubuntu-latest
     permissions:
       packages: write
@@ -218,13 +219,14 @@ jobs:
 
   build-frontend-and-apk:
     name: Build Flutter Web & Android APK
-    needs: [changes, flutter-validation]
+    needs: [changes, backend-validation, flutter-validation]
     if: |
       always() &&
       github.event_name == 'push' &&
       github.ref == 'refs/heads/main' &&
       (needs.changes.outputs.frontend == 'true' || needs.changes.outputs.shared == 'true') &&
-      needs.flutter-validation.result == 'success'
+      needs.flutter-validation.result == 'success' &&
+      (needs.changes.outputs.backend != 'true' || needs.backend-validation.result == 'success')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Repository
