@@ -8,6 +8,7 @@ Create Date: 2026-11-19 15:50:00.000000
 from collections.abc import Sequence
 
 import sqlalchemy as sa
+
 from alembic import op
 
 revision: str = "0010_cliente_direccion"
