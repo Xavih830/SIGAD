@@ -25,6 +25,7 @@ class Cliente(Base):
     nombres: Mapped[str] = mapped_column(String(255), nullable=False)
     email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     telefono: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    direccion: Mapped[str | None] = mapped_column(String(500), nullable=True)
     usuario_id: Mapped[uuid.UUID | None] = mapped_column(
         UUID(as_uuid=True),
         ForeignKey("usuarios.id", ondelete="SET NULL"),

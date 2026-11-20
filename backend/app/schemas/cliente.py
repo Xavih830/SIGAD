@@ -148,8 +148,9 @@ class ClienteCreate(StrictBaseSchema):
 
     identificacion: str = Field(..., description="Cédula (10 dígitos) o RUC (13 dígitos) ecuatoriano")
     nombres: str = Field(..., min_length=2, max_length=255)
-    email: EmailStr | None = None
+    email: str | None = None
     telefono: str | None = Field(None, max_length=20)
+    direccion: str | None = Field(None, max_length=500)
 
     @field_validator("identificacion")
     @classmethod
@@ -158,6 +159,30 @@ class ClienteCreate(StrictBaseSchema):
         if not validar_identificacion(v_clean):
             raise ValueError("Identificación ecuatoriana inválida (Cédula de 10 dígitos o RUC de 13 dígitos).")
         return v_clean
+
+    @field_validator("email")
+    @classmethod
+    def check_email(cls, v: str | None) -> str:
+        if v is None or not v.strip() or v.strip().upper() == "N/A":
+            return "N/A"
+        clean = v.strip().lower()
+        if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", clean):
+            raise ValueError("El correo electrónico no es válido.")
+        return clean
+
+    @field_validator("telefono")
+    @classmethod
+    def check_telefono(cls, v: str | None) -> str:
+        if v is None or not v.strip() or v.strip().upper() == "N/A":
+            return "N/A"
+        return v.strip()
+
+    @field_validator("direccion")
+    @classmethod
+    def check_direccion(cls, v: str | None) -> str:
+        if v is None or not v.strip() or v.strip().upper() == "N/A":
+            return "N/A"
+        return v.strip()
 
 
 class ClienteResponse(BaseModel):
@@ -168,6 +193,7 @@ class ClienteResponse(BaseModel):
     nombres: str
     email: str | None = None
     telefono: str | None = None
+    direccion: str | None = None
     usuario_id: uuid.UUID | None = None
     created_at: datetime
     codigo_vinculacion: str | None = None
@@ -179,8 +205,39 @@ class ClienteUpdate(StrictBaseSchema):
     """Schema para actualización parcial de datos de contacto de cliente."""
 
     nombres: str | None = Field(None, min_length=2, max_length=255)
-    email: EmailStr | None = None
+    email: str | None = None
     telefono: str | None = Field(None, max_length=20)
+    direccion: str | None = Field(None, max_length=500)
+
+    @field_validator("email")
+    @classmethod
+    def check_email(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        if not v.strip() or v.strip().upper() == "N/A":
+            return "N/A"
+        clean = v.strip().lower()
+        if not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", clean):
+            raise ValueError("El correo electrónico no es válido.")
+        return clean
+
+    @field_validator("telefono")
+    @classmethod
+    def check_telefono(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        if not v.strip() or v.strip().upper() == "N/A":
+            return "N/A"
+        return v.strip()
+
+    @field_validator("direccion")
+    @classmethod
+    def check_direccion(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
+        if not v.strip() or v.strip().upper() == "N/A":
+            return "N/A"
+        return v.strip()
 
 
 class VinculacionRequest(StrictBaseSchema):

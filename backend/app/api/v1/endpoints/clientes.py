@@ -31,7 +31,7 @@ async def registrar_cliente(
     service = ClienteService(db)
     nuevo_cliente, codigo_plano = await service.registrar(body)
 
-    if nuevo_cliente.email:
+    if nuevo_cliente.email and nuevo_cliente.email != "N/A":
         background_tasks.add_task(
             smtp_service.send_otp_email,
             destinatario=nuevo_cliente.email,
@@ -45,6 +45,7 @@ async def registrar_cliente(
         nombres=nuevo_cliente.nombres,
         email=nuevo_cliente.email,
         telefono=nuevo_cliente.telefono,
+        direccion=nuevo_cliente.direccion,
         usuario_id=nuevo_cliente.usuario_id,
         created_at=nuevo_cliente.created_at,
         codigo_vinculacion=codigo_plano,
@@ -63,7 +64,19 @@ async def listar_clientes(
     service = ClienteService(db)
     clientes, total = await service.listar(q=q, skip=skip, limit=limit)
     return PaginatedResponse(
-        items=[ClienteResponse.model_validate(c) for c in clientes],
+        items=[
+            ClienteResponse(
+                id=c.id,
+                identificacion=c.identificacion,
+                nombres=c.nombres,
+                email=c.email,
+                telefono=c.telefono,
+                direccion=c.direccion,
+                usuario_id=c.usuario_id,
+                created_at=c.created_at,
+            )
+            for c in clientes
+        ],
         total=total,
         skip=skip,
         limit=limit,
@@ -83,7 +96,16 @@ async def obtener_cliente(
     if current_user.rol not in (RolEnum.ADMIN, RolEnum.AGENTE) and cliente.usuario_id != current_user.id:
         raise RecursoNoEncontradoException("Recurso no encontrado.")
 
-    return ClienteResponse.model_validate(cliente)
+    return ClienteResponse(
+        id=cliente.id,
+        identificacion=cliente.identificacion,
+        nombres=cliente.nombres,
+        email=cliente.email,
+        telefono=cliente.telefono,
+        direccion=cliente.direccion,
+        usuario_id=cliente.usuario_id,
+        created_at=cliente.created_at,
+    )
 
 
 @router.patch("/{cliente_id}", response_model=ClienteResponse)
@@ -96,7 +118,16 @@ async def actualizar_cliente(
     """Actualiza datos de contacto de un cliente asegurado (ADMIN y AGENTE)."""
     service = ClienteService(db)
     cliente = await service.actualizar(cliente_id, body)
-    return ClienteResponse.model_validate(cliente)
+    return ClienteResponse(
+        id=cliente.id,
+        identificacion=cliente.identificacion,
+        nombres=cliente.nombres,
+        email=cliente.email,
+        telefono=cliente.telefono,
+        direccion=cliente.direccion,
+        usuario_id=cliente.usuario_id,
+        created_at=cliente.created_at,
+    )
 
 
 @router.delete("/{cliente_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -121,7 +152,7 @@ async def regenerar_otp_cliente(
     service = ClienteService(db)
     cliente, codigo_plano = await service.regenerar_otp(cliente_id)
 
-    if cliente.email:
+    if cliente.email and cliente.email != "N/A":
         background_tasks.add_task(
             smtp_service.send_otp_email,
             destinatario=cliente.email,
@@ -135,6 +166,7 @@ async def regenerar_otp_cliente(
         nombres=cliente.nombres,
         email=cliente.email,
         telefono=cliente.telefono,
+        direccion=cliente.direccion,
         usuario_id=cliente.usuario_id,
         created_at=cliente.created_at,
         codigo_vinculacion=codigo_plano,

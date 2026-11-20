@@ -251,3 +251,45 @@ async def test_cliente_no_encontrado_retorna_404(base_scenario: ScenarioBundle):
 
         del_res = await client.delete(f"/api/v1/clientes/{fake_id}")
         assert del_res.status_code == 404
+
+
+async def test_crear_cliente_con_campos_opcionales_vacios_guarda_na(base_scenario: ScenarioBundle):
+    """Campos opcionales vacíos o ausentes se guardan como 'N/A'."""
+    admin_token = base_scenario.admin_token
+    cedula = generar_cedula_valida()
+    payload = {
+        "identificacion": cedula,
+        "nombres": "Cliente Sin Datos Opcionales",
+        "email": "",
+        "telefono": "",
+        "direccion": "",
+    }
+
+    async with make_client(admin_token) as client:
+        res = await client.post("/api/v1/clientes", json=payload)
+        assert res.status_code == 201
+        data = res.json()
+        assert data["identificacion"] == cedula
+        assert data["nombres"] == "Cliente Sin Datos Opcionales"
+        assert data["email"] == "N/A"
+        assert data["telefono"] == "N/A"
+        assert data["direccion"] == "N/A"
+
+
+async def test_crear_cliente_con_direccion_valida(base_scenario: ScenarioBundle):
+    """Cliente con dirección especificada persiste y retorna dicho campo."""
+    admin_token = base_scenario.admin_token
+    cedula = generar_cedula_valida()
+    payload = {
+        "identificacion": cedula,
+        "nombres": "Cliente Con Direccion",
+        "email": f"cli_dir_{uuid.uuid4().hex[:6]}@test.sigad.ec",
+        "telefono": "0987654321",
+        "direccion": "Av. 9 de Octubre y Malecón",
+    }
+
+    async with make_client(admin_token) as client:
+        res = await client.post("/api/v1/clientes", json=payload)
+        assert res.status_code == 201
+        data = res.json()
+        assert data["direccion"] == "Av. 9 de Octubre y Malecón"

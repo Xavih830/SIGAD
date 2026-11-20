@@ -2577,8 +2577,7 @@
           "email": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "email"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -2597,6 +2596,18 @@
               }
             ],
             "title": "Telefono"
+          },
+          "direccion": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Direccion"
           }
         },
         "additionalProperties": false,
@@ -2644,6 +2655,17 @@
               }
             ],
             "title": "Telefono"
+          },
+          "direccion": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Direccion"
           },
           "usuario_id": {
             "anyOf": [
@@ -2702,8 +2724,7 @@
           "email": {
             "anyOf": [
               {
-                "type": "string",
-                "format": "email"
+                "type": "string"
               },
               {
                 "type": "null"
@@ -2722,6 +2743,18 @@
               }
             ],
             "title": "Telefono"
+          },
+          "direccion": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Direccion"
           }
         },
         "additionalProperties": false,
