@@ -4,6 +4,7 @@ class ClientModel {
   final String nombres;
   final String? email;
   final String? telefono;
+  final String? direccion;
   final String? usuarioId;
   final String? codigoVinculacion;
   final DateTime? createdAt;
@@ -14,6 +15,7 @@ class ClientModel {
     required this.nombres,
     this.email,
     this.telefono,
+    this.direccion,
     this.usuarioId,
     this.codigoVinculacion,
     this.createdAt,
@@ -26,6 +28,7 @@ class ClientModel {
       nombres: json['nombres'] as String,
       email: json['email'] as String?,
       telefono: json['telefono'] as String?,
+      direccion: json['direccion'] as String?,
       usuarioId: json['usuario_id'] as String?,
       codigoVinculacion: json['codigo_vinculacion'] as String?,
       createdAt: json['created_at'] != null
@@ -40,6 +43,7 @@ class ClientModel {
         'nombres': nombres,
         if (email != null) 'email': email,
         if (telefono != null) 'telefono': telefono,
+        if (direccion != null) 'direccion': direccion,
         if (usuarioId != null) 'usuario_id': usuarioId,
         if (codigoVinculacion != null) 'codigo_vinculacion': codigoVinculacion,
         if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
@@ -51,19 +55,22 @@ class CreateClientRequest {
   final String nombres;
   final String? email;
   final String? telefono;
+  final String? direccion;
 
   const CreateClientRequest({
     required this.identificacion,
     required this.nombres,
     this.email,
     this.telefono,
+    this.direccion,
   });
 
   Map<String, dynamic> toJson() => {
         'identificacion': identificacion,
         'nombres': nombres,
-        if (email != null && email!.isNotEmpty) 'email': email,
-        if (telefono != null && telefono!.isNotEmpty) 'telefono': telefono,
+        'email': (email != null && email!.trim().isNotEmpty) ? email!.trim() : 'N/A',
+        'telefono': (telefono != null && telefono!.trim().isNotEmpty) ? telefono!.trim() : 'N/A',
+        'direccion': (direccion != null && direccion!.trim().isNotEmpty) ? direccion!.trim() : 'N/A',
       };
 }
 
@@ -71,17 +78,20 @@ class UpdateClientRequest {
   final String? nombres;
   final String? email;
   final String? telefono;
+  final String? direccion;
 
   const UpdateClientRequest({
     this.nombres,
     this.email,
     this.telefono,
+    this.direccion,
   });
 
   Map<String, dynamic> toJson() => {
         if (nombres != null) 'nombres': nombres,
-        if (email != null) 'email': email,
-        if (telefono != null) 'telefono': telefono,
+        if (email != null) 'email': email!.trim().isEmpty ? 'N/A' : email!.trim(),
+        if (telefono != null) 'telefono': telefono!.trim().isEmpty ? 'N/A' : telefono!.trim(),
+        if (direccion != null) 'direccion': direccion!.trim().isEmpty ? 'N/A' : direccion!.trim(),
       };
 }
 

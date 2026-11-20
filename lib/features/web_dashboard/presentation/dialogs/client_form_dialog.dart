@@ -18,6 +18,7 @@ class _ClientFormDialogState extends State<ClientFormDialog> {
   late final TextEditingController _nameCtrl;
   late final TextEditingController _emailCtrl;
   late final TextEditingController _phoneCtrl;
+  late final TextEditingController _addressCtrl;
 
   @override
   void initState() {
@@ -27,6 +28,7 @@ class _ClientFormDialogState extends State<ClientFormDialog> {
     _nameCtrl = TextEditingController(text: c?.nombres ?? '');
     _emailCtrl = TextEditingController(text: c?.email ?? '');
     _phoneCtrl = TextEditingController(text: c?.telefono ?? '');
+    _addressCtrl = TextEditingController(text: c?.direccion ?? '');
   }
 
   @override
@@ -35,25 +37,32 @@ class _ClientFormDialogState extends State<ClientFormDialog> {
     _nameCtrl.dispose();
     _emailCtrl.dispose();
     _phoneCtrl.dispose();
+    _addressCtrl.dispose();
     super.dispose();
   }
 
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
 
+    final emailVal = _emailCtrl.text.trim();
+    final phoneVal = _phoneCtrl.text.trim();
+    final addressVal = _addressCtrl.text.trim();
+
     if (widget.initialClient != null) {
       final request = UpdateClientRequest(
         nombres: _nameCtrl.text.trim(),
-        email: _emailCtrl.text.trim().toLowerCase(),
-        telefono: _phoneCtrl.text.trim(),
+        email: emailVal.isEmpty ? 'N/A' : emailVal.toLowerCase(),
+        telefono: phoneVal.isEmpty ? 'N/A' : phoneVal,
+        direccion: addressVal.isEmpty ? 'N/A' : addressVal,
       );
       Navigator.of(context).pop(request);
     } else {
       final request = CreateClientRequest(
         identificacion: _idCtrl.text.trim(),
         nombres: _nameCtrl.text.trim(),
-        email: _emailCtrl.text.trim().toLowerCase(),
-        telefono: _phoneCtrl.text.trim(),
+        email: emailVal.isEmpty ? 'N/A' : emailVal.toLowerCase(),
+        telefono: phoneVal.isEmpty ? 'N/A' : phoneVal,
+        direccion: addressVal.isEmpty ? 'N/A' : addressVal,
       );
       Navigator.of(context).pop(request);
     }
@@ -93,9 +102,10 @@ class _ClientFormDialogState extends State<ClientFormDialog> {
               SigadTextField(
                 controller: _emailCtrl,
                 label: 'Correo Electrónico',
+                hintText: 'Opcional (se guardará N/A si se deja vacío)',
                 keyboardType: TextInputType.emailAddress,
                 validator: (v) {
-                  if (v == null || v.trim().isEmpty) return 'El correo es requerido';
+                  if (v == null || v.trim().isEmpty || v.trim().toUpperCase() == 'N/A') return null;
                   if (!v.contains('@') || !v.contains('.')) return 'Correo inválido';
                   return null;
                 },
@@ -104,8 +114,14 @@ class _ClientFormDialogState extends State<ClientFormDialog> {
               SigadTextField(
                 controller: _phoneCtrl,
                 label: 'Teléfono Móvil (10 dígitos)',
+                hintText: 'Opcional (se guardará N/A si se deja vacío)',
                 keyboardType: TextInputType.phone,
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'El teléfono es requerido' : null,
+              ),
+              const SizedBox(height: 12),
+              SigadTextField(
+                controller: _addressCtrl,
+                label: 'Dirección',
+                hintText: 'Opcional (se guardará N/A si se deja vacío)',
               ),
             ],
           ),

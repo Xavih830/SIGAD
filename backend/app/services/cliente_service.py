@@ -46,11 +46,30 @@ class ClienteService:
         if existing:
             raise IdentificacionDuplicadaException()
 
+        email_val = datos.email if datos.email else "N/A"
+        if not email_val or email_val.strip().upper() == "N/A":
+            email_val = "N/A"
+        else:
+            email_val = email_val.strip().lower()
+
+        telefono_val = datos.telefono if datos.telefono else "N/A"
+        if not telefono_val or telefono_val.strip().upper() == "N/A":
+            telefono_val = "N/A"
+        else:
+            telefono_val = telefono_val.strip()
+
+        direccion_val = getattr(datos, "direccion", None) or "N/A"
+        if not direccion_val or direccion_val.strip().upper() == "N/A":
+            direccion_val = "N/A"
+        else:
+            direccion_val = direccion_val.strip()
+
         nuevo_cliente = Cliente(
             identificacion=identificacion,
             nombres=datos.nombres.strip(),
-            email=datos.email.lower() if datos.email else None,
-            telefono=datos.telefono.strip() if datos.telefono else None,
+            email=email_val,
+            telefono=telefono_val,
+            direccion=direccion_val,
         )
         try:
             await self.repo.add(nuevo_cliente)
@@ -109,9 +128,14 @@ class ClienteService:
         if "nombres" in update_data and update_data["nombres"] is not None:
             cliente.nombres = update_data["nombres"].strip()
         if "email" in update_data:
-            cliente.email = update_data["email"].lower() if update_data["email"] else None
+            val = update_data["email"]
+            cliente.email = "N/A" if (not val or val.strip().upper() == "N/A") else val.strip().lower()
         if "telefono" in update_data:
-            cliente.telefono = update_data["telefono"].strip() if update_data["telefono"] else None
+            val = update_data["telefono"]
+            cliente.telefono = "N/A" if (not val or val.strip().upper() == "N/A") else val.strip()
+        if "direccion" in update_data:
+            val = update_data["direccion"]
+            cliente.direccion = "N/A" if (not val or val.strip().upper() == "N/A") else val.strip()
 
         await self.db.commit()
         await self.db.refresh(cliente)

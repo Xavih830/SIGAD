@@ -95,6 +95,10 @@ class _ClientsDataTableState extends State<ClientsDataTable> {
           cellBuilder: (c) => Text(c.telefono ?? ''),
         ),
         SigadColumn(
+          label: const Text('Dirección', style: TextStyle(fontWeight: FontWeight.bold)),
+          cellBuilder: (c) => Text(c.direccion ?? ''),
+        ),
+        SigadColumn(
           label: const Text('Acciones', style: TextStyle(fontWeight: FontWeight.bold)),
           cellBuilder: (c) => Row(
             mainAxisSize: MainAxisSize.min,
