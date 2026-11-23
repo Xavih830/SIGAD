@@ -80,8 +80,8 @@ Risk-driven strategy: 23 risks identified, 9 high-priority (exposure = probabili
 
 ```bash
 # 1. Clone
-git clone <repository-url>
-cd <repository-folder>
+git clone [<repository-url>](https://github.com/Xavih830/SIGAD)
+cd SIGAD
 
 # 2. Configure environment variables
 cp .env.example .env
@@ -111,7 +111,3 @@ Evaluation credentials are provided in the project report (Appendix B) and are n
 
 Product Owner (RJ Seguros): Ariana Guerrón
 Instructor: Ing. Ángela Isabel Carrera Rivera
-
-## License
-
-Academic project developed for ESPOL. Add a license here if the repository will be made public.
